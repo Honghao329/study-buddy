@@ -1,155 +1,142 @@
 const api = require('../../utils/api.js');
 
 Page({
-  data: {
-    stats: {
-      streak: 0,
-      totalDays: 0,
-      totalDuration: 0,
-      todaySigned: false
-    },
-    // Calendar
-    year: 0,
-    month: 0,
-    days: [],
-    weekDays: ['日', '一', '二', '三', '四', '五', '六'],
-    signedDays: [],
-    // Sign modal
-    showModal: false,
-    duration: '',
-    statusIndex: 0,
-    statusOptions: ['高效', '一般', '疲惫'],
-    content: '',
-    // Rank
-    rankList: []
-  },
+	data: {
+		stats: { streak: 0, totalDays: 0, totalDuration: 0, todaySigned: 0 },
+		year: 0,
+		month: 0,
+		days: [],
+		weekDays: ['日', '一', '二', '三', '四', '五', '六'],
+		signedDaySet: {},
+		showModal: false,
+		duration: '',
+		statusIndex: 1,
+		statusLabels: ['高效', '一般', '疲惫'],
+		statusValues: ['efficient', 'normal', 'tired'],
+		content: '',
+		rankList: [],
+	},
 
-  onLoad() {
-    const now = new Date();
-    this.setData({
-      year: now.getFullYear(),
-      month: now.getMonth() + 1
-    });
-    this.loadAll();
-  },
+	onShow() {
+		if (!api.getToken()) {
+			wx.showToast({ title: '请先登录', icon: 'none' });
+			setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 1000);
+			return;
+		}
+		if (!this.data.year) {
+			const now = new Date();
+			this.setData({ year: now.getFullYear(), month: now.getMonth() + 1 });
+		}
+		this.loadAll();
+	},
 
-  loadAll() {
-    this.loadStats();
-    this.loadCalendar();
-    this.loadRank();
-  },
+	onPullDownRefresh() {
+		this.loadAll();
+		wx.stopPullDownRefresh();
+	},
 
-  loadStats() {
-    api.get('/api/sign/stats').then(res => {
-      if (res) {
-        this.setData({
-          stats: {
-            streak: res.streak || 0,
-            totalDays: res.totalDays || 0,
-            totalDuration: res.totalDuration || 0,
-            todaySigned: res.todaySigned || false
-          }
-        });
-      }
-    }).catch(() => {});
-  },
+	loadAll() {
+		this.loadStats();
+		this.loadCalendar();
+		this.loadRank();
+	},
 
-  loadCalendar() {
-    const { year, month } = this.data;
-    api.get('/api/sign/calendar', { year, month }).then(res => {
-      const signedDays = (res && res.days) ? res.days : [];
-      this.setData({ signedDays });
-      this.buildCalendar();
-    }).catch(() => {
-      this.buildCalendar();
-    });
-  },
+	loadStats() {
+		api.get('/api/sign/stats').then(res => {
+			if (res) this.setData({ stats: res });
+		}).catch(() => {});
+	},
 
-  buildCalendar() {
-    const { year, month, signedDays } = this.data;
-    const firstDay = new Date(year, month - 1, 1).getDay();
-    const totalDaysInMonth = new Date(year, month, 0).getDate();
-    const days = [];
+	loadCalendar() {
+		const { year, month } = this.data;
+		api.get('/api/sign/calendar', { year, month }).then(res => {
+			// 后端返回 [{day:'2026-04-08', duration:60, status:'efficient'}, ...]
+			const list = Array.isArray(res) ? res : [];
+			const signedDaySet = {};
+			list.forEach(item => {
+				const dayNum = parseInt(item.day.split('-')[2]);
+				signedDaySet[dayNum] = true;
+			});
+			this.setData({ signedDaySet });
+			this._buildCalendar();
+		}).catch(() => {
+			this._buildCalendar();
+		});
+	},
 
-    // Empty slots before first day
-    for (let i = 0; i < firstDay; i++) {
-      days.push({ day: '', signed: false, empty: true });
-    }
-    // Days of month
-    for (let d = 1; d <= totalDaysInMonth; d++) {
-      const signed = signedDays.indexOf(d) !== -1;
-      const isToday = (new Date().getFullYear() === year && new Date().getMonth() + 1 === month && new Date().getDate() === d);
-      days.push({ day: d, signed, empty: false, isToday });
-    }
+	_buildCalendar() {
+		const { year, month, signedDaySet } = this.data;
+		const firstDay = new Date(year, month - 1, 1).getDay();
+		const totalDaysInMonth = new Date(year, month, 0).getDate();
+		const today = new Date();
+		const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === month;
+		const days = [];
 
-    this.setData({ days });
-  },
+		for (let i = 0; i < firstDay; i++) {
+			days.push({ day: '', empty: true });
+		}
+		for (let d = 1; d <= totalDaysInMonth; d++) {
+			days.push({
+				day: d,
+				signed: !!signedDaySet[d],
+				isToday: isCurrentMonth && today.getDate() === d,
+				empty: false,
+			});
+		}
+		this.setData({ days });
+	},
 
-  prevMonth() {
-    let { year, month } = this.data;
-    month--;
-    if (month < 1) { month = 12; year--; }
-    this.setData({ year, month });
-    this.loadCalendar();
-  },
+	prevMonth() {
+		let { year, month } = this.data;
+		month--;
+		if (month < 1) { month = 12; year--; }
+		this.setData({ year, month });
+		this.loadCalendar();
+	},
 
-  nextMonth() {
-    let { year, month } = this.data;
-    month++;
-    if (month > 12) { month = 1; year++; }
-    this.setData({ year, month });
-    this.loadCalendar();
-  },
+	nextMonth() {
+		let { year, month } = this.data;
+		month++;
+		if (month > 12) { month = 1; year++; }
+		this.setData({ year, month });
+		this.loadCalendar();
+	},
 
-  openSignModal() {
-    if (this.data.stats.todaySigned) {
-      wx.showToast({ title: '今日已签到', icon: 'none' });
-      return;
-    }
-    this.setData({ showModal: true, duration: '', statusIndex: 0, content: '' });
-  },
+	openSignModal() {
+		if (this.data.stats.todaySigned) {
+			wx.showToast({ title: '今日已签到', icon: 'none' });
+			return;
+		}
+		this.setData({ showModal: true, duration: '', statusIndex: 1, content: '' });
+	},
 
-  closeModal() {
-    this.setData({ showModal: false });
-  },
+	closeModal() { this.setData({ showModal: false }); },
 
-  onDurationInput(e) {
-    this.setData({ duration: e.detail.value });
-  },
+	onDurationInput(e) { this.setData({ duration: e.detail.value }); },
+	onStatusChange(e) { this.setData({ statusIndex: e.detail.value }); },
+	onContentInput(e) { this.setData({ content: e.detail.value }); },
 
-  onStatusChange(e) {
-    this.setData({ statusIndex: e.detail.value });
-  },
+	doSign() {
+		const { duration, statusIndex, statusValues, content } = this.data;
+		wx.showLoading({ title: '签到中' });
+		api.post('/api/sign/do', {
+			duration: parseInt(duration) || 0,
+			status: statusValues[statusIndex],
+			content
+		}).then(() => {
+			wx.hideLoading();
+			wx.showToast({ title: '签到成功', icon: 'success' });
+			this.setData({ showModal: false });
+			this.loadAll();
+		}).catch(() => {
+			wx.hideLoading();
+		});
+	},
 
-  onContentInput(e) {
-    this.setData({ content: e.detail.value });
-  },
-
-  doSign() {
-    const { duration, statusIndex, statusOptions, content } = this.data;
-    if (!duration) {
-      wx.showToast({ title: '请输入学习时长', icon: 'none' });
-      return;
-    }
-    wx.showLoading({ title: '签到中' });
-    api.post('/api/sign/do', {
-      duration: Number(duration),
-      status: statusOptions[statusIndex],
-      content
-    }).then(() => {
-      wx.hideLoading();
-      wx.showToast({ title: '签到成功', icon: 'success' });
-      this.setData({ showModal: false });
-      this.loadAll();
-    }).catch(() => {
-      wx.hideLoading();
-    });
-  },
-
-  loadRank() {
-    api.get('/api/sign/rank').then(res => {
-      const rankList = (res && Array.isArray(res)) ? res.slice(0, 20) : [];
-      this.setData({ rankList });
-    }).catch(() => {});
-  }
+	loadRank() {
+		api.get('/api/sign/rank').then(res => {
+			// 后端返回 [{user_id, user_name, user_pic, days, total_duration}, ...]
+			this.setData({ rankList: Array.isArray(res) ? res.slice(0, 20) : [] });
+		}).catch(() => {});
+	},
 });

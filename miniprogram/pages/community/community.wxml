@@ -1,71 +1,47 @@
 <view class="container">
-  <!-- Search Bar -->
-  <view class="search-bar">
-    <view class="search-wrap">
-      <image class="search-icon" src="/images/icon-search.png" mode="aspectFit"></image>
-      <input class="search-input" placeholder="搜索社区笔记..." value="{{search}}" bindinput="onSearchInput" bindconfirm="onSearch" confirm-type="search" />
-      <view class="search-clear" wx:if="{{search}}" bindtap="onClearSearch">x</view>
-    </view>
-  </view>
+	<van-search value="{{search}}" placeholder="搜索社区笔记" bind:search="onSearch" bind:change="onSearchInput" bind:clear="onClearSearch" shape="round" />
 
-  <!-- Sort Tabs -->
-  <view class="sort-tabs">
-    <view class="sort-tab {{activeSortTab === index ? 'sort-active' : ''}}" wx:for="{{sortTabs}}" wx:key="value" data-index="{{index}}" bindtap="onSortChange">
-      {{item.label}}
-    </view>
-  </view>
+	<van-tabs active="{{sortIndex}}" bind:change="onSortChange" color="#4A90D9" title-active-color="#4A90D9">
+		<van-tab title="推荐"></van-tab>
+		<van-tab title="最新"></van-tab>
+		<van-tab title="最热"></van-tab>
+	</van-tabs>
 
-  <!-- Feed List -->
-  <view wx:if="{{notes.length > 0}}">
-    <view class="card feed-card" wx:for="{{notes}}" wx:key="_id" data-id="{{item._id}}" bindtap="goDetail">
-      <!-- Author -->
-      <view class="flex-center mb20">
-        <image class="feed-avatar" src="{{item.author_avatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
-        <view class="feed-author">
-          <view class="text-bold text-sm">{{item.author_name || '匿名用户'}}</view>
-          <view class="text-gray text-sm">{{item.create_time || item.createdAt || ''}}</view>
-        </view>
-      </view>
+	<view class="feed-list">
+		<view class="card feed-card" wx:for="{{notes}}" wx:key="id">
+			<view class="feed-header" bindtap="goDetail" data-id="{{item.id}}">
+				<view class="avatar-circle small">
+					<van-icon name="smile-o" size="20px" color="#fff" />
+				</view>
+				<view class="feed-author-info">
+					<text class="feed-name">{{item.user_name || '匿名'}}</text>
+					<text class="feed-time text-sm text-gray">{{item.created_at}}</text>
+				</view>
+			</view>
+			<view class="feed-body" bindtap="goDetail" data-id="{{item.id}}">
+				<text class="feed-title">{{item.title}}</text>
+				<text class="feed-text text-gray">{{item.content}}</text>
+				<view class="feed-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+					<van-tag plain type="primary" size="medium" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this" custom-class="feed-tag">{{tag}}</van-tag>
+				</view>
+			</view>
+			<view class="feed-actions">
+				<view class="feed-action" data-id="{{item.id}}" data-index="{{index}}" catchtap="toggleLike">
+					<van-icon name="{{item.is_liked ? 'good-job' : 'good-job-o'}}" color="{{item.is_liked ? '#ff4757' : '#999'}}" size="18px" />
+					<text class="action-num">{{item.like_cnt || 0}}</text>
+				</view>
+				<view class="feed-action" bindtap="goDetail" data-id="{{item.id}}">
+					<van-icon name="chat-o" color="#999" size="18px" />
+					<text class="action-num">{{item.comment_cnt || 0}}</text>
+				</view>
+				<view class="feed-action">
+					<van-icon name="eye-o" color="#999" size="18px" />
+					<text class="action-num">{{item.view_cnt || 0}}</text>
+				</view>
+			</view>
+		</view>
+	</view>
 
-      <!-- Content -->
-      <view class="feed-title text-bold">{{item.title}}</view>
-      <view class="feed-content text-gray mt20">{{item.content}}</view>
-
-      <!-- Images Thumbnails -->
-      <view class="feed-images mt20" wx:if="{{item.images && item.images.length > 0}}">
-        <image class="feed-img" wx:for="{{item.images}}" wx:for-item="img" wx:key="*this" src="{{img}}" mode="aspectFill" wx:if="{{index < 3}}" />
-        <view class="more-images text-gray text-sm" wx:if="{{item.images.length > 3}}">+{{item.images.length - 3}}</view>
-      </view>
-
-      <!-- Tags -->
-      <view class="tag-list mt20" wx:if="{{item.tags && item.tags.length > 0}}">
-        <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
-      </view>
-
-      <!-- Stats & Like -->
-      <view class="flex-between mt20 feed-footer">
-        <view class="feed-stats flex">
-          <view class="stat-item text-gray text-sm" catchtap="toggleLike" data-id="{{item._id}}" data-index="{{index}}">
-            <text>{{item.is_liked ? '&#x2764;' : '&#x1F90D;'}}</text> {{item.like_count || 0}}
-          </view>
-          <view class="stat-item text-gray text-sm">
-            <text>&#x1F4AC;</text> {{item.comment_count || 0}}
-          </view>
-          <view class="stat-item text-gray text-sm">
-            <text>&#x1F441;</text> {{item.view_count || 0}}
-          </view>
-        </view>
-      </view>
-    </view>
-  </view>
-
-  <!-- Empty State -->
-  <view class="empty" wx:if="{{!loading && notes.length === 0}}">
-    <view>暂无笔记</view>
-    <view class="text-sm mt20 text-gray">社区还很安静，快来发布第一篇笔记吧</view>
-  </view>
-
-  <!-- Loading -->
-  <view class="loading-tip text-gray text-sm" wx:if="{{loading}}">加载中...</view>
-  <view class="loading-tip text-gray text-sm" wx:if="{{!hasMore && notes.length > 0}}">没有更多了</view>
+	<van-empty wx:if="{{!loading && notes.length === 0}}" description="暂无内容" />
+	<van-divider wx:if="{{!hasMore && notes.length > 0}}" contentPosition="center">没有更多了</van-divider>
 </view>

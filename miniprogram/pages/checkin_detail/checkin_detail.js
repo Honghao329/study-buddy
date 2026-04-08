@@ -4,8 +4,7 @@ Page({
   data: {
     id: '',
     detail: null,
-    joining: false,
-    joined: false
+    joining: false
   },
 
   onLoad(options) {
@@ -19,27 +18,22 @@ Page({
     wx.showLoading({ title: '加载中' });
     api.get('/api/checkin/detail/' + id).then(res => {
       wx.hideLoading();
-      this.setData({
-        detail: res,
-        joined: res.is_joined || false
-      });
+      this.setData({ detail: res });
     }).catch(() => {
       wx.hideLoading();
     });
   },
 
   onJoin() {
-    if (this.data.joining || this.data.joined) return;
+    if (this.data.joining || (this.data.detail && this.data.detail.is_joined)) return;
     this.setData({ joining: true });
     api.post('/api/checkin/join', { checkinId: this.data.id }).then(() => {
-      wx.showToast({ title: '参与成功', icon: 'success' });
-      this.setData({ joining: false, joined: true });
-      // Update join count locally
-      if (this.data.detail) {
-        const detail = { ...this.data.detail };
-        detail.join_cnt = (detail.join_cnt || detail.join_count || 0) + 1;
-        this.setData({ detail });
-      }
+      wx.showToast({ title: '打卡成功', icon: 'success' });
+      const detail = { ...this.data.detail };
+      detail.is_joined = true;
+      detail.my_total = (detail.my_total || 0) + 1;
+      detail.join_cnt = (detail.join_cnt || 0) + 1;
+      this.setData({ detail, joining: false });
     }).catch(() => {
       this.setData({ joining: false });
     });

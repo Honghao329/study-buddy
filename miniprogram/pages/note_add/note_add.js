@@ -17,6 +17,11 @@ Page({
   },
 
   onLoad(options) {
+    if (!api.getToken()) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 1000);
+      return;
+    }
     if (options.id) {
       this.setData({ id: options.id, isEdit: true });
       wx.setNavigationBarTitle({ title: '编辑笔记' });

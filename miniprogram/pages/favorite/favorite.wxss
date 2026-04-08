@@ -1,0 +1,14 @@
+.container {
+  padding: 20rpx 0;
+  min-height: 100vh;
+  background: #f5f6fa;
+}
+
+.fav-tag {
+  margin-left: 16rpx;
+}
+
+.loading-wrap {
+  padding-top: 200rpx;
+  text-align: center;
+}

@@ -2,25 +2,29 @@
   <!-- Header -->
   <view class="flex-between mb20">
     <view class="page-title">打卡活动管理</view>
-    <view class="add-btn" bindtap="openAddModal">+ 新建活动</view>
+    <view class="add-btn" bindtap="openAddModal">
+      <van-icon name="plus" size="14px" /> 新建活动
+    </view>
   </view>
 
   <!-- List -->
-  <view wx:if="{{list.length === 0 && !loading}}" class="empty">暂无打卡活动</view>
+  <van-empty wx:if="{{list.length === 0 && !loading}}" description="暂无打卡活动" />
 
   <view class="card checkin-item" wx:for="{{list}}" wx:key="id">
     <view class="flex-between">
       <view class="checkin-title flex-1">{{item.title || '无标题'}}</view>
-      <view class="del-btn" bindtap="deleteCheckin" data-id="{{item.id}}">删除</view>
+      <view class="del-btn" bindtap="deleteCheckin" data-id="{{item.id}}">
+        <van-icon name="cross" size="14px" color="#ff4757" /> 删除
+      </view>
     </view>
     <view class="checkin-desc text-sm text-gray" wx:if="{{item.description}}">{{item.description}}</view>
     <view class="checkin-meta text-sm text-gray">
       <text wx:if="{{item.startDate}}">{{item.startDate}} ~ {{item.endDate}}</text>
-      <text wx:if="{{item.joinCount !== undefined}}"> | 参与 {{item.joinCount || 0}} 人</text>
+      <text wx:if="{{item.joinCount !== undefined}}"> | <van-icon name="friends-o" size="12px" /> {{item.joinCount || 0}} 人</text>
     </view>
   </view>
 
-  <view wx:if="{{loading}}" class="loading-tip text-gray text-sm">加载中...</view>
+  <van-loading wx:if="{{loading}}" size="24px" vertical>加载中...</van-loading>
 
   <!-- Add Modal -->
   <view class="modal-mask" wx:if="{{showModal}}" bindtap="closeModal"></view>

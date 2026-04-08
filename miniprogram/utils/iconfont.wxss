@@ -1,0 +1,21 @@
+/* Base icon style */
+.icon { display: inline-block; width: 32rpx; height: 32rpx; text-align: center; line-height: 32rpx; font-style: normal; font-size: 26rpx; }
+.icon-like { color: #ff6b6b; } .icon-like::before { content: '\2661'; }
+.icon-liked { color: #ff4757; } .icon-liked::before { content: '\2665'; }
+.icon-comment { color: #4A90D9; } .icon-comment::before { content: '\270E'; }
+.icon-view { color: #a0a0a0; } .icon-view::before { content: '\25C9'; }
+.icon-fav { color: #ffa502; } .icon-fav::before { content: '\2606'; }
+.icon-faved { color: #ffa502; } .icon-faved::before { content: '\2605'; }
+.icon-search { color: #999; } .icon-search::before { content: '\2315'; font-size: 32rpx; }
+.icon-add { color: #fff; } .icon-add::before { content: '+'; font-size: 40rpx; font-weight: 300; }
+.icon-arrow { color: #ccc; } .icon-arrow::before { content: '\203A'; font-size: 36rpx; }
+.icon-back { color: #333; } .icon-back::before { content: '\2039'; font-size: 36rpx; }
+.icon-delete { color: #ff4757; } .icon-delete::before { content: '\2715'; }
+.icon-edit { color: #4A90D9; } .icon-edit::before { content: '\270E'; }
+.icon-check { color: #2ed573; } .icon-check::before { content: '\2713'; font-weight: bold; }
+.icon-time { color: #999; } .icon-time::before { content: '\25F7'; }
+.icon-user { color: #4A90D9; } .icon-user::before { content: '\25EF'; }
+/* Default avatar CSS circle */
+.avatar-circle { width: 72rpx; height: 72rpx; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 28rpx; font-weight: bold; flex-shrink: 0; }
+.avatar-circle.small { width: 56rpx; height: 56rpx; font-size: 24rpx; }
+.avatar-circle.large { width: 120rpx; height: 120rpx; font-size: 48rpx; }

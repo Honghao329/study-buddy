@@ -3,10 +3,13 @@
   <view class="card author-card">
     <view class="flex-between">
       <view class="flex-center">
-        <image class="avatar" src="{{note.author_avatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+        <image wx:if="{{note.author_avatar}}" class="avatar" src="{{note.author_avatar}}" mode="aspectFill"></image>
+        <view wx:else class="avatar-circle">
+          <van-icon name="smile-o" size="28px" color="#fff" />
+        </view>
         <view class="author-info">
           <view class="text-bold">{{note.author_name || '匿名用户'}}</view>
-          <view class="text-gray text-sm">{{note.create_time || note.createdAt || ''}}</view>
+          <view class="text-gray text-sm">{{note.created_at || ''}}</view>
         </view>
       </view>
       <view class="visibility-badge badge-{{note.visibility || 'public'}}">
@@ -34,41 +37,44 @@
   <!-- Action Bar -->
   <view class="card action-bar">
     <view class="action-item {{isLiked ? 'action-active' : ''}}" bindtap="toggleLike">
-      <text>{{isLiked ? '&#x2764;' : '&#x1F90D;'}}</text>
-      <text class="action-text">{{note.like_count || 0}}</text>
+      <van-icon name="{{isLiked ? 'good-job' : 'good-job-o'}}" color="{{isLiked ? '#ff4757' : '#666'}}" size="20px" />
+      <text class="action-text">{{note.like_cnt || 0}}</text>
     </view>
     <view class="action-item {{isFaved ? 'action-active' : ''}}" bindtap="toggleFav">
-      <text>{{isFaved ? '&#x2B50;' : '&#x2606;'}}</text>
+      <van-icon name="{{isFaved ? 'star' : 'star-o'}}" color="{{isFaved ? '#ff9800' : '#666'}}" size="20px" />
       <text class="action-text">{{isFaved ? '已收藏' : '收藏'}}</text>
     </view>
     <view class="action-item">
-      <text>&#x1F4AC;</text>
-      <text class="action-text">{{note.comment_count || 0}}</text>
+      <van-icon name="chat-o" color="#666" size="20px" />
+      <text class="action-text">{{note.comment_cnt || 0}}</text>
     </view>
     <view class="action-item">
-      <text>&#x1F441;</text>
-      <text class="action-text">{{note.view_count || 0}}</text>
+      <van-icon name="eye-o" color="#666" size="20px" />
+      <text class="action-text">{{note.view_cnt || 0}}</text>
     </view>
   </view>
 
   <!-- Comments Section -->
-  <view class="section-title text-bold">评论 ({{note.comment_count || comments.length || 0}})</view>
+  <view class="section-title text-bold">评论 ({{note.comment_cnt || comments.length || 0}})</view>
 
   <view wx:if="{{comments.length > 0}}">
     <view class="card comment-card" wx:for="{{comments}}" wx:key="_id">
       <view class="flex-center">
-        <image class="comment-avatar" src="{{item.author_avatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+        <image wx:if="{{item.author_avatar}}" class="comment-avatar" src="{{item.author_avatar}}" mode="aspectFill"></image>
+        <view wx:else class="avatar-circle small">
+          <van-icon name="smile-o" size="20px" color="#fff" />
+        </view>
         <view class="comment-meta">
           <view class="text-bold text-sm">{{item.author_name || '匿名用户'}}</view>
-          <view class="text-gray text-sm">{{item.create_time || item.createdAt || ''}}</view>
+          <view class="text-gray text-sm">{{item.created_at || ''}}</view>
         </view>
       </view>
       <view class="comment-content mt20">{{item.content}}</view>
     </view>
   </view>
 
-  <view class="empty" wx:if="{{!loadingComments && comments.length === 0}}">暂无评论，来说点什么吧</view>
-  <view class="loading-tip text-gray text-sm" wx:if="{{loadingComments}}">加载中...</view>
+  <van-empty wx:if="{{!loadingComments && comments.length === 0}}" description="暂无评论，来说点什么吧" />
+  <van-loading wx:if="{{loadingComments}}" size="24px" vertical>加载中...</van-loading>
 
   <!-- Bottom Spacer for input bar -->
   <view style="height: 120rpx;"></view>

@@ -1,52 +1,81 @@
+/* Tabs */
 .tabs {
   background: #fff;
   border-radius: 16rpx;
   margin-bottom: 20rpx;
   overflow: hidden;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.03);
 }
 .tab {
   flex: 1;
   text-align: center;
-  padding: 24rpx 0;
+  padding: 26rpx 0;
   font-size: 28rpx;
   color: #666;
   position: relative;
+  transition: all 0.3s;
 }
 .tab.active {
   color: #4A90D9;
   font-weight: bold;
-  border-bottom: 4rpx solid #4A90D9;
+}
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40rpx;
+  height: 6rpx;
+  background: linear-gradient(90deg, #4A90D9, #6BB5F0);
+  border-radius: 3rpx;
 }
 .badge {
   position: absolute;
   top: 10rpx;
   right: 30%;
-  background: #e91e63;
+  background: linear-gradient(135deg, #e91e63, #ff5252);
   color: #fff;
   font-size: 20rpx;
-  width: 32rpx;
-  height: 32rpx;
-  line-height: 32rpx;
+  width: 34rpx;
+  height: 34rpx;
+  line-height: 34rpx;
   text-align: center;
   border-radius: 50%;
   font-weight: normal;
+  box-shadow: 0 2rpx 8rpx rgba(233,30,99,0.3);
 }
+
+/* Partner Item */
 .partner-item {
   padding: 30rpx;
+  border-radius: 20rpx;
+}
+.avatar-placeholder {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E8EEF6 0%, #D6E8F9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
 }
 .partner-info {
   margin-left: 20rpx;
 }
 .partner-name {
   font-size: 30rpx;
-  font-weight: 500;
+  font-weight: 600;
+  color: #333;
 }
 .partner-actions {
   justify-content: space-between;
 }
 .btn-sm {
-  padding: 14rpx !important;
+  padding: 16rpx !important;
   font-size: 26rpx !important;
+  font-weight: 500;
 }
 .btn-danger-outline {
   border: 1rpx solid #e91e63;
@@ -55,4 +84,5 @@
   padding: 22rpx;
   border-radius: 44rpx;
   font-size: 30rpx;
+  transition: all 0.2s;
 }

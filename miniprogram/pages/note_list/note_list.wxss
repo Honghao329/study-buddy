@@ -1,3 +1,4 @@
+/* Search Bar */
 .search-bar {
   padding: 10rpx 0 20rpx;
 }
@@ -6,14 +7,14 @@
   align-items: center;
   background: #fff;
   border-radius: 40rpx;
-  padding: 12rpx 24rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+  padding: 14rpx 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(74,144,217,0.08);
+  border: 1rpx solid #EBF3FC;
 }
-.search-icon {
-  width: 32rpx;
-  height: 32rpx;
+.search-icon-text {
+  font-size: 28rpx;
   margin-right: 12rpx;
-  opacity: 0.4;
+  opacity: 0.5;
 }
 .search-input {
   flex: 1;
@@ -22,24 +23,28 @@
 }
 .search-clear {
   color: #999;
-  font-size: 28rpx;
+  font-size: 32rpx;
   padding: 0 10rpx;
+  font-weight: bold;
 }
 
+/* Tabs */
 .tabs {
   display: flex;
   background: #fff;
   border-radius: 12rpx;
   margin-bottom: 20rpx;
   overflow: hidden;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.03);
 }
 .tab-item {
   flex: 1;
   text-align: center;
-  padding: 18rpx 0;
+  padding: 20rpx 0;
   font-size: 26rpx;
   color: #666;
   position: relative;
+  transition: all 0.3s;
 }
 .tab-active {
   color: #4A90D9;
@@ -52,13 +57,19 @@
   left: 50%;
   transform: translateX(-50%);
   width: 40rpx;
-  height: 4rpx;
-  background: #4A90D9;
-  border-radius: 2rpx;
+  height: 6rpx;
+  background: linear-gradient(90deg, #4A90D9, #6BB5F0);
+  border-radius: 3rpx;
 }
 
+/* Note Card */
 .note-card {
   position: relative;
+  border-left: 6rpx solid transparent;
+  transition: all 0.2s;
+}
+.note-card:active {
+  border-left-color: #4A90D9;
 }
 .note-title {
   font-size: 30rpx;
@@ -77,28 +88,31 @@
 }
 .visibility-badge {
   font-size: 20rpx;
-  padding: 4rpx 14rpx;
+  padding: 6rpx 16rpx;
   border-radius: 20rpx;
   white-space: nowrap;
+  font-weight: 500;
 }
 .badge-public {
-  background: #e8f5e9;
+  background: #E8F5E9;
   color: #43a047;
 }
 .badge-private {
-  background: #fce4ec;
+  background: #FCE4EC;
   color: #e91e63;
 }
 .badge-partner {
-  background: #e3f2fd;
+  background: #E3F2FD;
   color: #4A90D9;
 }
 
+/* Tags */
 .tag-list {
   display: flex;
   flex-wrap: wrap;
 }
 
+/* Note Stats */
 .note-stats {
   display: flex;
   gap: 24rpx;
@@ -109,43 +123,52 @@
   gap: 4rpx;
 }
 
+/* Card Actions */
 .card-actions {
   border-top: 1rpx solid #f0f0f0;
   padding-top: 20rpx;
-  gap: 20rpx;
+  gap: 16rpx;
 }
 .action-btn {
   font-size: 24rpx;
-  padding: 8rpx 28rpx;
+  padding: 10rpx 32rpx;
   border-radius: 24rpx;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 .edit-btn {
-  background: #e3f2fd;
+  background: #E3F2FD;
   color: #4A90D9;
 }
 .delete-btn {
-  background: #fce4ec;
+  background: #FCE4EC;
   color: #e91e63;
 }
 
+/* Loading */
 .loading-tip {
   text-align: center;
   padding: 30rpx 0;
 }
 
+/* FAB Button */
 .fab {
   position: fixed;
   right: 40rpx;
   bottom: 120rpx;
-  width: 100rpx;
-  height: 100rpx;
-  background: #4A90D9;
+  width: 110rpx;
+  height: 110rpx;
+  background: linear-gradient(135deg, #4A90D9 0%, #6BB5F0 100%);
   color: #fff;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 52rpx;
-  box-shadow: 0 6rpx 20rpx rgba(74,144,217,0.4);
+  box-shadow: 0 8rpx 28rpx rgba(74,144,217,0.45);
   z-index: 99;
+  transition: all 0.2s;
+}
+.fab:active {
+  transform: scale(0.92);
 }

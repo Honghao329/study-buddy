@@ -1,90 +1,64 @@
-.login-card {
-  text-align: center;
-  padding: 60rpx 40rpx;
-  margin-top: 40rpx;
-}
-.login-avatar {
-  width: 140rpx;
-  height: 140rpx;
-  border-radius: 50%;
-  margin-bottom: 30rpx;
-}
-.login-title {
-  font-size: 36rpx;
-  font-weight: bold;
-  margin-bottom: 40rpx;
-  color: #333;
-}
-.login-form {
-  text-align: left;
-}
-.profile-header {
-  padding: 40rpx 30rpx;
-}
-.profile-top {
-  margin-bottom: 30rpx;
-}
-.profile-avatar {
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 50%;
-  margin-right: 24rpx;
-  border: 4rpx solid #e8eef6;
-}
-.profile-info {
-  flex: 1;
-}
-.profile-name {
-  font-size: 34rpx;
-  font-weight: bold;
-  margin-bottom: 8rpx;
-}
-.profile-bio {
-  line-height: 1.5;
-}
-.stats-row {
-  display: flex;
-  justify-content: space-around;
-  border-top: 1rpx solid #f0f0f0;
-  padding-top: 24rpx;
-}
-.stat-item {
-  text-align: center;
-}
-.stat-num {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #4A90D9;
-}
-.stat-label {
-  font-size: 22rpx;
-  color: #999;
-  margin-top: 6rpx;
-}
-.menu-card {
-  padding: 0 30rpx;
-}
-.menu-item {
-  display: flex;
-  align-items: center;
-  padding: 28rpx 0;
-  border-bottom: 1rpx solid #f5f5f5;
-}
-.menu-item:last-child {
-  border-bottom: none;
-}
-.menu-icon {
-  font-size: 36rpx;
-  margin-right: 20rpx;
-  width: 50rpx;
-  text-align: center;
-}
-.menu-text {
-  flex: 1;
-  font-size: 30rpx;
-  color: #333;
-}
-.menu-arrow {
-  color: #ccc;
-  font-size: 28rpx;
-}
+.page-my { min-height: 100vh; background: #f5f6fa; }
+
+/* ========== 登录页 ========== */
+.login-bg { padding: 80rpx 40rpx 40rpx; }
+.login-card { background: #fff; border-radius: 24rpx; padding: 60rpx 40rpx 50rpx; box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.06); }
+.login-header { text-align: center; margin-bottom: 30rpx; }
+
+.avatar-btn { background: none !important; border: none; padding: 0; margin: 0 auto; width: 160rpx; height: 160rpx; line-height: normal; }
+.avatar-btn::after { border: none; }
+.avatar-preview { width: 160rpx; height: 160rpx; border-radius: 50%; border: 4rpx solid #EBF3FC; }
+.avatar-placeholder { width: 160rpx; height: 160rpx; border-radius: 50%; background: linear-gradient(135deg, #EBF3FC 0%, #D6E8F9 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; border: 4rpx dashed #4A90D9; }
+.avatar-plus { font-size: 48rpx; color: #4A90D9; line-height: 1; }
+.avatar-tip { font-size: 20rpx; color: #4A90D9; margin-top: 4rpx; }
+
+.login-title { text-align: center; font-size: 40rpx; font-weight: bold; color: #333; margin-bottom: 12rpx; }
+.login-desc { text-align: center; font-size: 26rpx; color: #999; margin-bottom: 40rpx; }
+
+.login-form { padding: 0 10rpx; }
+.form-item { margin-bottom: 28rpx; }
+.form-label { font-size: 26rpx; color: #666; margin-bottom: 12rpx; display: block; font-weight: 500; }
+.form-input { border: 2rpx solid #e8eef6; border-radius: 16rpx; padding: 22rpx 24rpx; font-size: 30rpx; background: #f8fbff; }
+.login-btn { background: linear-gradient(135deg, #4A90D9 0%, #6BB5F0 100%); color: #fff; text-align: center; padding: 26rpx; border-radius: 48rpx; font-size: 32rpx; font-weight: 600; margin-top: 16rpx; box-shadow: 0 6rpx 20rpx rgba(74,144,217,0.3); }
+.login-btn:active { opacity: 0.85; }
+
+/* ========== 个人信息 ========== */
+.profile-card { position: relative; margin: 0 0 20rpx; overflow: hidden; }
+.profile-bg { height: 200rpx; background: linear-gradient(135deg, #4A90D9 0%, #6BB5F0 50%, #89C4F4 100%); }
+.profile-content { margin-top: -80rpx; padding: 0 30rpx; }
+.profile-row { display: flex; align-items: flex-end; }
+
+.profile-avatar { width: 140rpx; height: 140rpx; border-radius: 50%; border: 6rpx solid #fff; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.15); margin-right: 24rpx; flex-shrink: 0; }
+.profile-avatar-default { width: 140rpx; height: 140rpx; border-radius: 50%; border: 6rpx solid #fff; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.15); margin-right: 24rpx; flex-shrink: 0; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 56rpx; font-weight: bold; }
+
+.profile-info { flex: 1; padding-bottom: 16rpx; }
+.profile-name { font-size: 36rpx; font-weight: bold; color: #fff; display: block; text-shadow: 0 2rpx 6rpx rgba(0,0,0,0.2); }
+.profile-bio { font-size: 24rpx; color: #666; margin-top: 12rpx; display: block; line-height: 1.5; }
+.profile-id { font-size: 22rpx; color: #aaa; margin-top: 8rpx; display: block; }
+
+/* ========== 菜单 ========== */
+.menu-section { padding: 0 20rpx; }
+.menu-group { background: #fff; border-radius: 20rpx; margin-bottom: 20rpx; overflow: hidden; box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.03); }
+.menu-item { display: flex; align-items: center; padding: 28rpx 30rpx; border-bottom: 1rpx solid #f5f5f5; }
+.menu-item:last-child { border-bottom: none; }
+
+.menu-icon-box { width: 64rpx; height: 64rpx; border-radius: 16rpx; display: flex; align-items: center; justify-content: center; margin-right: 24rpx; flex-shrink: 0; }
+.menu-icon-text { font-size: 28rpx; font-weight: bold; }
+
+.menu-label { flex: 1; font-size: 30rpx; color: #333; }
+.menu-arrow { color: #ccc; font-size: 28rpx; }
+
+/* ========== 退出按钮 ========== */
+.logout-btn { margin: 20rpx 20rpx 40rpx; text-align: center; padding: 24rpx; border-radius: 48rpx; font-size: 30rpx; color: #E91E63; background: #fff; border: 2rpx solid #FCE4EC; }
+.logout-btn:active { background: #FCE4EC; }
+
+/* ========== 自定义弹窗 ========== */
+.modal-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 999; display: flex; align-items: center; justify-content: center; }
+.modal-box { width: 560rpx; background: #fff; border-radius: 24rpx; overflow: hidden; }
+.modal-title { text-align: center; font-size: 34rpx; font-weight: bold; padding: 40rpx 30rpx 16rpx; color: #333; }
+.modal-content { text-align: center; font-size: 28rpx; color: #666; padding: 0 40rpx 40rpx; }
+.modal-btns { display: flex; border-top: 1rpx solid #f0f0f0; }
+.modal-btn { flex: 1; text-align: center; padding: 28rpx; font-size: 30rpx; }
+.modal-btn.cancel { color: #999; border-right: 1rpx solid #f0f0f0; }
+.modal-btn.confirm { color: #E91E63; font-weight: 600; }
+.modal-btn:active { background: #f5f5f5; }

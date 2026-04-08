@@ -15,6 +15,11 @@ Page({
   },
 
   onLoad(options) {
+    if (!api.getToken()) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 1000);
+      return;
+    }
     if (options.id) {
       this.setData({ id: options.id });
       this.loadNote(options.id);
@@ -82,7 +87,7 @@ Page({
       // Update comment count locally
       if (this.data.note) {
         const note = { ...this.data.note };
-        note.comment_count = (note.comment_count || 0) + 1;
+        note.comment_cnt = (note.comment_cnt || 0) + 1;
         this.setData({ note });
       }
     });
@@ -92,7 +97,7 @@ Page({
     api.post('/api/like/toggle', { targetId: this.data.id, targetType: 'note' }).then(res => {
       const isLiked = !this.data.isLiked;
       const note = { ...this.data.note };
-      note.like_count = (note.like_count || 0) + (isLiked ? 1 : -1);
+      note.like_cnt = (note.like_cnt || 0) + (isLiked ? 1 : -1);
       this.setData({ isLiked, note });
     });
   },

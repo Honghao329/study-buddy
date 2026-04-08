@@ -1,33 +1,84 @@
-<view class="container" wx:if="{{detail}}">
-  <!-- Header Card -->
-  <view class="card header-card">
-    <view class="detail-title text-bold">{{detail.title}}</view>
-    <view class="detail-desc mt20">{{detail.description}}</view>
-
-    <view class="info-grid mt20">
-      <view class="info-item">
-        <view class="info-label text-gray text-sm">开始日期</view>
-        <view class="info-value">{{detail.start_date || '-'}}</view>
-      </view>
-      <view class="info-item">
-        <view class="info-label text-gray text-sm">结束日期</view>
-        <view class="info-value">{{detail.end_date || '-'}}</view>
-      </view>
-      <view class="info-item">
-        <view class="info-label text-gray text-sm">参与人数</view>
-        <view class="info-value highlight">{{detail.join_cnt || detail.join_count || 0}}</view>
-      </view>
-    </view>
+<view class="page" wx:if="{{detail}}">
+  <!-- Gradient Header Card -->
+  <view class="header-card">
+    <view class="header-title">{{detail.title}}</view>
+    <view class="header-desc" wx:if="{{detail.description}}">{{detail.description}}</view>
   </view>
 
-  <!-- Join Button -->
-  <view class="btn-area">
-    <view class="{{joined ? 'btn-joined' : 'btn-primary'}} join-btn" bindtap="onJoin">
-      {{joining ? '参与中...' : (joined ? '已参与打卡' : '参与打卡')}}
-    </view>
+  <!-- Info Grid -->
+  <view class="section">
+    <van-grid column-num="3" border="{{false}}" custom-class="info-grid">
+      <van-grid-item use-slot>
+        <view class="grid-item">
+          <view class="grid-value">{{detail.join_cnt || 0}}</view>
+          <view class="grid-label">参与人数</view>
+        </view>
+      </van-grid-item>
+      <van-grid-item use-slot>
+        <view class="grid-item">
+          <view class="grid-value accent">{{detail.my_total || 0}}<text class="grid-unit">次</text></view>
+          <view class="grid-label">我的打卡</view>
+        </view>
+      </van-grid-item>
+      <van-grid-item use-slot>
+        <view class="grid-item">
+          <view class="grid-value">{{detail.view_cnt || 0}}</view>
+          <view class="grid-label">浏览量</view>
+        </view>
+      </van-grid-item>
+    </van-grid>
   </view>
 
-  <button class="share-btn" open-type="share">分享给好友</button>
+  <!-- Date Range -->
+  <view class="section date-section">
+    <van-icon name="clock-o" size="18px" color="#4A90D9" custom-class="date-icon" />
+    <text class="date-text">{{detail.start_date || '开始'}} ~ {{detail.end_date || '结束'}}</text>
+  </view>
+
+  <!-- Recent Participants -->
+  <view class="section" wx:if="{{detail.recent_users && detail.recent_users.length > 0}}">
+    <view class="section-title">最近参与</view>
+    <scroll-view scroll-x class="avatar-scroll">
+      <view class="avatar-item" wx:for="{{detail.recent_users}}" wx:key="nickname">
+        <view class="avatar-wrap">
+          <van-image wx:if="{{item.avatar}}" round width="80rpx" height="80rpx" src="{{item.avatar}}" fit="cover" />
+          <view wx:else class="avatar-circle">
+            <van-icon name="smile-o" size="22px" color="#fff" />
+          </view>
+        </view>
+        <text class="avatar-name">{{item.nickname}}</text>
+        <text class="avatar-day">第{{item.day}}天</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- Action Button -->
+  <view class="action-area">
+    <van-button
+      wx:if="{{detail.is_joined}}"
+      block
+      round
+      size="large"
+      disabled
+      custom-class="btn-done"
+    >今日已打卡 ✓</van-button>
+    <van-button
+      wx:else
+      block
+      round
+      size="large"
+      type="primary"
+      loading="{{joining}}"
+      custom-class="btn-join"
+      bind:click="onJoin"
+    >参与打卡</van-button>
+  </view>
+
+  <button class="share-btn" open-type="share">
+    <van-icon name="share-o" size="16px" custom-class="share-icon" /> 分享给好友
+  </button>
 </view>
 
-<view class="empty" wx:if="{{!detail}}">加载中...</view>
+<view class="loading-page" wx:if="{{!detail}}">
+  <van-loading size="24px" vertical>加载中...</van-loading>
+</view>

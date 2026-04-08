@@ -17,7 +17,7 @@
     <picker mode="selector" range="{{visibilityOptions}}" value="{{visibilityIndex}}" bindchange="onVisibilityChange">
       <view class="input picker-value flex-between">
         <text>{{visibilityOptions[visibilityIndex]}}</text>
-        <text class="text-gray">&#x25BC;</text>
+        <van-icon name="arrow" size="14px" color="#999" />
       </view>
     </picker>
   </view>
@@ -27,12 +27,16 @@
     <view class="form-label text-bold">标签</view>
     <view class="tag-input-wrap">
       <input class="input tag-input" placeholder="输入标签后点击添加" value="{{tagInput}}" bindinput="onTagInput" bindconfirm="addTag" />
-      <view class="tag-add-btn" bindtap="addTag">添加</view>
+      <view class="tag-add-btn" bindtap="addTag">
+        <van-icon name="plus" size="14px" /> 添加
+      </view>
     </view>
     <view class="tag-list mt20" wx:if="{{tags.length > 0}}">
       <view class="tag tag-removable" wx:for="{{tags}}" wx:key="*this">
         <text>{{item}}</text>
-        <text class="tag-remove" data-index="{{index}}" catchtap="removeTag"> x</text>
+        <text class="tag-remove" data-index="{{index}}" catchtap="removeTag">
+          <van-icon name="cross" size="12px" />
+        </text>
       </view>
     </view>
   </view>
@@ -43,10 +47,12 @@
     <view class="image-grid">
       <view class="image-item" wx:for="{{images}}" wx:key="*this">
         <image class="preview-img" src="{{item}}" mode="aspectFill" data-url="{{item}}" bindtap="previewImage" />
-        <view class="image-remove" data-index="{{index}}" catchtap="removeImage">x</view>
+        <view class="image-remove" data-index="{{index}}" catchtap="removeImage">
+          <van-icon name="cross" size="12px" color="#fff" />
+        </view>
       </view>
       <view class="image-add" bindtap="chooseImage" wx:if="{{images.length < 9}}">
-        <text class="add-icon">+</text>
+        <van-icon name="plus" size="24px" color="#999" />
         <text class="text-gray text-sm">添加图片</text>
       </view>
     </view>

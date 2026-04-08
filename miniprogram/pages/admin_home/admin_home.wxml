@@ -23,15 +23,15 @@
   <view class="card">
     <view class="admin-menu-item" bindtap="goUsers">
       <text class="menu-text">用户管理</text>
-      <text class="menu-arrow">></text>
+      <van-icon name="arrow" color="#ccc" size="16px" />
     </view>
     <view class="admin-menu-item" bindtap="goNotes">
       <text class="menu-text">笔记管理</text>
-      <text class="menu-arrow">></text>
+      <van-icon name="arrow" color="#ccc" size="16px" />
     </view>
     <view class="admin-menu-item" bindtap="goCheckins">
       <text class="menu-text">打卡管理</text>
-      <text class="menu-arrow">></text>
+      <van-icon name="arrow" color="#ccc" size="16px" />
     </view>
   </view>
 

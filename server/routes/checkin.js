@@ -15,11 +15,40 @@ router.get('/list', (req, res) => {
 	res.json({ code: 200, data: { list, total } });
 });
 
+// 可选认证：有token就解析，没有也放行
+function optionalAuth(req, res, next) {
+	const token = req.headers['x-token'];
+	if (token) {
+		try {
+			const jwt = require('jsonwebtoken');
+			req.userId = jwt.verify(token.replace('Bearer ', ''), require('../middleware/auth').SECRET).userId;
+		} catch(e) {}
+	}
+	next();
+}
+
 // 打卡任务详情
-router.get('/detail/:id', (req, res) => {
+router.get('/detail/:id', optionalAuth, (req, res) => {
 	const item = db.prepare('SELECT * FROM checkins WHERE id = ?').get(req.params.id);
 	if (!item) return res.json({ code: 404, msg: '不存在' });
 	db.prepare('UPDATE checkins SET view_cnt = view_cnt + 1 WHERE id = ?').run(req.params.id);
+
+	let is_joined = false, my_total = 0;
+	if (req.userId) {
+		const today = new Date().toISOString().split('T')[0];
+		is_joined = !!db.prepare('SELECT 1 FROM checkin_records WHERE checkin_id = ? AND user_id = ? AND day = ?').get(req.params.id, req.userId, today);
+		my_total = db.prepare('SELECT COUNT(*) as cnt FROM checkin_records WHERE checkin_id = ? AND user_id = ?').get(req.params.id, req.userId).cnt;
+	}
+
+	const recent_users = db.prepare(
+		`SELECT u.nickname, u.avatar, cr.day FROM checkin_records cr
+		 LEFT JOIN users u ON cr.user_id = u.id
+		 WHERE cr.checkin_id = ? ORDER BY cr.created_at DESC LIMIT 10`
+	).all(req.params.id);
+
+	item.is_joined = is_joined;
+	item.my_total = my_total;
+	item.recent_users = recent_users;
 	res.json({ code: 200, data: item });
 });
 

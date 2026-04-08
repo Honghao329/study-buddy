@@ -2,9 +2,11 @@
   <!-- Search Bar -->
   <view class="search-bar">
     <view class="search-wrap">
-      <image class="search-icon" src="/images/icon-search.png" mode="aspectFit"></image>
+      <van-icon name="search" size="16px" color="#999" />
       <input class="search-input" placeholder="搜索笔记..." value="{{search}}" bindinput="onSearchInput" bindconfirm="onSearch" confirm-type="search" />
-      <view class="search-clear" wx:if="{{search}}" bindtap="onClearSearch">x</view>
+      <view class="search-clear" wx:if="{{search}}" bindtap="onClearSearch">
+        <van-icon name="cross" size="14px" color="#999" />
+      </view>
     </view>
   </view>
 
@@ -17,7 +19,7 @@
 
   <!-- Note List -->
   <view class="note-list" wx:if="{{notes.length > 0}}">
-    <view class="card note-card" wx:for="{{notes}}" wx:key="_id" data-id="{{item._id}}" bindtap="goDetail">
+    <view class="card note-card" wx:for="{{notes}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
       <view class="flex-between mb20">
         <view class="note-title text-bold">{{item.title}}</view>
         <view class="visibility-badge badge-{{item.visibility || 'public'}}">
@@ -34,35 +36,38 @@
       <view class="flex-between mt20">
         <view class="note-stats flex">
           <view class="stat-item text-gray text-sm">
-            <text class="stat-icon">&#x1F44D;</text> {{item.like_count || 0}}
+            <van-icon name="good-job-o" size="14px" color="#999" /> {{item.like_cnt || 0}}
           </view>
           <view class="stat-item text-gray text-sm">
-            <text class="stat-icon">&#x1F4AC;</text> {{item.comment_count || 0}}
+            <van-icon name="chat-o" size="14px" color="#999" /> {{item.comment_cnt || 0}}
           </view>
           <view class="stat-item text-gray text-sm">
-            <text class="stat-icon">&#x1F441;</text> {{item.view_count || 0}}
+            <van-icon name="eye-o" size="14px" color="#999" /> {{item.view_cnt || 0}}
           </view>
         </view>
-        <view class="text-gray text-sm">{{item.create_time || item.createdAt || ''}}</view>
+        <view class="text-gray text-sm">{{item.created_at || ''}}</view>
       </view>
 
       <view class="card-actions flex mt20" catchtap="">
-        <view class="action-btn edit-btn" catchtap="goEdit" data-id="{{item._id}}">编辑</view>
-        <view class="action-btn delete-btn" catchtap="onDelete" data-id="{{item._id}}">删除</view>
+        <view class="action-btn edit-btn" catchtap="goEdit" data-id="{{item.id}}">
+          <van-icon name="edit" size="14px" /> 编辑
+        </view>
+        <view class="action-btn delete-btn" catchtap="onDelete" data-id="{{item.id}}">
+          <van-icon name="cross" size="14px" /> 删除
+        </view>
       </view>
     </view>
   </view>
 
   <!-- Empty State -->
-  <view class="empty" wx:if="{{!loading && notes.length === 0}}">
-    <view>暂无笔记</view>
-    <view class="text-sm mt20 text-gray">点击右下角按钮创建第一篇笔记吧</view>
-  </view>
+  <van-empty wx:if="{{!loading && notes.length === 0}}" description="暂无笔记，点击右下角按钮创建第一篇笔记吧" />
 
   <!-- Loading -->
-  <view class="loading-tip text-gray text-sm" wx:if="{{loading}}">加载中...</view>
-  <view class="loading-tip text-gray text-sm" wx:if="{{!hasMore && notes.length > 0}}">没有更多了</view>
+  <van-loading wx:if="{{loading}}" size="24px" vertical>加载中...</van-loading>
+  <van-divider wx:if="{{!hasMore && notes.length > 0}}" contentPosition="center">没有更多了</van-divider>
 
   <!-- FAB Button -->
-  <view class="fab" bindtap="goCreate">+</view>
+  <view class="fab" bindtap="goCreate">
+    <van-icon name="plus" size="24px" color="#fff" />
+  </view>
 </view>

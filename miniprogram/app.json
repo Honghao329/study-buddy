@@ -15,7 +15,8 @@
 		"pages/admin_login/admin_login",
 		"pages/admin_home/admin_home",
 		"pages/admin_notes/admin_notes",
-		"pages/admin_checkins/admin_checkins"
+		"pages/admin_checkins/admin_checkins",
+		"pages/favorite/favorite"
 	],
 	"window": {
 		"backgroundColor": "#f5f6fa",
@@ -35,6 +36,31 @@
 			{ "pagePath": "pages/community/community", "text": "社区", "iconPath": "images/tab_community.png", "selectedIconPath": "images/tab_community_on.png" },
 			{ "pagePath": "pages/my/my", "text": "我的", "iconPath": "images/tab_my.png", "selectedIconPath": "images/tab_my_on.png" }
 		]
+	},
+	"usingComponents": {
+		"van-button": "@vant/weapp/button/index",
+		"van-icon": "@vant/weapp/icon/index",
+		"van-cell": "@vant/weapp/cell/index",
+		"van-cell-group": "@vant/weapp/cell-group/index",
+		"van-field": "@vant/weapp/field/index",
+		"van-search": "@vant/weapp/search/index",
+		"van-tag": "@vant/weapp/tag/index",
+		"van-image": "@vant/weapp/image/index",
+		"van-tab": "@vant/weapp/tab/index",
+		"van-tabs": "@vant/weapp/tabs/index",
+		"van-card": "@vant/weapp/card/index",
+		"van-popup": "@vant/weapp/popup/index",
+		"van-dialog": "@vant/weapp/dialog/index",
+		"van-toast": "@vant/weapp/toast/index",
+		"van-empty": "@vant/weapp/empty/index",
+		"van-grid": "@vant/weapp/grid/index",
+		"van-grid-item": "@vant/weapp/grid-item/index",
+		"van-action-sheet": "@vant/weapp/action-sheet/index",
+		"van-divider": "@vant/weapp/divider/index",
+		"van-skeleton": "@vant/weapp/skeleton/index",
+		"van-notice-bar": "@vant/weapp/notice-bar/index",
+		"van-progress": "@vant/weapp/progress/index",
+		"van-loading": "@vant/weapp/loading/index"
 	},
 	"sitemapLocation": "sitemap.json"
 }

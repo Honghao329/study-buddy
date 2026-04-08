@@ -31,4 +31,18 @@ router.get('/check', authMiddleware, (req, res) => {
 	res.json({ code: 200, data: { isLiked: cnt > 0 ? 1 : 0 } });
 });
 
+// 批量检查点赞状态
+router.post('/batch_status', authMiddleware, (req, res) => {
+	const { targetIds, targetType } = req.body;
+	if (!targetIds || !Array.isArray(targetIds) || targetIds.length === 0) {
+		return res.json({ code: 200, data: [] });
+	}
+	const placeholders = targetIds.map(() => '?').join(',');
+	const rows = db.prepare(
+		`SELECT target_id FROM likes WHERE user_id = ? AND target_type = ? AND target_id IN (${placeholders})`
+	).all(req.userId, targetType, ...targetIds);
+	const likedIds = rows.map(r => r.target_id);
+	res.json({ code: 200, data: likedIds });
+});
+
 module.exports = router;

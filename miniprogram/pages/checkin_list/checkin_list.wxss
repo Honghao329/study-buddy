@@ -1,3 +1,4 @@
+/* Search Bar */
 .search-bar {
   padding: 10rpx 0 20rpx;
 }
@@ -6,14 +7,14 @@
   align-items: center;
   background: #fff;
   border-radius: 40rpx;
-  padding: 12rpx 24rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+  padding: 14rpx 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(74,144,217,0.08);
+  border: 1rpx solid #EBF3FC;
 }
-.search-icon {
-  width: 32rpx;
-  height: 32rpx;
+.search-icon-text {
+  font-size: 28rpx;
   margin-right: 12rpx;
-  opacity: 0.4;
+  opacity: 0.5;
 }
 .search-input {
   flex: 1;
@@ -22,34 +23,46 @@
 }
 .search-clear {
   color: #999;
-  font-size: 28rpx;
+  font-size: 32rpx;
   padding: 0 10rpx;
+  font-weight: bold;
 }
 
+/* Checkin Card */
 .checkin-card {
   position: relative;
+  border-left: 6rpx solid #4A90D9;
+  transition: all 0.2s;
+}
+.checkin-card:active {
+  background: #f8fbff;
 }
 .checkin-title {
   font-size: 32rpx;
   line-height: 1.4;
+  color: #222;
 }
 .checkin-desc {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 .checkin-date {
   color: #4A90D9;
+  font-weight: 500;
 }
 .join-count {
   display: flex;
   align-items: center;
   gap: 6rpx;
+  background: #EBF3FC;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
 }
 .join-icon {
-  font-size: 28rpx;
+  font-size: 24rpx;
 }
 
 .loading-tip {
