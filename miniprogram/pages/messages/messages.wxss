@@ -1,0 +1,18 @@
+.msg-item {
+	display: flex; align-items: flex-start; gap: 20rpx;
+	padding: 24rpx; margin-bottom: 12rpx; position: relative;
+}
+.msg-item.unread { background: #f0f7ff; }
+.msg-icon-wrap {
+	width: 60rpx; height: 60rpx; border-radius: 50%;
+	background: #f5f6fa; display: flex; align-items: center; justify-content: center;
+	flex-shrink: 0;
+}
+.msg-body { flex: 1; }
+.msg-title { font-size: 28rpx; font-weight: bold; color: #333; margin-bottom: 6rpx; }
+.msg-content { font-size: 26rpx; color: #666; line-height: 1.5; margin-bottom: 6rpx; }
+.msg-time { font-size: 22rpx; }
+.msg-dot {
+	width: 16rpx; height: 16rpx; border-radius: 50%;
+	background: #f56c6c; position: absolute; top: 28rpx; right: 24rpx;
+}

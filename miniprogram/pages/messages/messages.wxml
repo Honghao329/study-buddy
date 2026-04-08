@@ -1,0 +1,17 @@
+<view class="container">
+	<van-empty wx:if="{{!loading && list.length === 0}}" description="暂无消息" />
+
+	<view class="card msg-item {{item.is_read ? '' : 'unread'}}" wx:for="{{list}}" wx:key="id" bindtap="goCheckin" data-id="{{item.related_id}}">
+		<view class="msg-icon-wrap">
+			<van-icon wx:if="{{item.type === 'remind'}}" name="bell" size="22px" color="#ff9800" />
+			<van-icon wx:elif="{{item.type === 'comment'}}" name="chat-o" size="22px" color="#4A90D9" />
+			<van-icon wx:else name="info-o" size="22px" color="#999" />
+		</view>
+		<view class="msg-body">
+			<view class="msg-title">{{item.title}}</view>
+			<view class="msg-content">{{item.content}}</view>
+			<view class="msg-time text-sm text-gray">{{item.created_at}}</view>
+		</view>
+		<view wx:if="{{!item.is_read}}" class="msg-dot"></view>
+	</view>
+</view>

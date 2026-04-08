@@ -77,8 +77,11 @@
 .comment-label { font-size: 22rpx; color: #4A90D9; font-weight: bold; }
 .comment-text { font-size: 24rpx; color: #555; line-height: 1.5; }
 
-/* 底部按钮 */
-.bottom-area { position: fixed; bottom: 0; left: 0; right: 0; padding: 20rpx 30rpx; background: #fff; box-shadow: 0 -2rpx 12rpx rgba(0,0,0,0.06); z-index: 10; }
+/* 监督者工具栏 */
+.supervisor-tools { display: flex; gap: 16rpx; margin-top: 16rpx; padding-top: 16rpx; border-top: 1rpx solid #f0f0f0; }
+
+/* 底部固定栏 */
+.bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 20rpx 30rpx; background: #fff; box-shadow: 0 -2rpx 12rpx rgba(0,0,0,0.06); z-index: 10; display: flex; gap: 16rpx; }
 .share-btn { margin: 16rpx 30rpx 0; background: #fff; color: #4A90D9; border: 2rpx solid #4A90D9; border-radius: 48rpx; font-size: 28rpx; padding: 18rpx 0; display: flex; align-items: center; justify-content: center; gap: 8rpx; }
 .share-btn::after { border: none; }
 

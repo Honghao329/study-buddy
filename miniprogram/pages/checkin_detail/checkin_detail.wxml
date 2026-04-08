@@ -27,12 +27,13 @@
 		</view>
 	</view>
 
-	<!-- 监督者 -->
+	<!-- 监督者信息（独立区块） -->
 	<view class="section">
 		<view class="section-header">
 			<text class="section-title">伙伴监督</text>
 			<van-tag wx:if="{{detail.is_supervisor}}" type="warning" size="medium">你是监督者</van-tag>
 		</view>
+
 		<view wx:if="{{detail.has_supervisor}}" class="supervisor-card">
 			<view class="supervisor-info">
 				<image wx:if="{{detail.supervisor_avatar}}" class="supervisor-avatar" src="{{detail.supervisor_avatar}}" mode="aspectFill" />
@@ -50,6 +51,11 @@
 			<van-icon name="friends-o" size="24px" color="#4A90D9" />
 			<text class="invite-text">邀请伙伴来监督</text>
 			<van-icon name="arrow" size="16px" color="#ccc" />
+		</view>
+
+		<!-- 监督者工具栏 -->
+		<view wx:if="{{detail.is_supervisor}}" class="supervisor-tools">
+			<van-button size="small" plain type="warning" icon="bell" bind:click="remindCheckin" custom-style="flex:1">催打卡</van-button>
 		</view>
 	</view>
 
@@ -89,7 +95,7 @@
 					<view class="timeline-content" wx:if="{{item.content}}">{{item.content}}</view>
 					<view class="timeline-content empty" wx:else>已完成打卡</view>
 
-					<!-- 监督者已评价 -->
+					<!-- 已评价 -->
 					<view wx:if="{{item.comment}}" class="comment-box">
 						<view class="comment-header">
 							<van-icon name="chat-o" size="14px" color="#4A90D9" />
@@ -99,7 +105,7 @@
 						<text class="comment-text">{{item.comment}}</text>
 					</view>
 
-					<!-- 监督者可评价按钮 -->
+					<!-- 监督者可评价 -->
 					<view wx:if="{{detail.is_supervisor && !item.comment}}" class="timeline-actions">
 						<van-button size="small" plain type="primary" icon="edit" data-id="{{item.id}}" bind:click="openComment">写评价</van-button>
 					</view>
@@ -108,11 +114,13 @@
 		</view>
 	</view>
 
-	<!-- 底部操作区 -->
-	<view class="bottom-area">
-		<van-button wx:if="{{detail.is_joined}}" block round size="large" disabled icon="checked">今日已打卡</van-button>
-		<van-button wx:elif="{{detail.is_supervisor}}" block round size="large" type="info" disabled icon="eye-o">你是监督者（无需打卡）</van-button>
-		<van-button wx:else block round size="large" type="primary" icon="edit" bind:click="openCheckinForm">打卡</van-button>
+	<!-- 底部空白占位 -->
+	<view style="height: 140rpx;"></view>
+
+	<!-- 底部固定操作栏 — 打卡和监督完全分离 -->
+	<view class="bottom-bar">
+		<van-button wx:if="{{detail.is_joined}}" block round size="large" disabled icon="checked" custom-style="flex:1">今日已打卡</van-button>
+		<van-button wx:else block round size="large" type="primary" icon="edit" bind:click="openCheckinForm" custom-style="flex:1">打卡</van-button>
 	</view>
 
 	<button class="share-btn" open-type="share">
@@ -125,7 +133,7 @@
 			<view class="popup-title">今日打卡</view>
 			<view class="form-group">
 				<text class="form-label">记录今天的学习内容（选填）</text>
-				<textarea class="checkin-textarea" placeholder="比如：今天背了50个单词，完成了第3章练习..." value="{{checkinContent}}" bindinput="onCheckinContentInput" maxlength="500" auto-height />
+				<textarea class="checkin-textarea" placeholder="比如：今天背了50个单词..." value="{{checkinContent}}" bindinput="onCheckinContentInput" maxlength="500" auto-height />
 			</view>
 			<van-button type="primary" block round bind:click="onJoin" loading="{{joining}}" custom-style="margin-top:24rpx">提交打卡</van-button>
 		</view>

@@ -35,6 +35,16 @@
 		<!-- 功能菜单 -->
 		<view class="menu-section">
 			<view class="menu-group">
+				<view class="menu-item" bindtap="goMessages">
+					<view class="menu-icon-box" style="background:#FFF8E1;"><van-icon name="bell" color="#FF9800" size="22px" /></view>
+					<text class="menu-label">消息通知</text>
+					<van-tag wx:if="{{unreadCount > 0}}" type="danger" size="small" round style="margin-left:8rpx">{{unreadCount}}</van-tag>
+					<view style="flex:1"></view>
+					<van-icon name="arrow" color="#ccc" size="16px" />
+				</view>
+			</view>
+
+			<view class="menu-group">
 				<view class="menu-item" bindtap="goNotes">
 					<view class="menu-icon-box" style="background:#EBF3FC;"><van-icon name="notes-o" color="#4A90D9" size="22px" /></view>
 					<text class="menu-label">我的笔记</text>

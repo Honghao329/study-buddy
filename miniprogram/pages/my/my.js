@@ -25,14 +25,15 @@ Page({
 	data: {
 		logged: false,
 		user: null,
+		unreadCount: 0,
 		showLogoutModal: false,
-		// 登录表单
 		nickName: '',
 		avatarUrl: '',
 	},
 
 	onShow() {
 		this._checkLogin();
+		this._loadUnread();
 	},
 
 	_checkLogin() {
@@ -134,7 +135,14 @@ Page({
 		});
 	},
 
-	// 菜单导航
+	_loadUnread() {
+		if (!api.getToken()) return;
+		api.get('/api/message/unread_count').then(res => {
+			this.setData({ unreadCount: res || 0 });
+		}).catch(() => {});
+	},
+
+	goMessages() { wx.navigateTo({ url: '/pages/messages/messages' }); },
 	goNotes() { wx.switchTab({ url: '/pages/note_list/note_list' }); },
 	goSign() { wx.navigateTo({ url: '/pages/sign/sign' }); },
 	goPartner() { wx.navigateTo({ url: '/pages/partner/partner' }); },

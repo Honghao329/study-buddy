@@ -24,6 +24,7 @@ app.use('/api/news', require('./routes/news'));
 app.use('/api/fav', require('./routes/fav'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/plan', require('./routes/plan'));
+app.use('/api/message', require('./routes/message'));
 app.use('/api/admin', require('./routes/admin'));
 
 // 首页配置接口（兼容原框架）

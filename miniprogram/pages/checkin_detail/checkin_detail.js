@@ -7,13 +7,10 @@ Page({
 		joining: false,
 		records: [],
 		recordTotal: 0,
-		// 打卡填写
 		showCheckinForm: false,
 		checkinContent: '',
-		// 邀请监督
 		showInvite: false,
 		partners: [],
-		// 评价弹窗
 		showComment: false,
 		commentRecordId: null,
 		commentText: '',
@@ -21,9 +18,7 @@ Page({
 	},
 
 	onLoad(options) {
-		if (options.id) {
-			this.setData({ id: options.id });
-		}
+		if (options.id) this.setData({ id: options.id });
 	},
 
 	onShow() {
@@ -45,7 +40,7 @@ Page({
 		}).catch(() => {});
 	},
 
-	// 打卡
+	// === 打卡 ===
 	openCheckinForm() {
 		if (!api.getToken()) {
 			wx.showToast({ title: '请先登录', icon: 'none' });
@@ -54,13 +49,9 @@ Page({
 		this.setData({ showCheckinForm: true, checkinContent: '' });
 	},
 
-	closeCheckinForm() {
-		this.setData({ showCheckinForm: false });
-	},
+	closeCheckinForm() { this.setData({ showCheckinForm: false }); },
 
-	onCheckinContentInput(e) {
-		this.setData({ checkinContent: e.detail.value });
-	},
+	onCheckinContentInput(e) { this.setData({ checkinContent: e.detail.value }); },
 
 	onJoin() {
 		if (this.data.joining) return;
@@ -73,12 +64,10 @@ Page({
 			this.setData({ joining: false, showCheckinForm: false });
 			this.loadDetail(this.data.id);
 			this.loadRecords();
-		}).catch(() => {
-			this.setData({ joining: false });
-		});
+		}).catch(() => { this.setData({ joining: false }); });
 	},
 
-	// 邀请监督者
+	// === 邀请监督 ===
 	openInvite() {
 		const userId = (wx.getStorageSync('userInfo') || {}).id;
 		api.get('/api/partner/my_list').then(res => {
@@ -94,9 +83,7 @@ Page({
 		});
 	},
 
-	closeInvite() {
-		this.setData({ showInvite: false });
-	},
+	closeInvite() { this.setData({ showInvite: false }); },
 
 	selectSupervisor(e) {
 		const partnerId = e.currentTarget.dataset.id;
@@ -110,7 +97,28 @@ Page({
 		});
 	},
 
-	// 监督者评价
+	// === 催打卡 ===
+	remindCheckin() {
+		const d = this.data.detail;
+		if (!d || !d.recent_users || d.recent_users.length === 0) {
+			wx.showToast({ title: '暂无参与者', icon: 'none' });
+			return;
+		}
+		// 提醒最近参与的用户
+		const users = d.recent_users;
+		let sent = 0;
+		const promises = users.filter(u => u.user_id).map(u => {
+			return api.post('/api/message/remind', {
+				checkinId: this.data.id,
+				targetUserId: u.user_id,
+			}).then(() => { sent++; }).catch(() => {});
+		});
+		Promise.all(promises).then(() => {
+			wx.showToast({ title: '已提醒' + (sent || users.length) + '人', icon: 'success' });
+		});
+	},
+
+	// === 监督评价 ===
 	openComment(e) {
 		this.setData({
 			showComment: true,
@@ -120,17 +128,11 @@ Page({
 		});
 	},
 
-	closeComment() {
-		this.setData({ showComment: false });
-	},
+	closeComment() { this.setData({ showComment: false }); },
 
-	onCommentInput(e) {
-		this.setData({ commentText: e.detail.value });
-	},
+	onCommentInput(e) { this.setData({ commentText: e.detail.value }); },
 
-	onScoreChange(e) {
-		this.setData({ commentScore: e.detail });
-	},
+	onScoreChange(e) { this.setData({ commentScore: e.detail }); },
 
 	submitComment() {
 		if (!this.data.commentText.trim()) {

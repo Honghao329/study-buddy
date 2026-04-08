@@ -36,7 +36,7 @@ router.get('/detail/:id', optionalAuth, (req, res) => {
 	}
 
 	const recent_users = db.prepare(
-		`SELECT u.nickname, u.avatar, cr.day FROM checkin_records cr
+		`SELECT cr.user_id, u.nickname, u.avatar, cr.day FROM checkin_records cr
 		 LEFT JOIN users u ON cr.user_id = u.id
 		 WHERE cr.checkin_id = ? ORDER BY cr.created_at DESC LIMIT 10`
 	).all(req.params.id);

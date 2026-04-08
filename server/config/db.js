@@ -193,6 +193,20 @@ db.exec(`
 
   INSERT OR IGNORE INTO admins (username, password) VALUES ('admin', '123456');
 
+  CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    from_id INTEGER DEFAULT 0,
+    type TEXT DEFAULT 'system',
+    title TEXT DEFAULT '',
+    content TEXT DEFAULT '',
+    related_id INTEGER DEFAULT 0,
+    is_read INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_messages_user ON messages(user_id, is_read, created_at);
   CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname);
 
   CREATE INDEX IF NOT EXISTS idx_notes_user ON notes(user_id);
