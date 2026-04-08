@@ -80,8 +80,8 @@ Page({
     });
   },
 
-  goPlanList(e) {
-    wx.navigateTo({ url: '/pages/plan_list/plan_list' });
+  goCheckins() {
+    wx.switchTab({ url: '/pages/checkin_list/checkin_list' });
   },
 
   goInvite() {

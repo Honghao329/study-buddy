@@ -1,84 +1,127 @@
 <view class="page" wx:if="{{detail}}">
-  <!-- Gradient Header Card -->
-  <view class="header-card">
-    <view class="header-title">{{detail.title}}</view>
-    <view class="header-desc" wx:if="{{detail.description}}">{{detail.description}}</view>
-  </view>
+	<!-- 头部 -->
+	<view class="header-card">
+		<view class="header-title">{{detail.title}}</view>
+		<view class="header-desc" wx:if="{{detail.description}}">{{detail.description}}</view>
+	</view>
 
-  <!-- Info Grid -->
-  <view class="section">
-    <van-grid column-num="3" border="{{false}}" custom-class="info-grid">
-      <van-grid-item use-slot>
-        <view class="grid-item">
-          <view class="grid-value">{{detail.join_cnt || 0}}</view>
-          <view class="grid-label">参与人数</view>
-        </view>
-      </van-grid-item>
-      <van-grid-item use-slot>
-        <view class="grid-item">
-          <view class="grid-value accent">{{detail.my_total || 0}}<text class="grid-unit">次</text></view>
-          <view class="grid-label">我的打卡</view>
-        </view>
-      </van-grid-item>
-      <van-grid-item use-slot>
-        <view class="grid-item">
-          <view class="grid-value">{{detail.view_cnt || 0}}</view>
-          <view class="grid-label">浏览量</view>
-        </view>
-      </van-grid-item>
-    </van-grid>
-  </view>
+	<!-- 统计 -->
+	<view class="section">
+		<van-grid column-num="3" border="{{false}}">
+			<van-grid-item use-slot><view class="grid-item"><view class="grid-value">{{detail.join_cnt || 0}}</view><view class="grid-label">参与人数</view></view></van-grid-item>
+			<van-grid-item use-slot><view class="grid-item"><view class="grid-value accent">{{detail.my_total || 0}}</view><view class="grid-label">我的打卡</view></view></van-grid-item>
+			<van-grid-item use-slot><view class="grid-item"><view class="grid-value">{{detail.view_cnt || 0}}</view><view class="grid-label">浏览量</view></view></van-grid-item>
+		</van-grid>
+	</view>
 
-  <!-- Date Range -->
-  <view class="section date-section">
-    <van-icon name="clock-o" size="18px" color="#4A90D9" custom-class="date-icon" />
-    <text class="date-text">{{detail.start_date || '开始'}} ~ {{detail.end_date || '结束'}}</text>
-  </view>
+	<!-- 日期 -->
+	<view class="section date-section" wx:if="{{detail.start_date}}">
+		<van-icon name="clock-o" size="16px" color="#4A90D9" />
+		<text class="date-text">{{detail.start_date}} ~ {{detail.end_date}}</text>
+	</view>
 
-  <!-- Recent Participants -->
-  <view class="section" wx:if="{{detail.recent_users && detail.recent_users.length > 0}}">
-    <view class="section-title">最近参与</view>
-    <scroll-view scroll-x class="avatar-scroll">
-      <view class="avatar-item" wx:for="{{detail.recent_users}}" wx:key="nickname">
-        <view class="avatar-wrap">
-          <van-image wx:if="{{item.avatar}}" round width="80rpx" height="80rpx" src="{{item.avatar}}" fit="cover" />
-          <view wx:else class="avatar-circle">
-            <van-icon name="smile-o" size="22px" color="#fff" />
-          </view>
-        </view>
-        <text class="avatar-name">{{item.nickname}}</text>
-        <text class="avatar-day">第{{item.day}}天</text>
-      </view>
-    </scroll-view>
-  </view>
+	<!-- 监督者区域 -->
+	<view class="section supervisor-section">
+		<view class="section-header">
+			<text class="section-title">伙伴监督</text>
+		</view>
+		<view wx:if="{{detail.has_supervisor}}" class="supervisor-card">
+			<view class="supervisor-info">
+				<view class="avatar-circle small">
+					<van-icon name="smile-o" size="18px" color="#fff" />
+				</view>
+				<view class="supervisor-text">
+					<text class="supervisor-name">{{detail.supervisor_display_name || '监督者'}}</text>
+					<text class="supervisor-role">监督中</text>
+				</view>
+			</view>
+			<van-tag type="success" size="medium">已邀请</van-tag>
+		</view>
+		<view wx:else class="invite-card" bindtap="openInvite">
+			<van-icon name="friends-o" size="24px" color="#4A90D9" />
+			<text class="invite-text">邀请伙伴来监督</text>
+			<van-icon name="arrow" size="16px" color="#ccc" />
+		</view>
+	</view>
 
-  <!-- Action Button -->
-  <view class="action-area">
-    <van-button
-      wx:if="{{detail.is_joined}}"
-      block
-      round
-      size="large"
-      disabled
-      custom-class="btn-done"
-    >今日已打卡 ✓</van-button>
-    <van-button
-      wx:else
-      block
-      round
-      size="large"
-      type="primary"
-      loading="{{joining}}"
-      custom-class="btn-join"
-      bind:click="onJoin"
-    >参与打卡</van-button>
-  </view>
+	<!-- 最近参与者 -->
+	<view class="section" wx:if="{{detail.recent_users && detail.recent_users.length > 0}}">
+		<text class="section-title">最近参与</text>
+		<scroll-view scroll-x class="avatar-scroll">
+			<view class="avatar-item" wx:for="{{detail.recent_users}}" wx:key="nickname">
+				<view class="avatar-circle small"><van-icon name="smile-o" size="16px" color="#fff" /></view>
+				<text class="avatar-name">{{item.nickname || '用户'}}</text>
+			</view>
+		</scroll-view>
+	</view>
 
-  <button class="share-btn" open-type="share">
-    <van-icon name="share-o" size="16px" custom-class="share-icon" /> 分享给好友
-  </button>
+	<!-- 打卡记录时间线 -->
+	<view class="section" wx:if="{{records.length > 0}}">
+		<text class="section-title">打卡记录</text>
+		<view class="timeline">
+			<view class="timeline-item" wx:for="{{records}}" wx:key="id">
+				<view class="timeline-dot"></view>
+				<view class="timeline-card">
+					<view class="timeline-header">
+						<text class="timeline-name">{{item.user_name || '用户'}}</text>
+						<text class="timeline-day">{{item.day}}</text>
+					</view>
+					<view class="timeline-content" wx:if="{{item.content}}">{{item.content}}</view>
+					<!-- 监督者评价 -->
+					<view wx:if="{{item.comment}}" class="timeline-comment">
+						<van-icon name="chat-o" size="14px" color="#4A90D9" />
+						<text>评价: {{item.comment}} ({{item.score}}分)</text>
+					</view>
+					<!-- 监督者可评价按钮 -->
+					<view wx:if="{{detail.is_supervisor && !item.comment}}" class="timeline-actions">
+						<van-button size="small" plain type="primary" data-id="{{item.id}}" bind:click="openComment">评价</van-button>
+					</view>
+				</view>
+			</view>
+		</view>
+	</view>
+
+	<!-- 底部操作 -->
+	<view class="action-area">
+		<van-button wx:if="{{detail.is_joined}}" block round size="large" disabled>今日已打卡</van-button>
+		<van-button wx:elif="{{detail.is_supervisor}}" block round size="large" type="warning" disabled>你是监督者</van-button>
+		<van-button wx:else block round size="large" type="primary" loading="{{joining}}" bind:click="onJoin">参与打卡</van-button>
+	</view>
+
+	<button class="share-btn" open-type="share">
+		<van-icon name="share-o" size="14px" /> 分享给好友
+	</button>
+
+	<!-- 邀请监督弹窗 -->
+	<van-popup show="{{showInvite}}" position="bottom" round bind:close="closeInvite">
+		<view class="popup-content">
+			<view class="popup-title">选择伙伴作为监督者</view>
+			<view wx:if="{{partners.length === 0}}" class="popup-empty">暂无伙伴，先去添加伙伴吧</view>
+			<view class="partner-option" wx:for="{{partners}}" wx:key="id" data-id="{{item.id}}" bindtap="selectSupervisor">
+				<view class="avatar-circle small"><van-icon name="smile-o" size="16px" color="#fff" /></view>
+				<text class="partner-name">{{item.name}}</text>
+				<van-icon name="arrow" size="16px" color="#ccc" />
+			</view>
+		</view>
+	</van-popup>
+
+	<!-- 评价弹窗 -->
+	<van-popup show="{{showComment}}" position="bottom" round bind:close="closeComment">
+		<view class="popup-content">
+			<view class="popup-title">评价打卡记录</view>
+			<view class="form-group">
+				<text class="form-label">评分</text>
+				<van-rate value="{{commentScore}}" bind:change="onScoreChange" size="24px" color="#ffd21e" void-icon="star" void-color="#eee" />
+			</view>
+			<view class="form-group">
+				<text class="form-label">评语</text>
+				<input class="comment-input" placeholder="写点评语鼓励一下..." value="{{commentText}}" bindinput="onCommentInput" />
+			</view>
+			<van-button type="primary" block round bind:click="submitComment" custom-style="margin-top:24rpx">提交评价</van-button>
+		</view>
+	</van-popup>
 </view>
 
 <view class="loading-page" wx:if="{{!detail}}">
-  <van-loading size="24px" vertical>加载中...</van-loading>
+	<van-loading size="24px" vertical>加载中...</van-loading>
 </view>

@@ -30,10 +30,16 @@ function optionalAuth(req, res, next) {
 
 // 打卡任务详情
 router.get('/detail/:id', optionalAuth, (req, res) => {
-	const item = db.prepare('SELECT * FROM checkins WHERE id = ? AND status = 1').get(req.params.id);
+	const item = db.prepare(
+		`SELECT c.*, u.nickname as supervisor_display_name, u.avatar as supervisor_avatar
+		 FROM checkins c LEFT JOIN users u ON c.supervisor_id = u.id
+		 WHERE c.id = ? AND c.status = 1`
+	).get(req.params.id);
 	if (!item) return res.json({ code: 404, msg: '不存在' });
 	db.prepare('UPDATE checkins SET view_cnt = view_cnt + 1 WHERE id = ?').run(req.params.id);
 	item.view_cnt = (item.view_cnt || 0) + 1;
+	item.has_supervisor = !!item.supervisor_id;
+	item.is_supervisor = req.userId && item.supervisor_id === req.userId;
 
 	let is_joined = false, my_total = 0;
 	if (req.userId) {
@@ -76,6 +82,47 @@ router.get('/my_records', authMiddleware, (req, res) => {
 		 WHERE cr.user_id = ? ORDER BY cr.created_at DESC LIMIT 50`
 	).all(req.userId);
 	res.json({ code: 200, data: list });
+});
+
+// 邀请伙伴监督某个打卡任务
+router.post('/invite_supervisor', authMiddleware, (req, res) => {
+	const { checkinId, supervisorId } = req.body;
+	const item = db.prepare('SELECT * FROM checkins WHERE id = ?').get(checkinId);
+	if (!item) return res.json({ code: 404, msg: '打卡任务不存在' });
+
+	const supervisor = db.prepare('SELECT id, nickname FROM users WHERE id = ?').get(supervisorId);
+	if (!supervisor) return res.json({ code: 404, msg: '用户不存在' });
+
+	db.prepare('UPDATE checkins SET supervisor_id = ?, supervisor_name = ?, creator_id = ? WHERE id = ?')
+		.run(supervisorId, supervisor.nickname || '', req.userId, checkinId);
+	res.json({ code: 200, msg: '已邀请监督' });
+});
+
+// 监督者评价某条打卡记录
+router.post('/comment_record', authMiddleware, (req, res) => {
+	const { recordId, comment, score } = req.body;
+	const record = db.prepare(
+		`SELECT cr.*, c.supervisor_id FROM checkin_records cr
+		 LEFT JOIN checkins c ON cr.checkin_id = c.id WHERE cr.id = ?`
+	).get(recordId);
+	if (!record) return res.json({ code: 404, msg: '记录不存在' });
+	if (record.supervisor_id !== req.userId) return res.json({ code: 403, msg: '只有监督者可以评价' });
+
+	db.prepare('UPDATE checkin_records SET comment = ?, score = ? WHERE id = ?').run(comment || '', score || 0, recordId);
+	res.json({ code: 200, msg: '评价成功' });
+});
+
+// 打卡记录时间线（含评价）
+router.get('/records/:id', optionalAuth, (req, res) => {
+	const { page = 1, size = 20 } = req.query;
+	const offset = (page - 1) * size;
+	const list = db.prepare(
+		`SELECT cr.*, u.nickname as user_name, u.avatar as user_avatar
+		 FROM checkin_records cr LEFT JOIN users u ON cr.user_id = u.id
+		 WHERE cr.checkin_id = ? ORDER BY cr.created_at DESC LIMIT ? OFFSET ?`
+	).all(req.params.id, Number(size), offset);
+	const total = db.prepare('SELECT COUNT(*) as cnt FROM checkin_records WHERE checkin_id = ?').get(req.params.id).cnt;
+	res.json({ code: 200, data: { list, total } });
 });
 
 module.exports = router;

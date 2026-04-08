@@ -13,9 +13,6 @@
 		"pages/partner/partner",
 		"pages/partner_invite/partner_invite",
 		"pages/favorite/favorite",
-		"pages/plan_list/plan_list",
-		"pages/plan_detail/plan_detail",
-		"pages/plan_create/plan_create",
 		"pages/login/login"
 	],
 	"window": {

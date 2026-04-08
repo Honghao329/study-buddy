@@ -1,4 +1,7 @@
 {
-  "usingComponents": {},
-  "navigationBarTitleText": "打卡详情"
+	"usingComponents": {
+		"van-rate": "@vant/weapp/rate/index"
+	},
+	"navigationBarTitleText": "打卡详情",
+	"enablePullDownRefresh": true
 }

@@ -25,7 +25,7 @@
       <view class="partner-actions flex mt20">
         <view class="btn-outline btn-sm flex-1" bindtap="goSpace" data-id="{{item.id}}">共享空间</view>
         <view style="width: 16rpx;"></view>
-        <view class="btn-outline btn-sm flex-1" style="border-color:#4CAF50;color:#4CAF50;" bindtap="goPlanList" data-id="{{item.id}}">查看计划</view>
+        <view class="btn-outline btn-sm flex-1" style="border-color:#4CAF50;color:#4CAF50;" bindtap="goCheckins">查看打卡</view>
         <view style="width: 16rpx;"></view>
         <view class="btn-danger-outline btn-sm flex-1" bindtap="dissolve" data-id="{{item.id}}">解除</view>
       </view>

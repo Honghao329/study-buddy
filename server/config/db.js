@@ -111,6 +111,9 @@ db.exec(`
     status INTEGER DEFAULT 1,
     join_cnt INTEGER DEFAULT 0,
     view_cnt INTEGER DEFAULT 0,
+    creator_id INTEGER DEFAULT 0,
+    supervisor_id INTEGER DEFAULT 0,
+    supervisor_name TEXT DEFAULT '',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -119,7 +122,10 @@ db.exec(`
     checkin_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     day TEXT NOT NULL,
+    content TEXT DEFAULT '',
     forms TEXT DEFAULT '{}',
+    comment TEXT DEFAULT '',
+    score INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (checkin_id) REFERENCES checkins(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
