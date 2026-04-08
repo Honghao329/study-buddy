@@ -81,13 +81,6 @@
 				</view>
 			</view>
 
-			<view class="menu-group">
-				<view class="menu-item" bindtap="goAdmin">
-					<view class="menu-icon-box" style="background:#E0E0E0;"><van-icon name="manager-o" color="#616161" size="22px" /></view>
-					<text class="menu-label">后台管理</text>
-					<van-icon name="arrow" color="#ccc" size="16px" />
-				</view>
-			</view>
 		</view>
 
 		<!-- 退出按钮 -->

@@ -12,10 +12,6 @@
 		"pages/my_edit/my_edit",
 		"pages/partner/partner",
 		"pages/partner_invite/partner_invite",
-		"pages/admin_login/admin_login",
-		"pages/admin_home/admin_home",
-		"pages/admin_notes/admin_notes",
-		"pages/admin_checkins/admin_checkins",
 		"pages/favorite/favorite"
 	],
 	"window": {

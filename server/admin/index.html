@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学习伴侣 - 管理后台</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.4.4/dist/index.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <el-container class="main-layout">
+    <el-aside width="220px" class="sidebar">
+      <div class="logo">学习伴侣</div>
+      <el-menu :default-active="currentPage" @select="changePage" background-color="#001529" text-color="#ffffffb3" active-text-color="#409EFF">
+        <el-menu-item index="dashboard"><el-icon><DataAnalysis /></el-icon><span>数据概览</span></el-menu-item>
+        <el-sub-menu index="content">
+          <template #title><el-icon><FolderOpened /></el-icon><span>内容管理</span></template>
+          <el-menu-item index="notes"><el-icon><Document /></el-icon>笔记管理</el-menu-item>
+          <el-menu-item index="comments"><el-icon><ChatDotRound /></el-icon>评论管理</el-menu-item>
+          <el-menu-item index="news"><el-icon><Bell /></el-icon>资讯管理</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="activity">
+          <template #title><el-icon><Trophy /></el-icon><span>活动管理</span></template>
+          <el-menu-item index="checkins"><el-icon><Calendar /></el-icon>打卡任务</el-menu-item>
+          <el-menu-item index="signs"><el-icon><TrendCharts /></el-icon>签到数据</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="userMgr">
+          <template #title><el-icon><UserFilled /></el-icon><span>用户管理</span></template>
+          <el-menu-item index="users"><el-icon><User /></el-icon>用户列表</el-menu-item>
+          <el-menu-item index="partners"><el-icon><Connection /></el-icon>伙伴关系</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="system">
+          <template #title><el-icon><Setting /></el-icon><span>系统管理</span></template>
+          <el-menu-item index="export"><el-icon><Download /></el-icon>数据导出</el-menu-item>
+          <el-menu-item index="settings"><el-icon><Tools /></el-icon>系统设置</el-menu-item>
+        </el-sub-menu>
+      </el-menu>
+      <div class="sidebar-bottom">
+        <el-button text type="danger" @click="doLogout"><el-icon><SwitchButton /></el-icon> 退出登录</el-button>
+      </div>
+    </el-aside>
+
+    <el-container>
+      <el-header class="topbar">
+        <div class="topbar-left">
+          <el-breadcrumb separator="/">
+            <el-breadcrumb-item>首页</el-breadcrumb-item>
+            <el-breadcrumb-item>{{pageTitle}}</el-breadcrumb-item>
+          </el-breadcrumb>
+        </div>
+        <div class="topbar-right">
+          <el-avatar :size="32" style="background:#4A90D9">{{adminName[0]}}</el-avatar>
+          <span class="admin-name">{{adminName}}</span>
+        </div>
+      </el-header>
+
+      <el-main class="content">
+        <component :is="currentComponent" ref="pageRef"></component>
+      </el-main>
+    </el-container>
+  </el-container>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/element-plus@2.4.4/dist/index.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/components/layout.js"></script>
+<script src="js/pages/dashboard.js"></script>
+<script src="js/pages/users.js"></script>
+<script src="js/pages/notes.js"></script>
+<script src="js/pages/comments.js"></script>
+<script src="js/pages/checkins.js"></script>
+<script src="js/pages/news.js"></script>
+<script src="js/pages/signs.js"></script>
+<script src="js/pages/partners.js"></script>
+<script src="js/pages/export.js"></script>
+<script src="js/pages/settings.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
