@@ -1,0 +1,172 @@
+.stats-card {
+  background: linear-gradient(135deg, #4A90D9 0%, #6BB5F0 100%);
+  border-radius: 16rpx;
+  padding: 40rpx 30rpx;
+  margin-bottom: 20rpx;
+  color: #fff;
+}
+.stats-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  margin-bottom: 30rpx;
+}
+.stats-grid {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 30rpx;
+}
+.stats-item {
+  text-align: center;
+}
+.stats-num {
+  font-size: 44rpx;
+  font-weight: bold;
+}
+.stats-label {
+  font-size: 22rpx;
+  opacity: 0.85;
+  margin-top: 6rpx;
+}
+.sign-btn {
+  background: rgba(255,255,255,0.25);
+  text-align: center;
+  padding: 18rpx;
+  border-radius: 44rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+}
+.sign-btn.signed {
+  background: rgba(255,255,255,0.15);
+  opacity: 0.7;
+}
+/* Calendar */
+.cal-header {
+  padding: 10rpx 0 20rpx;
+}
+.cal-arrow {
+  font-size: 32rpx;
+  color: #4A90D9;
+  padding: 10rpx 20rpx;
+  font-weight: bold;
+}
+.cal-title {
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.cal-weekdays {
+  display: flex;
+}
+.cal-wd {
+  width: 14.28%;
+  text-align: center;
+  font-size: 24rpx;
+  color: #999;
+  padding: 10rpx 0;
+}
+.cal-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+.cal-day {
+  width: 14.28%;
+  text-align: center;
+  padding: 16rpx 0;
+  position: relative;
+  font-size: 28rpx;
+}
+.cal-day.empty {
+  color: transparent;
+}
+.cal-day.today {
+  color: #4A90D9;
+  font-weight: bold;
+}
+.cal-dot {
+  width: 10rpx;
+  height: 10rpx;
+  background: #4CAF50;
+  border-radius: 50%;
+  margin: 4rpx auto 0;
+}
+/* Rank */
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+}
+.rank-item {
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+.rank-item:last-child {
+  border-bottom: none;
+}
+.rank-num {
+  width: 50rpx;
+  height: 50rpx;
+  line-height: 50rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #999;
+  margin-right: 16rpx;
+}
+.rank-top {
+  background: #4A90D9;
+  color: #fff;
+  border-radius: 50%;
+  font-weight: bold;
+}
+.rank-info {
+  margin-left: 16rpx;
+}
+.rank-name {
+  font-size: 28rpx;
+}
+.rank-days {
+  font-size: 26rpx;
+  color: #4A90D9;
+  font-weight: bold;
+}
+/* Modal */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 100;
+}
+.modal-box {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 85%;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  z-index: 101;
+}
+.modal-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+.modal-btns {
+  margin-top: 30rpx;
+}
+.form-group {
+  margin-bottom: 24rpx;
+}
+.form-label {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+.picker-value {
+  display: flex;
+  align-items: center;
+  min-height: 36rpx;
+}

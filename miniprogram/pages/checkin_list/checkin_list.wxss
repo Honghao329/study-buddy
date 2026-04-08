@@ -1,0 +1,58 @@
+.search-bar {
+  padding: 10rpx 0 20rpx;
+}
+.search-wrap {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 40rpx;
+  padding: 12rpx 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+}
+.search-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 12rpx;
+  opacity: 0.4;
+}
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  height: 48rpx;
+}
+.search-clear {
+  color: #999;
+  font-size: 28rpx;
+  padding: 0 10rpx;
+}
+
+.checkin-card {
+  position: relative;
+}
+.checkin-title {
+  font-size: 32rpx;
+  line-height: 1.4;
+}
+.checkin-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.6;
+}
+.checkin-date {
+  color: #4A90D9;
+}
+.join-count {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+.join-icon {
+  font-size: 28rpx;
+}
+
+.loading-tip {
+  text-align: center;
+  padding: 30rpx 0;
+}

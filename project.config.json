@@ -1,6 +1,5 @@
 {
 	"miniprogramRoot": "miniprogram/",
-	"cloudfunctionRoot": "cloudfunctions/",
 	"setting": {
 		"urlCheck": false,
 		"es6": true,
@@ -40,14 +39,17 @@
 		"useCompilerPlugins": false,
 		"ignoreUploadUnusedFiles": true,
 		"useStaticServer": true,
-		"condition": false
+		"condition": false,
+		"compileWorklet": false,
+		"localPlugins": false,
+		"swc": false,
+		"disableSWC": true
 	},
-	"appid": "wxb100b44af794708e",
-	"projectname": "Multi多功能平台",
-	"libVersion": "2.17.0",
+	"appid": "wxf7417e6fd5a522c5",
+	"projectname": "学习伴侣系统",
+	"libVersion": "2.30.0",
 	"simulatorType": "wechat",
 	"simulatorPluginLibVersion": {},
-	"cloudfunctionTemplateRoot": "cloudfunctionTemplate/",
 	"compileType": "miniprogram",
 	"srcMiniprogramRoot": "miniprogram/",
 	"packOptions": {

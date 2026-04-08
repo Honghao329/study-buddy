@@ -1,0 +1,17 @@
+.form-group {
+  margin-bottom: 30rpx;
+}
+.form-group:last-child {
+  margin-bottom: 0;
+}
+.form-label {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 12rpx;
+  font-weight: 500;
+}
+.textarea {
+  min-height: 160rpx;
+  width: 100%;
+  box-sizing: border-box;
+}

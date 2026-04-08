@@ -1,0 +1,43 @@
+<view class="container">
+  <!-- Header -->
+  <view class="flex-between mb20">
+    <view class="page-title">打卡活动管理</view>
+    <view class="add-btn" bindtap="openAddModal">+ 新建活动</view>
+  </view>
+
+  <!-- List -->
+  <view wx:if="{{list.length === 0 && !loading}}" class="empty">暂无打卡活动</view>
+
+  <view class="card checkin-item" wx:for="{{list}}" wx:key="id">
+    <view class="flex-between">
+      <view class="checkin-title flex-1">{{item.title || '无标题'}}</view>
+      <view class="del-btn" bindtap="deleteCheckin" data-id="{{item.id}}">删除</view>
+    </view>
+    <view class="checkin-desc text-sm text-gray" wx:if="{{item.description}}">{{item.description}}</view>
+    <view class="checkin-meta text-sm text-gray">
+      <text wx:if="{{item.startDate}}">{{item.startDate}} ~ {{item.endDate}}</text>
+      <text wx:if="{{item.joinCount !== undefined}}"> | 参与 {{item.joinCount || 0}} 人</text>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading-tip text-gray text-sm">加载中...</view>
+
+  <!-- Add Modal -->
+  <view class="modal-mask" wx:if="{{showModal}}" bindtap="closeModal"></view>
+  <view class="modal-box" wx:if="{{showModal}}">
+    <view class="modal-title">新建打卡活动</view>
+    <view class="form-group">
+      <view class="form-label">活动标题</view>
+      <input class="input" placeholder="请输入活动标题" value="{{newTitle}}" bindinput="onTitleInput" />
+    </view>
+    <view class="form-group">
+      <view class="form-label">活动描述</view>
+      <textarea class="input textarea" placeholder="请输入活动描述" value="{{newDesc}}" bindinput="onDescInput" auto-height></textarea>
+    </view>
+    <view class="modal-btns flex">
+      <view class="btn-outline flex-1" bindtap="closeModal">取消</view>
+      <view style="width: 20rpx;"></view>
+      <view class="btn-primary flex-1" bindtap="doAdd">创建</view>
+    </view>
+  </view>
+</view>

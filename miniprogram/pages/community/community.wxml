@@ -1,0 +1,71 @@
+<view class="container">
+  <!-- Search Bar -->
+  <view class="search-bar">
+    <view class="search-wrap">
+      <image class="search-icon" src="/images/icon-search.png" mode="aspectFit"></image>
+      <input class="search-input" placeholder="搜索社区笔记..." value="{{search}}" bindinput="onSearchInput" bindconfirm="onSearch" confirm-type="search" />
+      <view class="search-clear" wx:if="{{search}}" bindtap="onClearSearch">x</view>
+    </view>
+  </view>
+
+  <!-- Sort Tabs -->
+  <view class="sort-tabs">
+    <view class="sort-tab {{activeSortTab === index ? 'sort-active' : ''}}" wx:for="{{sortTabs}}" wx:key="value" data-index="{{index}}" bindtap="onSortChange">
+      {{item.label}}
+    </view>
+  </view>
+
+  <!-- Feed List -->
+  <view wx:if="{{notes.length > 0}}">
+    <view class="card feed-card" wx:for="{{notes}}" wx:key="_id" data-id="{{item._id}}" bindtap="goDetail">
+      <!-- Author -->
+      <view class="flex-center mb20">
+        <image class="feed-avatar" src="{{item.author_avatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+        <view class="feed-author">
+          <view class="text-bold text-sm">{{item.author_name || '匿名用户'}}</view>
+          <view class="text-gray text-sm">{{item.create_time || item.createdAt || ''}}</view>
+        </view>
+      </view>
+
+      <!-- Content -->
+      <view class="feed-title text-bold">{{item.title}}</view>
+      <view class="feed-content text-gray mt20">{{item.content}}</view>
+
+      <!-- Images Thumbnails -->
+      <view class="feed-images mt20" wx:if="{{item.images && item.images.length > 0}}">
+        <image class="feed-img" wx:for="{{item.images}}" wx:for-item="img" wx:key="*this" src="{{img}}" mode="aspectFill" wx:if="{{index < 3}}" />
+        <view class="more-images text-gray text-sm" wx:if="{{item.images.length > 3}}">+{{item.images.length - 3}}</view>
+      </view>
+
+      <!-- Tags -->
+      <view class="tag-list mt20" wx:if="{{item.tags && item.tags.length > 0}}">
+        <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+      </view>
+
+      <!-- Stats & Like -->
+      <view class="flex-between mt20 feed-footer">
+        <view class="feed-stats flex">
+          <view class="stat-item text-gray text-sm" catchtap="toggleLike" data-id="{{item._id}}" data-index="{{index}}">
+            <text>{{item.is_liked ? '&#x2764;' : '&#x1F90D;'}}</text> {{item.like_count || 0}}
+          </view>
+          <view class="stat-item text-gray text-sm">
+            <text>&#x1F4AC;</text> {{item.comment_count || 0}}
+          </view>
+          <view class="stat-item text-gray text-sm">
+            <text>&#x1F441;</text> {{item.view_count || 0}}
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Empty State -->
+  <view class="empty" wx:if="{{!loading && notes.length === 0}}">
+    <view>暂无笔记</view>
+    <view class="text-sm mt20 text-gray">社区还很安静，快来发布第一篇笔记吧</view>
+  </view>
+
+  <!-- Loading -->
+  <view class="loading-tip text-gray text-sm" wx:if="{{loading}}">加载中...</view>
+  <view class="loading-tip text-gray text-sm" wx:if="{{!hasMore && notes.length > 0}}">没有更多了</view>
+</view>

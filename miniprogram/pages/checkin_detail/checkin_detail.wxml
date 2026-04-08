@@ -1,0 +1,33 @@
+<view class="container" wx:if="{{detail}}">
+  <!-- Header Card -->
+  <view class="card header-card">
+    <view class="detail-title text-bold">{{detail.title}}</view>
+    <view class="detail-desc mt20">{{detail.description}}</view>
+
+    <view class="info-grid mt20">
+      <view class="info-item">
+        <view class="info-label text-gray text-sm">开始日期</view>
+        <view class="info-value">{{detail.start_date || '-'}}</view>
+      </view>
+      <view class="info-item">
+        <view class="info-label text-gray text-sm">结束日期</view>
+        <view class="info-value">{{detail.end_date || '-'}}</view>
+      </view>
+      <view class="info-item">
+        <view class="info-label text-gray text-sm">参与人数</view>
+        <view class="info-value highlight">{{detail.join_cnt || detail.join_count || 0}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Join Button -->
+  <view class="btn-area">
+    <view class="{{joined ? 'btn-joined' : 'btn-primary'}} join-btn" bindtap="onJoin">
+      {{joining ? '参与中...' : (joined ? '已参与打卡' : '参与打卡')}}
+    </view>
+  </view>
+
+  <button class="share-btn" open-type="share">分享给好友</button>
+</view>
+
+<view class="empty" wx:if="{{!detail}}">加载中...</view>

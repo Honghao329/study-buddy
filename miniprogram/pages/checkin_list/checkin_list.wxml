@@ -1,0 +1,38 @@
+<view class="container">
+  <!-- Search Bar -->
+  <view class="search-bar">
+    <view class="search-wrap">
+      <image class="search-icon" src="/images/icon-search.png" mode="aspectFit"></image>
+      <input class="search-input" placeholder="搜索打卡任务..." value="{{search}}" bindinput="onSearchInput" bindconfirm="onSearch" confirm-type="search" />
+      <view class="search-clear" wx:if="{{search}}" bindtap="onClearSearch">x</view>
+    </view>
+  </view>
+
+  <!-- Checkin List -->
+  <view wx:if="{{list.length > 0}}">
+    <view class="card checkin-card" wx:for="{{list}}" wx:key="_id" data-id="{{item._id}}" bindtap="goDetail">
+      <view class="checkin-title text-bold">{{item.title}}</view>
+      <view class="checkin-desc text-gray text-sm mt20">{{item.description}}</view>
+      <view class="flex-between mt20">
+        <view class="checkin-date text-sm text-gray">
+          <text>{{item.start_date || '开始'}}</text>
+          <text> ~ </text>
+          <text>{{item.end_date || '结束'}}</text>
+        </view>
+        <view class="join-count text-sm">
+          <text class="join-icon">&#x1F465;</text>
+          <text class="text-gray">{{item.join_cnt || item.join_count || 0}} 人参与</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Empty State -->
+  <view class="empty" wx:if="{{!loading && list.length === 0}}">
+    <view>暂无打卡任务</view>
+  </view>
+
+  <!-- Loading -->
+  <view class="loading-tip text-gray text-sm" wx:if="{{loading}}">加载中...</view>
+  <view class="loading-tip text-gray text-sm" wx:if="{{!hasMore && list.length > 0}}">没有更多了</view>
+</view>

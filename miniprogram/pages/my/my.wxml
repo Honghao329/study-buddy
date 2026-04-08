@@ -1,0 +1,82 @@
+<view class="container">
+  <!-- Not logged in -->
+  <block wx:if="{{!logged}}">
+    <view class="login-card card">
+      <view class="login-icon">
+        <image src="/images/default_avatar.png" class="login-avatar" mode="aspectFill"></image>
+      </view>
+      <view class="login-title">欢迎使用学习伴侣</view>
+      <view class="login-form">
+        <input class="input mb20" placeholder="请输入昵称" bindinput="onNickNameInput" value="{{nickName}}" />
+        <input class="input mb20" placeholder="头像链接（选填）" bindinput="onAvatarInput" value="{{avatarUrl}}" />
+        <view class="btn-primary" bindtap="doLogin">登录</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- Logged in -->
+  <block wx:if="{{logged}}">
+    <!-- Profile header -->
+    <view class="profile-header card">
+      <view class="profile-top flex-center">
+        <image class="profile-avatar" src="{{userInfo.avatarUrl || '/images/default_avatar.png'}}" mode="aspectFill"></image>
+        <view class="profile-info">
+          <view class="profile-name">{{userInfo.nickName || '学习者'}}</view>
+          <view class="profile-bio text-gray text-sm">{{userInfo.bio || '这个人很勤奋，什么都没留下~'}}</view>
+        </view>
+      </view>
+      <!-- Stats row -->
+      <view class="stats-row">
+        <view class="stat-item">
+          <view class="stat-num">{{stats.noteCount}}</view>
+          <view class="stat-label">笔记</view>
+        </view>
+        <view class="stat-item">
+          <view class="stat-num">{{stats.signDays}}</view>
+          <view class="stat-label">签到天数</view>
+        </view>
+        <view class="stat-item">
+          <view class="stat-num">{{stats.partnerCount}}</view>
+          <view class="stat-label">学习伙伴</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Menu -->
+    <view class="menu-card card">
+      <view class="menu-item" bindtap="goNotes">
+        <text class="menu-icon">&#128221;</text>
+        <text class="menu-text">我的笔记</text>
+        <text class="menu-arrow">></text>
+      </view>
+      <view class="menu-item" bindtap="goSign">
+        <text class="menu-icon">&#128197;</text>
+        <text class="menu-text">学习签到</text>
+        <text class="menu-arrow">></text>
+      </view>
+      <view class="menu-item" bindtap="goPartner">
+        <text class="menu-icon">&#129309;</text>
+        <text class="menu-text">学习伙伴</text>
+        <text class="menu-arrow">></text>
+      </view>
+      <view class="menu-item" bindtap="goFavorite">
+        <text class="menu-icon">&#11088;</text>
+        <text class="menu-text">我的收藏</text>
+        <text class="menu-arrow">></text>
+      </view>
+      <view class="menu-item" bindtap="goEdit">
+        <text class="menu-icon">&#9998;</text>
+        <text class="menu-text">编辑资料</text>
+        <text class="menu-arrow">></text>
+      </view>
+      <view class="menu-item" bindtap="goAdmin">
+        <text class="menu-icon">&#9881;</text>
+        <text class="menu-text">后台管理</text>
+        <text class="menu-arrow">></text>
+      </view>
+    </view>
+
+    <!-- Logout -->
+    <view class="btn-danger mt20" bindtap="doLogout">退出登录</view>
+  </block>
+</view>

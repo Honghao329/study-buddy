@@ -1,0 +1,36 @@
+.login-card {
+  margin-top: 80rpx;
+  padding: 60rpx 40rpx;
+}
+.login-header {
+  text-align: center;
+  margin-bottom: 50rpx;
+}
+.login-icon-wrap {
+  width: 120rpx;
+  height: 120rpx;
+  background: linear-gradient(135deg, #4A90D9 0%, #6BB5F0 100%);
+  border-radius: 30rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+}
+.login-icon-text {
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+.login-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+.form-group {
+  margin-bottom: 28rpx;
+}
+.form-label {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}

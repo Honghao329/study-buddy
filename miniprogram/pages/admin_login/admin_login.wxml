@@ -1,0 +1,22 @@
+<view class="container">
+  <view class="login-card card">
+    <view class="login-header">
+      <view class="login-icon-wrap">
+        <text class="login-icon-text">Admin</text>
+      </view>
+      <view class="login-title">后台管理登录</view>
+    </view>
+
+    <view class="form-group">
+      <view class="form-label">管理员账号</view>
+      <input class="input" placeholder="请输入账号" value="{{username}}" bindinput="onUsernameInput" />
+    </view>
+
+    <view class="form-group">
+      <view class="form-label">密码</view>
+      <input class="input" placeholder="请输入密码" password="true" value="{{password}}" bindinput="onPasswordInput" />
+    </view>
+
+    <view class="btn-primary mt20" bindtap="doLogin">登录</view>
+  </view>
+</view>

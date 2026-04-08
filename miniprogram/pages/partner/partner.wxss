@@ -1,0 +1,58 @@
+.tabs {
+  background: #fff;
+  border-radius: 16rpx;
+  margin-bottom: 20rpx;
+  overflow: hidden;
+}
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 24rpx 0;
+  font-size: 28rpx;
+  color: #666;
+  position: relative;
+}
+.tab.active {
+  color: #4A90D9;
+  font-weight: bold;
+  border-bottom: 4rpx solid #4A90D9;
+}
+.badge {
+  position: absolute;
+  top: 10rpx;
+  right: 30%;
+  background: #e91e63;
+  color: #fff;
+  font-size: 20rpx;
+  width: 32rpx;
+  height: 32rpx;
+  line-height: 32rpx;
+  text-align: center;
+  border-radius: 50%;
+  font-weight: normal;
+}
+.partner-item {
+  padding: 30rpx;
+}
+.partner-info {
+  margin-left: 20rpx;
+}
+.partner-name {
+  font-size: 30rpx;
+  font-weight: 500;
+}
+.partner-actions {
+  justify-content: space-between;
+}
+.btn-sm {
+  padding: 14rpx !important;
+  font-size: 26rpx !important;
+}
+.btn-danger-outline {
+  border: 1rpx solid #e91e63;
+  color: #e91e63;
+  text-align: center;
+  padding: 22rpx;
+  border-radius: 44rpx;
+  font-size: 30rpx;
+}

@@ -1,0 +1,80 @@
+<view class="container">
+  <!-- Stats Card -->
+  <view class="stats-card">
+    <view class="stats-title">学习签到</view>
+    <view class="stats-grid">
+      <view class="stats-item">
+        <view class="stats-num">{{stats.streak}}</view>
+        <view class="stats-label">连续签到</view>
+      </view>
+      <view class="stats-item">
+        <view class="stats-num">{{stats.totalDays}}</view>
+        <view class="stats-label">累计天数</view>
+      </view>
+      <view class="stats-item">
+        <view class="stats-num">{{stats.totalDuration}}</view>
+        <view class="stats-label">总时长(h)</view>
+      </view>
+    </view>
+    <view class="sign-btn {{stats.todaySigned ? 'signed' : ''}}" bindtap="openSignModal">
+      {{stats.todaySigned ? '今日已签到' : '立即签到'}}
+    </view>
+  </view>
+
+  <!-- Calendar -->
+  <view class="card">
+    <view class="cal-header flex-between">
+      <text class="cal-arrow" bindtap="prevMonth">&lt;</text>
+      <text class="cal-title">{{year}}年{{month}}月</text>
+      <text class="cal-arrow" bindtap="nextMonth">&gt;</text>
+    </view>
+    <view class="cal-weekdays">
+      <view class="cal-wd" wx:for="{{weekDays}}" wx:key="*this">{{item}}</view>
+    </view>
+    <view class="cal-grid">
+      <view class="cal-day {{item.isToday ? 'today' : ''}} {{item.empty ? 'empty' : ''}}" wx:for="{{days}}" wx:key="index">
+        <text>{{item.day}}</text>
+        <view wx:if="{{item.signed}}" class="cal-dot"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Rank -->
+  <view class="card">
+    <view class="section-title">签到排行榜</view>
+    <view wx:if="{{rankList.length === 0}}" class="empty">暂无排行数据</view>
+    <view class="rank-item flex-center" wx:for="{{rankList}}" wx:key="index">
+      <view class="rank-num {{index < 3 ? 'rank-top' : ''}}">{{index + 1}}</view>
+      <image class="avatar" src="{{item.avatarUrl || '/images/default_avatar.png'}}" mode="aspectFill"></image>
+      <view class="rank-info flex-1">
+        <view class="rank-name">{{item.nickName || '学习者'}}</view>
+      </view>
+      <view class="rank-days">{{item.totalDays || 0}}天</view>
+    </view>
+  </view>
+
+  <!-- Sign Modal -->
+  <view class="modal-mask" wx:if="{{showModal}}" bindtap="closeModal"></view>
+  <view class="modal-box" wx:if="{{showModal}}">
+    <view class="modal-title">学习签到</view>
+    <view class="form-group">
+      <view class="form-label">学习时长（小时）</view>
+      <input class="input" type="digit" placeholder="请输入学习时长" value="{{duration}}" bindinput="onDurationInput" />
+    </view>
+    <view class="form-group">
+      <view class="form-label">学习状态</view>
+      <picker mode="selector" range="{{statusOptions}}" value="{{statusIndex}}" bindchange="onStatusChange">
+        <view class="input picker-value">{{statusOptions[statusIndex]}}</view>
+      </picker>
+    </view>
+    <view class="form-group">
+      <view class="form-label">学习内容</view>
+      <input class="input" placeholder="今天学了什么？" value="{{content}}" bindinput="onContentInput" />
+    </view>
+    <view class="modal-btns flex">
+      <view class="btn-outline flex-1" bindtap="closeModal">取消</view>
+      <view style="width: 20rpx;"></view>
+      <view class="btn-primary flex-1" bindtap="doSign">确认签到</view>
+    </view>
+  </view>
+</view>

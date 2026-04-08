@@ -1,2 +1,19 @@
-@import "style/base/comm.wxss";
-@import "style/public/project.wxss"; 
+page { background: #f5f6fa; font-size: 28rpx; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+.container { padding: 20rpx; }
+.card { background: #fff; border-radius: 16rpx; padding: 30rpx; margin-bottom: 20rpx; box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.04); }
+.btn-primary { background: #4A90D9; color: #fff; text-align: center; padding: 22rpx; border-radius: 44rpx; font-size: 30rpx; }
+.btn-outline { border: 1rpx solid #4A90D9; color: #4A90D9; text-align: center; padding: 22rpx; border-radius: 44rpx; font-size: 30rpx; }
+.btn-danger { background: #e91e63; color: #fff; text-align: center; padding: 22rpx; border-radius: 44rpx; font-size: 30rpx; }
+.input { border: 1rpx solid #e0e0e0; border-radius: 12rpx; padding: 18rpx 22rpx; font-size: 28rpx; background: #fff; }
+.flex { display: flex; }
+.flex-1 { flex: 1; }
+.flex-center { display: flex; align-items: center; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.text-gray { color: #999; }
+.text-sm { font-size: 24rpx; }
+.text-bold { font-weight: bold; }
+.mt20 { margin-top: 20rpx; }
+.mb20 { margin-bottom: 20rpx; }
+.empty { text-align: center; padding: 120rpx 0; color: #ccc; font-size: 28rpx; }
+.avatar { width: 80rpx; height: 80rpx; border-radius: 50%; }
+.tag { font-size: 22rpx; background: #f0f4ff; color: #4A90D9; padding: 4rpx 16rpx; border-radius: 20rpx; margin-right: 10rpx; }

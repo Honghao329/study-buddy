@@ -1,0 +1,31 @@
+<view class="container">
+	<!-- 顶部快捷入口 -->
+	<view class="quick-bar card">
+		<view class="quick-item" bindtap="goSign"><text class="quick-icon">📅</text><text>签到</text></view>
+		<view class="quick-item" bindtap="goPartner"><text class="quick-icon">👥</text><text>伙伴</text></view>
+		<view class="quick-item" bindtap="goLogin" wx:if="{{!isLogin}}"><text class="quick-icon">🔑</text><text>登录</text></view>
+	</view>
+
+	<!-- 打卡任务 -->
+	<view class="section">
+		<view class="flex-between mb20"><text class="text-bold">打卡任务</text></view>
+		<view class="card task-card" wx:for="{{checkins}}" wx:key="id" bindtap="goCheckin" data-id="{{item.id}}">
+			<text class="task-title">{{item.title}}</text>
+			<text class="text-sm text-gray">{{item.join_cnt || 0}}人参与</text>
+		</view>
+		<view class="empty" wx:if="{{checkins.length === 0}}">暂无打卡任务</view>
+	</view>
+
+	<!-- 热门笔记 -->
+	<view class="section">
+		<view class="flex-between mb20"><text class="text-bold">热门笔记</text></view>
+		<view class="card" wx:for="{{notes}}" wx:key="id" bindtap="goNote" data-id="{{item.id}}">
+			<view class="flex-between">
+				<text class="text-bold">{{item.title}}</text>
+				<text class="text-sm text-gray">{{item.user_name || '匿名'}}</text>
+			</view>
+			<view class="text-sm text-gray mt20">❤️{{item.like_cnt || 0}} 💬{{item.comment_cnt || 0}} 👁{{item.view_cnt || 0}}</view>
+		</view>
+		<view class="empty" wx:if="{{notes.length === 0}}">暂无笔记</view>
+	</view>
+</view>

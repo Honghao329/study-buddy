@@ -1,0 +1,6 @@
+.quick-bar { display: flex; justify-content: space-around; }
+.quick-item { text-align: center; font-size: 26rpx; }
+.quick-icon { font-size: 48rpx; display: block; margin-bottom: 8rpx; }
+.section { margin-top: 10rpx; }
+.task-card { display: flex; justify-content: space-between; align-items: center; }
+.task-title { font-size: 30rpx; font-weight: bold; }

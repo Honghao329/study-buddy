@@ -1,0 +1,32 @@
+<view class="container">
+  <!-- Search -->
+  <view class="search-bar flex">
+    <input class="input flex-1" placeholder="搜索笔记标题" value="{{search}}" bindinput="onSearchInput" confirm-type="search" bindconfirm="doSearch" />
+    <view class="search-btn" bindtap="doSearch">搜索</view>
+  </view>
+
+  <!-- List -->
+  <view wx:if="{{list.length === 0 && !loading}}" class="empty">暂无笔记数据</view>
+
+  <view class="card note-item" wx:for="{{list}}" wx:key="id">
+    <view class="flex-between">
+      <view class="note-title flex-1">{{item.title || '无标题'}}</view>
+      <view class="del-btn" bindtap="deleteNote" data-id="{{item.id}}">删除</view>
+    </view>
+    <view class="note-meta text-sm text-gray">
+      <text>作者: {{item.authorName || item.nickName || '未知'}}</text>
+      <text class="meta-sep">|</text>
+      <text>{{item.createdAt || ''}}</text>
+    </view>
+    <view class="note-stats text-sm text-gray" wx:if="{{item.viewCount !== undefined}}">
+      <text>浏览 {{item.viewCount || 0}}</text>
+      <text class="meta-sep">|</text>
+      <text>点赞 {{item.likeCount || 0}}</text>
+      <text class="meta-sep">|</text>
+      <text>评论 {{item.commentCount || 0}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading-tip text-gray text-sm">加载中...</view>
+  <view wx:if="{{!hasMore && list.length > 0}}" class="loading-tip text-gray text-sm">没有更多了</view>
+</view>

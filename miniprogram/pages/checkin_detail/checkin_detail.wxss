@@ -1,0 +1,63 @@
+.header-card {
+  margin-top: 10rpx;
+}
+.detail-title {
+  font-size: 38rpx;
+  line-height: 1.4;
+}
+.detail-desc {
+  font-size: 28rpx;
+  line-height: 1.8;
+  color: #555;
+  white-space: pre-wrap;
+}
+
+.info-grid {
+  display: flex;
+  justify-content: space-between;
+  background: #f9fafc;
+  border-radius: 12rpx;
+  padding: 24rpx;
+}
+.info-item {
+  text-align: center;
+  flex: 1;
+}
+.info-label {
+  margin-bottom: 8rpx;
+}
+.info-value {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+}
+.highlight {
+  color: #4A90D9;
+  font-size: 36rpx;
+}
+
+.btn-area {
+  margin-top: 50rpx;
+}
+.join-btn {
+  font-size: 32rpx;
+  padding: 26rpx;
+}
+.btn-joined {
+  background: #ccc;
+  color: #fff;
+  text-align: center;
+  padding: 22rpx;
+  border-radius: 44rpx;
+  font-size: 30rpx;
+}
+
+.share-btn {
+  margin-top: 30rpx;
+  background: #fff;
+  color: #4A90D9;
+  border: 1rpx solid #4A90D9;
+  border-radius: 44rpx;
+  font-size: 28rpx;
+  padding: 20rpx;
+}

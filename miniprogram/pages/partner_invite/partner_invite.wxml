@@ -1,0 +1,13 @@
+<view class="container">
+  <view class="card invite-card">
+    <view class="invite-title">邀请学习伙伴</view>
+    <view class="invite-desc text-gray text-sm">输入对方的用户ID，发送伙伴邀请</view>
+
+    <view class="form-group">
+      <view class="form-label">用户ID</view>
+      <input class="input" placeholder="请输入目标用户ID" value="{{targetId}}" bindinput="onTargetIdInput" />
+    </view>
+
+    <view class="btn-primary" bindtap="doInvite">发送邀请</view>
+  </view>
+</view>

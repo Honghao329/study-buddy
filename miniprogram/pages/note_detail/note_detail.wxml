@@ -1,0 +1,81 @@
+<view class="container" wx:if="{{note}}">
+  <!-- Author Info -->
+  <view class="card author-card">
+    <view class="flex-between">
+      <view class="flex-center">
+        <image class="avatar" src="{{note.author_avatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+        <view class="author-info">
+          <view class="text-bold">{{note.author_name || '匿名用户'}}</view>
+          <view class="text-gray text-sm">{{note.create_time || note.createdAt || ''}}</view>
+        </view>
+      </view>
+      <view class="visibility-badge badge-{{note.visibility || 'public'}}">
+        {{note.visibility === 'private' ? '私密' : note.visibility === 'partner' ? '伙伴可见' : '公开'}}
+      </view>
+    </view>
+  </view>
+
+  <!-- Note Content -->
+  <view class="card content-card">
+    <view class="note-title text-bold">{{note.title}}</view>
+    <view class="note-body mt20">{{note.content}}</view>
+
+    <!-- Images -->
+    <view class="image-grid mt20" wx:if="{{note.images && note.images.length > 0}}">
+      <image class="note-image" wx:for="{{note.images}}" wx:key="*this" src="{{item}}" mode="aspectFill" data-url="{{item}}" bindtap="previewImage" />
+    </view>
+
+    <!-- Tags -->
+    <view class="tag-list mt20" wx:if="{{note.tags && note.tags.length > 0}}">
+      <text class="tag" wx:for="{{note.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+    </view>
+  </view>
+
+  <!-- Action Bar -->
+  <view class="card action-bar">
+    <view class="action-item {{isLiked ? 'action-active' : ''}}" bindtap="toggleLike">
+      <text>{{isLiked ? '&#x2764;' : '&#x1F90D;'}}</text>
+      <text class="action-text">{{note.like_count || 0}}</text>
+    </view>
+    <view class="action-item {{isFaved ? 'action-active' : ''}}" bindtap="toggleFav">
+      <text>{{isFaved ? '&#x2B50;' : '&#x2606;'}}</text>
+      <text class="action-text">{{isFaved ? '已收藏' : '收藏'}}</text>
+    </view>
+    <view class="action-item">
+      <text>&#x1F4AC;</text>
+      <text class="action-text">{{note.comment_count || 0}}</text>
+    </view>
+    <view class="action-item">
+      <text>&#x1F441;</text>
+      <text class="action-text">{{note.view_count || 0}}</text>
+    </view>
+  </view>
+
+  <!-- Comments Section -->
+  <view class="section-title text-bold">评论 ({{note.comment_count || comments.length || 0}})</view>
+
+  <view wx:if="{{comments.length > 0}}">
+    <view class="card comment-card" wx:for="{{comments}}" wx:key="_id">
+      <view class="flex-center">
+        <image class="comment-avatar" src="{{item.author_avatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+        <view class="comment-meta">
+          <view class="text-bold text-sm">{{item.author_name || '匿名用户'}}</view>
+          <view class="text-gray text-sm">{{item.create_time || item.createdAt || ''}}</view>
+        </view>
+      </view>
+      <view class="comment-content mt20">{{item.content}}</view>
+    </view>
+  </view>
+
+  <view class="empty" wx:if="{{!loadingComments && comments.length === 0}}">暂无评论，来说点什么吧</view>
+  <view class="loading-tip text-gray text-sm" wx:if="{{loadingComments}}">加载中...</view>
+
+  <!-- Bottom Spacer for input bar -->
+  <view style="height: 120rpx;"></view>
+</view>
+
+<!-- Comment Input Bar (fixed bottom) -->
+<view class="comment-bar" wx:if="{{note}}">
+  <input class="comment-input" placeholder="写评论..." value="{{commentText}}" bindinput="onCommentInput" bindconfirm="sendComment" confirm-type="send" />
+  <view class="send-btn {{commentText ? 'send-active' : ''}}" bindtap="sendComment">发送</view>
+</view>
