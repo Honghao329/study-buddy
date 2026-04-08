@@ -93,6 +93,12 @@ router.post('/invite_supervisor', authMiddleware, (req, res) => {
 	const supervisor = db.prepare('SELECT id, nickname FROM users WHERE id = ?').get(supervisorId);
 	if (!supervisor) return res.json({ code: 404, msg: '用户不存在' });
 
+	// 校验是否为伙伴关系
+	const isPartner = db.prepare(
+		'SELECT 1 FROM partners WHERE status = 1 AND ((user_id = ? AND target_id = ?) OR (user_id = ? AND target_id = ?))'
+	).get(req.userId, supervisorId, supervisorId, req.userId);
+	if (!isPartner) return res.json({ code: 403, msg: '只能邀请伙伴作为监督者' });
+
 	db.prepare('UPDATE checkins SET supervisor_id = ?, supervisor_name = ?, creator_id = ? WHERE id = ?')
 		.run(supervisorId, supervisor.nickname || '', req.userId, checkinId);
 	res.json({ code: 200, msg: '已邀请监督' });
