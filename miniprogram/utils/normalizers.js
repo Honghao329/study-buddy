@@ -54,6 +54,25 @@ function normalizePartnerRow(row = {}, currentUserId) {
   };
 }
 
+function normalizePlanPartnerOption(row = {}, currentUserId) {
+  const normalized = normalizePartnerRow(row, currentUserId);
+  const currentId = Number(currentUserId);
+  const targetId = Number(row.target_id);
+  const currentIsTarget = Number.isFinite(currentId) && Number.isFinite(targetId) && currentId === targetId;
+
+  let rawId = row.target_id ?? row.user_id;
+  if (currentIsTarget) {
+    rawId = row.user_id ?? row.target_id;
+  }
+
+  const numericId = Number(rawId);
+
+  return {
+    ...normalized,
+    id: Number.isFinite(numericId) ? numericId : rawId ?? '',
+  };
+}
+
 function normalizeAdminNoteRow(row = {}) {
   const createdAt = row.createdAt || row.created_at || '';
 
@@ -88,6 +107,7 @@ module.exports = {
   normalizeAdminCheckinRow,
   normalizeAdminNoteRow,
   normalizeFavoriteRow,
+  normalizePlanPartnerOption,
   normalizePartnerRow,
   parseUploadResponse,
 };

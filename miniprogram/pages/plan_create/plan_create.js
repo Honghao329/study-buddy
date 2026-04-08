@@ -1,4 +1,5 @@
 const api = require('../../utils/api.js');
+const { normalizePlanPartnerOption } = require('../../utils/normalizers');
 
 Page({
   data: {
@@ -24,7 +25,7 @@ Page({
   onShow() {
     if (!api.getToken()) {
       wx.showToast({ title: '请先登录', icon: 'none' });
-      setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 1000);
+      setTimeout(() => wx.navigateTo({ url: '/pages/login/login' }), 1000);
       return;
     }
     this.loadPartners();
@@ -34,16 +35,7 @@ Page({
     const currentUserId = (wx.getStorageSync('userInfo') || {}).id;
     api.get('/api/partner/my_list').then(res => {
       const list = Array.isArray(res) ? res : [];
-      const partners = list.map(item => {
-        // 后端返回: user_id/target_id/user_name/target_name/user_pic/target_pic
-        const isMe = Number(item.user_id) === Number(currentUserId);
-        return {
-          id: isMe ? item.target_id : item.user_id,
-          nickName: isMe ? (item.target_name || '伙伴') : (item.user_name || '伙伴'),
-          avatarUrl: isMe ? (item.target_pic || '') : (item.user_pic || ''),
-          rawId: item.id
-        };
-      });
+      const partners = list.map(item => normalizePlanPartnerOption(item, currentUserId));
       this.setData({ partners });
     }).catch(() => {});
   },
@@ -80,9 +72,10 @@ Page({
 
   // Partner selection
   selectPartner(e) {
-    const id = e.currentTarget.dataset.id;
+    const rawId = e.currentTarget.dataset.id;
+    const id = Number(rawId);
     const name = e.currentTarget.dataset.name;
-    this.setData({ partnerId: id, selectedPartnerName: name });
+    this.setData({ partnerId: Number.isFinite(id) ? id : rawId, selectedPartnerName: name });
   },
 
   // Role switch

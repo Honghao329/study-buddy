@@ -34,5 +34,5 @@ Page({
 		const id = e.currentTarget.dataset.id;
 		if (id) wx.navigateTo({ url: '/pages/note_detail/note_detail?id=' + id });
 	},
-	goLogin() { wx.switchTab({ url: '/pages/my/my' }); },
+	goLogin() { wx.navigateTo({ url: '/pages/login/login' }); },
 })

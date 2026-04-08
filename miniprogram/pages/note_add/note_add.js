@@ -19,7 +19,7 @@ Page({
   onLoad(options) {
     if (!api.getToken()) {
       wx.showToast({ title: '请先登录', icon: 'none' });
-      setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 1000);
+      setTimeout(() => wx.navigateTo({ url: '/pages/login/login' }), 1000);
       return;
     }
     if (options.id) {

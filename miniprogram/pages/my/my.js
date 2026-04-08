@@ -140,7 +140,7 @@ Page({
 	goPartner() { wx.navigateTo({ url: '/pages/partner/partner' }); },
 	goFavorite() { wx.navigateTo({ url: '/pages/favorite/favorite' }); },
 	goEdit() { wx.navigateTo({ url: '/pages/my_edit/my_edit' }); },
-	goAdmin() { wx.navigateTo({ url: '/pages/admin_login/admin_login' }); },
+	goLogin() { wx.navigateTo({ url: '/pages/login/login' }); },
 
 	// 退出登录
 	showLogout() { this.setData({ showLogoutModal: true }); },

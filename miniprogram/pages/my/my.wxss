@@ -1,8 +1,11 @@
 .page-my { min-height: 100vh; background: #f5f6fa; }
 
-/* ========== 登录页 ========== */
-.login-bg { padding: 80rpx 40rpx 40rpx; }
-.login-card { background: #fff; border-radius: 24rpx; padding: 60rpx 40rpx 50rpx; box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.06); }
+/* ========== 未登录引导 ========== */
+.not-logged { padding: 120rpx 40rpx 40rpx; text-align: center; }
+.not-logged-bg { height: 200rpx; background: linear-gradient(135deg, #4A90D9, #6BB5F0); position: absolute; top: 0; left: 0; right: 0; }
+.not-logged-card { position: relative; background: #fff; border-radius: 24rpx; padding: 60rpx 40rpx 50rpx; box-shadow: 0 8rpx 30rpx rgba(0,0,0,0.08); }
+.not-logged-title { font-size: 36rpx; font-weight: bold; color: #333; margin: 24rpx 0 12rpx; }
+.not-logged-desc { font-size: 26rpx; color: #999; margin-bottom: 40rpx; }
 .login-header { text-align: center; margin-bottom: 30rpx; }
 
 .avatar-btn { background: none !important; border: none; padding: 0; margin: 0 auto; width: 160rpx; height: 160rpx; line-height: normal; }

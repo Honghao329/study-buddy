@@ -5,6 +5,7 @@ const {
   normalizeAdminCheckinRow,
   normalizeAdminNoteRow,
   normalizeFavoriteRow,
+  normalizePlanPartnerOption,
   normalizePartnerRow,
   parseUploadResponse,
 } = require('../miniprogram/utils/normalizers');
@@ -39,6 +40,21 @@ test('normalizePartnerRow picks the other participant for the current user', () 
   assert.equal(row.nickName, '发起人');
   assert.equal(row.avatarUrl, '/inviter.png');
   assert.equal(row.createdAt, '2026-04-08 11:00:00');
+});
+
+test('normalizePlanPartnerOption returns a numeric partner id for selection highlighting', () => {
+  const option = normalizePlanPartnerOption({
+    user_id: 9,
+    target_id: 3,
+    user_name: '发起人',
+    target_name: '伙伴',
+    user_pic: '/inviter.png',
+    target_pic: '/partner.png',
+  }, 3);
+
+  assert.equal(option.id, 9);
+  assert.equal(option.nickName, '发起人');
+  assert.equal(option.avatarUrl, '/inviter.png');
 });
 
 test('normalizeAdminNoteRow maps admin note fields used by the template', () => {

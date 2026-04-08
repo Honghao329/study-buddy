@@ -1,0 +1,47 @@
+<view class="login-page">
+	<!-- 顶部装饰 -->
+	<view class="login-top">
+		<view class="login-circle c1"></view>
+		<view class="login-circle c2"></view>
+		<view class="login-circle c3"></view>
+	</view>
+
+	<!-- Logo -->
+	<view class="login-logo">
+		<view class="logo-icon">
+			<van-icon name="friends-o" size="48px" color="#fff" />
+		</view>
+		<view class="logo-title">学习伴侣</view>
+		<view class="logo-desc">记录学习 · 结交伙伴 · 每天进步</view>
+	</view>
+
+	<!-- 登录表单 -->
+	<view class="login-form">
+		<!-- 头像选择 -->
+		<view class="avatar-section" bindtap="onPickAvatar">
+			<view class="avatar-wrap">
+				<image wx:if="{{avatarUrl}}" class="avatar-img" src="{{avatarUrl}}" mode="aspectFill" />
+				<view wx:else class="avatar-placeholder">
+					<van-icon name="photograph" size="32px" color="#4A90D9" />
+				</view>
+			</view>
+			<text class="avatar-tip">{{avatarUrl ? '点击更换头像' : '点击选择头像（可选）'}}</text>
+		</view>
+
+		<!-- 昵称输入 -->
+		<view class="input-group">
+			<view class="input-label">
+				<van-icon name="user-o" size="18px" color="#4A90D9" />
+				<text>昵称</text>
+			</view>
+			<input class="login-input" type="nickname" placeholder="输入你的昵称" value="{{nickName}}" bindinput="onNickNameInput" maxlength="20" />
+		</view>
+
+		<!-- 登录按钮 -->
+		<van-button type="primary" block round size="large" loading="{{loading}}" loading-text="登录中..." bind:click="doLogin" custom-style="margin-top: 24px; height: 96rpx; font-size: 32rpx;">
+			登录 / 注册
+		</van-button>
+
+		<view class="login-hint">首次登录将自动注册账号</view>
+	</view>
+</view>

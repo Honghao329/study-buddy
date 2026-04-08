@@ -1,16 +1,9 @@
 const router = require('express').Router();
 const db = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
+const { resolvePlanAccessError } = require('../lib/plan_access');
 let getLocalDateString;
 try { getLocalDateString = require('../lib/date').getLocalDateString; } catch(e) { getLocalDateString = () => new Date().toISOString().split('T')[0]; }
-
-// 校验用户是否为计划参与者
-function checkPlanAccess(planId, userId) {
-	const plan = db.prepare('SELECT * FROM plans WHERE id = ?').get(planId);
-	if (!plan) return null;
-	if (plan.executor_id !== userId && plan.supervisor_id !== userId && plan.creator_id !== userId) return null;
-	return plan;
-}
 
 // 创建计划（指定执行者和监督者）
 router.post('/create', authMiddleware, (req, res) => {
@@ -47,9 +40,6 @@ router.get('/my_list', authMiddleware, (req, res) => {
 
 // 计划详情（仅参与者可见）
 router.get('/detail/:id', authMiddleware, (req, res) => {
-	const access = checkPlanAccess(req.params.id, req.userId);
-	if (!access) return res.json({ code: 403, msg: '无权查看该计划' });
-
 	const plan = db.prepare(
 		`SELECT p.*,
 		 u1.nickname as executor_name, u1.avatar as executor_avatar,
@@ -60,9 +50,10 @@ router.get('/detail/:id', authMiddleware, (req, res) => {
 		 LEFT JOIN users u2 ON p.supervisor_id = u2.id
 		 LEFT JOIN users uc ON p.creator_id = uc.id
 		 WHERE p.id = ?`
-	).get(req.params.id);
+		).get(req.params.id);
 
-	if (!plan) return res.json({ code: 404, msg: '计划不存在' });
+	const accessError = resolvePlanAccessError(plan, req.userId);
+	if (accessError) return res.json(accessError);
 
 	// 统计
 	const stats = db.prepare(
@@ -78,7 +69,9 @@ router.get('/detail/:id', authMiddleware, (req, res) => {
 
 // 计划日历数据（仅参与者可见）
 router.get('/calendar/:id', authMiddleware, (req, res) => {
-	if (!checkPlanAccess(req.params.id, req.userId)) return res.json({ code: 403, msg: '无权查看' });
+	const plan = db.prepare('SELECT * FROM plans WHERE id = ?').get(req.params.id);
+	const accessError = resolvePlanAccessError(plan, req.userId);
+	if (accessError) return res.json(accessError);
 	const { year, month } = req.query;
 	const startDay = `${year}-${String(month).padStart(2, '0')}-01`;
 	const endMonth = Number(month) === 12 ? 1 : Number(month) + 1;
@@ -129,7 +122,9 @@ router.post('/comment', authMiddleware, (req, res) => {
 
 // 打卡记录列表（仅参与者可见）
 router.get('/records/:id', authMiddleware, (req, res) => {
-	if (!checkPlanAccess(req.params.id, req.userId)) return res.json({ code: 403, msg: '无权查看' });
+	const plan = db.prepare('SELECT * FROM plans WHERE id = ?').get(req.params.id);
+	const accessError = resolvePlanAccessError(plan, req.userId);
+	if (accessError) return res.json(accessError);
 	const { page = 1, size = 20 } = req.query;
 	const offset = (page - 1) * size;
 	const list = db.prepare(

@@ -1,29 +1,13 @@
 <view class="page-my">
 	<!-- 未登录 -->
 	<block wx:if="{{!logged}}">
-		<view class="login-bg">
-			<view class="login-card">
-				<view class="login-header">
-					<!-- 头像选择（可选） -->
-					<view class="avatar-btn" bindtap="onPickAvatar">
-						<image wx:if="{{avatarUrl}}" class="avatar-preview" src="{{avatarUrl}}" mode="aspectFill" />
-						<view wx:else class="avatar-placeholder">
-							<text class="avatar-plus">+</text>
-							<text class="avatar-tip">选头像(可选)</text>
-						</view>
-					</view>
-				</view>
-
-				<view class="login-title">欢迎使用学习伴侣</view>
-				<view class="login-desc">记录学习、结交伙伴、每天进步</view>
-
-				<view class="login-form">
-					<view class="form-item">
-						<text class="form-label">昵称</text>
-						<input class="form-input" type="nickname" placeholder="请输入你的昵称" bindinput="onNickNameInput" value="{{nickName}}" />
-					</view>
-					<view class="login-btn" bindtap="doLogin">立即登录</view>
-				</view>
+		<view class="not-logged">
+			<view class="not-logged-bg"></view>
+			<view class="not-logged-card">
+				<van-icon name="friends-o" size="64px" color="#4A90D9" />
+				<view class="not-logged-title">还未登录</view>
+				<view class="not-logged-desc">登录后可使用笔记、签到、伙伴等功能</view>
+				<van-button type="primary" round block size="large" bind:click="goLogin">立即登录</van-button>
 			</view>
 		</view>
 	</block>
