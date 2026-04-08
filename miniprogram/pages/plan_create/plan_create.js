@@ -35,12 +35,12 @@ Page({
     api.get('/api/partner/my_list').then(res => {
       const list = Array.isArray(res) ? res : [];
       const partners = list.map(item => {
-        // Normalize: show the other person's info
-        const isUser1 = String(item.user1_id) === String(currentUserId);
+        // 后端返回: user_id/target_id/user_name/target_name/user_pic/target_pic
+        const isMe = Number(item.user_id) === Number(currentUserId);
         return {
-          id: isUser1 ? item.user2_id : item.user1_id,
-          nickName: isUser1 ? (item.user2_nick || item.user2_name || '伙伴') : (item.user1_nick || item.user1_name || '伙伴'),
-          avatarUrl: isUser1 ? item.user2_avatar : item.user1_avatar,
+          id: isMe ? item.target_id : item.user_id,
+          nickName: isMe ? (item.target_name || '伙伴') : (item.user_name || '伙伴'),
+          avatarUrl: isMe ? (item.target_pic || '') : (item.user_pic || ''),
           rawId: item.id
         };
       });
