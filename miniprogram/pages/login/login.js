@@ -4,12 +4,13 @@ const app = getApp();
 Page({
 	data: {
 		nickName: '',
+		password: '',
 		avatarUrl: '',
 		loading: false,
+		showPwd: false,
 	},
 
 	onLoad() {
-		// 已登录直接回去
 		if (api.getToken() && wx.getStorageSync('userInfo')) {
 			wx.switchTab({ url: '/pages/my/my' });
 		}
@@ -17,6 +18,14 @@ Page({
 
 	onNickNameInput(e) {
 		this.setData({ nickName: e.detail.value });
+	},
+
+	onPasswordInput(e) {
+		this.setData({ password: e.detail.value });
+	},
+
+	togglePwd() {
+		this.setData({ showPwd: !this.data.showPwd });
 	},
 
 	onPickAvatar() {
@@ -31,61 +40,36 @@ Page({
 	},
 
 	doLogin() {
-		const { nickName } = this.data;
+		const { nickName, password } = this.data;
 		if (!nickName.trim()) {
 			wx.showToast({ title: '请输入昵称', icon: 'none' });
+			return;
+		}
+		if (!password || password.length < 4) {
+			wx.showToast({ title: '密码至少4位', icon: 'none' });
 			return;
 		}
 
 		this.setData({ loading: true });
 
-		// 先上传头像（如果有）
 		const doLoginRequest = (avatarUrl) => {
-			const demoUid = wx.getStorageSync('demo_uid') || ('user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6));
-			wx.setStorageSync('demo_uid', demoUid);
-
-			wx.login({
-				success: (loginRes) => {
-					api.post('/api/user/login', {
-						code: loginRes.code || demoUid,
-						demoUid,
-						nickName: nickName.trim(),
-						avatarUrl: avatarUrl || '',
-					}).then(res => {
-						this.setData({ loading: false });
-						if (res && res.token) {
-							wx.setStorageSync('token', res.token);
-							wx.setStorageSync('userInfo', res.user);
-							app.globalData.isLogin = true;
-							app.globalData.userInfo = res.user;
-							wx.showToast({ title: '登录成功', icon: 'success' });
-							setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 800);
-						}
-					}).catch(() => { this.setData({ loading: false }); });
-				},
-				fail: () => {
-					// wx.login 失败降级
-					api.post('/api/user/login', {
-						code: demoUid,
-						demoUid,
-						nickName: nickName.trim(),
-						avatarUrl: avatarUrl || '',
-					}).then(res => {
-						this.setData({ loading: false });
-						if (res && res.token) {
-							wx.setStorageSync('token', res.token);
-							wx.setStorageSync('userInfo', res.user);
-							app.globalData.isLogin = true;
-							app.globalData.userInfo = res.user;
-							wx.showToast({ title: '登录成功', icon: 'success' });
-							setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 800);
-						}
-					}).catch(() => { this.setData({ loading: false }); });
+			api.post('/api/user/login', {
+				nickname: nickName.trim(),
+				password: password,
+				avatarUrl: avatarUrl || '',
+			}).then(res => {
+				this.setData({ loading: false });
+				if (res && res.token) {
+					wx.setStorageSync('token', res.token);
+					wx.setStorageSync('userInfo', res.user);
+					app.globalData.isLogin = true;
+					app.globalData.userInfo = res.user;
+					wx.showToast({ title: '登录成功', icon: 'success' });
+					setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 800);
 				}
-			});
+			}).catch(() => { this.setData({ loading: false }); });
 		};
 
-		// 如果有本地头像先上传
 		if (this.data.avatarUrl && !this.data.avatarUrl.startsWith('http')) {
 			api.uploadImage(this.data.avatarUrl).then(url => {
 				doLoginRequest(url);

@@ -45,10 +45,15 @@ function normalizePartnerRow(row = {}, currentUserId) {
     avatarUrl = row.target_pic || row.user_pic || row.avatarUrl || '';
   }
 
+  // partnerId: the OTHER user's id (for profile links)
+  let partnerId = targetId;
+  if (currentIsTarget) partnerId = userId;
+
   return {
     ...row,
     nickName,
     avatarUrl,
+    partnerId,
     createdAt,
     created_at: createdAt,
   };

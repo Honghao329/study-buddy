@@ -1,0 +1,62 @@
+.page { min-height: 100vh; background: #f5f6fa; }
+
+.profile-header {
+	background: linear-gradient(135deg, #4A90D9 0%, #357ABD 100%);
+	padding: 60rpx 40rpx 40rpx;
+	text-align: center;
+	color: #fff;
+	border-radius: 0 0 40rpx 40rpx;
+}
+.profile-avatar-wrap {
+	width: 140rpx; height: 140rpx;
+	border-radius: 50%;
+	margin: 0 auto 20rpx;
+	overflow: hidden;
+	border: 4rpx solid rgba(255,255,255,0.3);
+}
+.profile-avatar { width: 100%; height: 100%; }
+.profile-avatar-default {
+	width: 100%; height: 100%;
+	background: rgba(255,255,255,0.15);
+	display: flex; align-items: center; justify-content: center;
+}
+.profile-name { font-size: 36rpx; font-weight: bold; margin-bottom: 8rpx; }
+.profile-bio { font-size: 26rpx; opacity: 0.85; margin-bottom: 12rpx; }
+.profile-tags { display: flex; gap: 12rpx; justify-content: center; flex-wrap: wrap; }
+.profile-tag { opacity: 0.9; }
+
+.stats-row {
+	display: flex; background: #fff; margin: -20rpx 30rpx 0;
+	border-radius: 16rpx; padding: 30rpx 0;
+	box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.06);
+	position: relative; z-index: 1;
+}
+.stat-item { flex: 1; text-align: center; }
+.stat-value { font-size: 40rpx; font-weight: bold; color: #4A90D9; }
+.stat-label { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+
+.action-row {
+	text-align: center; padding: 30rpx 0 10rpx;
+}
+
+.section-title {
+	display: flex; align-items: center; gap: 8rpx;
+	padding: 30rpx 30rpx 16rpx;
+	font-size: 30rpx; font-weight: bold; color: #333;
+}
+
+.note-list { padding: 0 30rpx; }
+.note-card { padding: 24rpx; margin-bottom: 16rpx; border-radius: 16rpx; }
+.note-title { font-size: 30rpx; font-weight: bold; color: #333; margin-bottom: 8rpx; }
+.note-content {
+	font-size: 26rpx; line-height: 1.6;
+	overflow: hidden; text-overflow: ellipsis;
+	display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.note-meta {
+	display: flex; justify-content: space-between; align-items: center;
+	margin-top: 12rpx;
+}
+.note-stats { display: flex; align-items: center; gap: 8rpx; }
+
+.loading-page { display: flex; justify-content: center; align-items: center; min-height: 60vh; }

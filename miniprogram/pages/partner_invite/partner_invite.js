@@ -2,7 +2,9 @@ const api = require('../../utils/api.js');
 
 Page({
   data: {
-    targetId: ''
+    search: '',
+    userList: [],
+    loading: false,
   },
 
   onShow() {
@@ -12,30 +14,48 @@ Page({
     }
   },
 
-  onTargetIdInput(e) {
-    this.setData({ targetId: e.detail.value });
+  onSearchInput(e) {
+    this.setData({ search: e.detail.value || e.detail });
   },
 
-  doInvite() {
-    if (!api.getToken()) {
-      wx.showToast({ title: '请先登录', icon: 'none' });
-      setTimeout(() => wx.navigateTo({ url: '/pages/login/login' }), 1000);
-      return;
-    }
-    const { targetId } = this.data;
-    if (!targetId) {
-      wx.showToast({ title: '请输入用户ID', icon: 'none' });
+  onSearch() {
+    this.loadUsers();
+  },
+
+  onClearSearch() {
+    this.setData({ search: '', userList: [] });
+  },
+
+  loadUsers() {
+    const search = this.data.search.trim();
+    if (!search) return;
+    this.setData({ loading: true });
+    api.get('/api/user/list', { search, size: 20 }).then(res => {
+      const list = (res && res.list) || [];
+      this.setData({ userList: list, loading: false });
+    }).catch(() => {
+      this.setData({ loading: false });
+    });
+  },
+
+  doInvite(e) {
+    const targetId = e.currentTarget.dataset.id;
+    const myInfo = wx.getStorageSync('userInfo') || {};
+    if (Number(targetId) === myInfo.id) {
+      wx.showToast({ title: '不能邀请自己', icon: 'none' });
       return;
     }
     wx.showLoading({ title: '发送中' });
     api.post('/api/partner/invite', { targetId }).then(() => {
       wx.hideLoading();
       wx.showToast({ title: '邀请已发送', icon: 'success' });
-      setTimeout(() => {
-        wx.navigateBack();
-      }, 1000);
     }).catch(() => {
       wx.hideLoading();
     });
-  }
+  },
+
+  goProfile(e) {
+    const uid = e.currentTarget.dataset.uid;
+    if (uid) wx.navigateTo({ url: '/pages/user_profile/user_profile?id=' + uid });
+  },
 });

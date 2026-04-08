@@ -146,6 +146,11 @@ Page({
     wx.previewImage({ current: url, urls: this.data.note.images || [] });
   },
 
+  goProfile(e) {
+    const uid = e.currentTarget.dataset.uid;
+    if (uid) wx.navigateTo({ url: '/pages/user_profile/user_profile?id=' + uid });
+  },
+
   getVisibilityText(v) {
     const map = { public: '公开', private: '私密', partner: '伙伴可见' };
     return map[v] || '公开';

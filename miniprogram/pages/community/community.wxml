@@ -9,13 +9,20 @@
 
 	<view class="feed-list">
 		<view class="card feed-card" wx:for="{{notes}}" wx:key="id">
-			<view class="feed-header" bindtap="goDetail" data-id="{{item.id}}">
-				<view class="avatar-circle small">
-					<van-icon name="smile-o" size="20px" color="#fff" />
+			<view class="feed-header">
+				<view class="feed-author-row" catchtap="goProfile" data-uid="{{item.user_id}}">
+					<image wx:if="{{item.user_pic}}" class="feed-avatar" src="{{item.user_pic}}" mode="aspectFill" />
+					<view wx:else class="avatar-circle small">
+						<van-icon name="smile-o" size="20px" color="#fff" />
+					</view>
+					<view class="feed-author-info">
+						<text class="feed-name">{{item.user_name || '匿名'}}</text>
+						<text class="feed-time text-sm text-gray">{{item.created_at}}</text>
+					</view>
 				</view>
-				<view class="feed-author-info">
-					<text class="feed-name">{{item.user_name || '匿名'}}</text>
-					<text class="feed-time text-sm text-gray">{{item.created_at}}</text>
+				<view class="feed-follow-btn" catchtap="quickAddFriend" data-uid="{{item.user_id}}" data-name="{{item.user_name}}">
+					<van-icon name="plus" size="14px" color="#4A90D9" />
+					<text>加伙伴</text>
 				</view>
 			</view>
 			<view class="feed-body" bindtap="goDetail" data-id="{{item.id}}">

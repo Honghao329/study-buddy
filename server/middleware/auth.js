@@ -29,8 +29,16 @@ function adminAuth(req, res, next) {
 	}
 }
 
+function optionalAuth(req, res, next) {
+	const token = req.headers['x-token'] || req.headers['authorization'];
+	if (token) {
+		try { req.userId = jwt.verify(token.replace('Bearer ', ''), SECRET).userId; } catch (e) {}
+	}
+	next();
+}
+
 function generateToken(payload) {
 	return jwt.sign(payload, SECRET, { expiresIn: '7d' });
 }
 
-module.exports = { authMiddleware, adminAuth, generateToken, SECRET };
+module.exports = { authMiddleware, optionalAuth, adminAuth, generateToken, SECRET };

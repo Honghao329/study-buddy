@@ -6,13 +6,14 @@
       待处理
       <view wx:if="{{pendingList.length > 0}}" class="badge">{{pendingList.length}}</view>
     </view>
+    <view class="tab {{activeTab === 2 ? 'active' : ''}}" bindtap="switchTab" data-tab="{{2}}">发现</view>
   </view>
 
   <!-- My Partners -->
   <block wx:if="{{activeTab === 0}}">
-    <van-empty wx:if="{{myList.length === 0}}" description="还没有学习伙伴，快去邀请吧" />
+    <van-empty wx:if="{{myList.length === 0}}" description="还没有学习伙伴，去发现页添加吧" />
     <view class="card partner-item" wx:for="{{myList}}" wx:key="id">
-      <view class="flex-center">
+      <view class="flex-center" bindtap="goProfile" data-uid="{{item.partnerId}}">
         <image wx:if="{{item.avatarUrl}}" class="avatar" src="{{item.avatarUrl}}" mode="aspectFill"></image>
         <view wx:else class="avatar-placeholder">
           <van-icon name="smile-o" size="22px" color="#fff" />
@@ -23,7 +24,7 @@
         </view>
       </view>
       <view class="partner-actions flex mt20">
-        <view class="btn-outline btn-sm flex-1" bindtap="goSpace" data-id="{{item.id}}">共享空间</view>
+        <view class="btn-outline btn-sm flex-1" bindtap="goProfile" data-uid="{{item.partnerId}}">查看主页</view>
         <view style="width: 16rpx;"></view>
         <view class="btn-outline btn-sm flex-1" style="border-color:#4CAF50;color:#4CAF50;" bindtap="goCheckins">查看打卡</view>
         <view style="width: 16rpx;"></view>
@@ -36,7 +37,7 @@
   <block wx:if="{{activeTab === 1}}">
     <van-empty wx:if="{{pendingList.length === 0}}" description="暂无待处理的邀请" />
     <view class="card partner-item" wx:for="{{pendingList}}" wx:key="id">
-      <view class="flex-center">
+      <view class="flex-center" bindtap="goProfile" data-uid="{{item.partnerId}}">
         <image wx:if="{{item.avatarUrl}}" class="avatar" src="{{item.avatarUrl}}" mode="aspectFill"></image>
         <view wx:else class="avatar-placeholder">
           <van-icon name="smile-o" size="22px" color="#fff" />
@@ -54,6 +55,33 @@
     </view>
   </block>
 
-  <!-- Invite button -->
-  <view class="btn-primary mt20" bindtap="goInvite">邀请伙伴</view>
+  <!-- Discover Users -->
+  <block wx:if="{{activeTab === 2}}">
+    <van-search value="{{userSearch}}" placeholder="搜索用户昵称" bind:search="onUserSearch" bind:change="onUserSearchInput" bind:clear="onClearUserSearch" shape="round" />
+
+    <van-empty wx:if="{{!loadingUsers && userList.length === 0}}" description="暂无用户" />
+
+    <view class="card user-item" wx:for="{{userList}}" wx:key="id">
+      <view class="flex-center" bindtap="goProfile" data-uid="{{item.id}}">
+        <image wx:if="{{item.avatar}}" class="avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+        <view wx:else class="avatar-placeholder">
+          <van-icon name="smile-o" size="22px" color="#fff" />
+        </view>
+        <view class="partner-info flex-1">
+          <view class="partner-name">{{item.nickname || '学习者'}}</view>
+          <view class="user-bio text-gray text-sm" wx:if="{{item.bio}}">{{item.bio}}</view>
+          <view class="user-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+            <van-tag plain type="primary" size="small" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</van-tag>
+          </view>
+        </view>
+      </view>
+      <view class="user-action-row mt20">
+        <van-button type="primary" plain round size="small" icon="plus" bind:click="inviteUser" data-id="{{item.id}}" custom-style="width: 200rpx;">加伙伴</van-button>
+        <van-button plain round size="small" bind:click="goProfile" data-uid="{{item.id}}" custom-style="width: 200rpx;">查看主页</van-button>
+      </view>
+    </view>
+
+    <van-loading wx:if="{{loadingUsers}}" size="24px" vertical>加载中...</van-loading>
+    <van-divider wx:if="{{!hasMoreUsers && userList.length > 0}}" contentPosition="center">没有更多了</van-divider>
+  </block>
 </view>

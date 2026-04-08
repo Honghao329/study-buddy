@@ -13,6 +13,7 @@ function normalizeUser(user) {
 	if (!user) return user;
 
 	const normalized = { ...user };
+	delete normalized.password;
 	normalized.nickname = normalized.nickname || normalized.nickName || '';
 	normalized.nickName = normalized.nickname;
 	normalized.avatar = normalized.avatar || normalized.avatarUrl || '';

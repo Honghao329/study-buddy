@@ -1,20 +1,9 @@
 const router = require('express').Router();
-const jwt = require('jsonwebtoken');
 const db = require('../config/db');
-const { authMiddleware, SECRET } = require('../middleware/auth');
+const { authMiddleware, optionalAuth } = require('../middleware/auth');
 const { canViewNote } = require('../lib/access');
 const { deleteNoteCascade } = require('../lib/cleanup');
 const { normalizeNote, parseJsonField } = require('../lib/format');
-
-function optionalAuth(req, res, next) {
-	const token = req.headers['x-token'] || req.headers['authorization'];
-	if (token) {
-		try {
-			req.userId = jwt.verify(token.replace('Bearer ', ''), SECRET).userId;
-		} catch (error) {}
-	}
-	next();
-}
 
 function checkPartnerAccess(ownerId, userId) {
 	if (!userId || Number(ownerId) === Number(userId)) return false;

@@ -1,10 +1,8 @@
 const router = require('express').Router();
 const db = require('../config/db');
-const jwt = require('jsonwebtoken');
-const { authMiddleware, SECRET } = require('../middleware/auth');
+const { authMiddleware, optionalAuth } = require('../middleware/auth');
 const { getLocalDateString } = require('../lib/date');
 
-// 打卡任务列表
 router.get('/list', (req, res) => {
 	const { page = 1, size = 10, search } = req.query;
 	const offset = (page - 1) * size;
@@ -16,17 +14,6 @@ router.get('/list', (req, res) => {
 	const list = db.prepare(`SELECT * FROM checkins ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...params, Number(size), offset);
 	res.json({ code: 200, data: { list, total } });
 });
-
-// 可选认证：有token就解析，没有也放行
-function optionalAuth(req, res, next) {
-	const token = req.headers['x-token'] || req.headers['authorization'];
-	if (token) {
-		try {
-			req.userId = jwt.verify(token.replace('Bearer ', ''), SECRET).userId;
-		} catch (e) {}
-	}
-	next();
-}
 
 // 打卡任务详情
 router.get('/detail/:id', optionalAuth, (req, res) => {

@@ -96,6 +96,8 @@ Page({
 
   onSortChange(e) {
     const idx = e.detail.index !== undefined ? e.detail.index : (e.currentTarget ? e.currentTarget.dataset.index : 0);
+    this._likedIds = new Set();
+    this._unlikedIds = new Set();
     this.setData({
       sortIndex: idx,
       activeSortTab: idx,
@@ -166,5 +168,27 @@ Page({
   goDetail(e) {
     const id = e.currentTarget.dataset.id;
     wx.navigateTo({ url: '/pages/note_detail/note_detail?id=' + id });
+  },
+
+  goProfile(e) {
+    const uid = e.currentTarget.dataset.uid;
+    if (!uid) return;
+    wx.navigateTo({ url: '/pages/user_profile/user_profile?id=' + uid });
+  },
+
+  quickAddFriend(e) {
+    if (!api.getToken()) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      return;
+    }
+    const uid = e.currentTarget.dataset.uid;
+    const myInfo = wx.getStorageSync('userInfo') || {};
+    if (Number(uid) === myInfo.id) {
+      wx.showToast({ title: '不能添加自己', icon: 'none' });
+      return;
+    }
+    api.post('/api/partner/invite', { targetId: uid }).then(() => {
+      wx.showToast({ title: '邀请已发送', icon: 'success' });
+    }).catch(() => {});
   }
 });

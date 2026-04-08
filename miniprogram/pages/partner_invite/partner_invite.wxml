@@ -1,13 +1,21 @@
 <view class="container">
-  <view class="card invite-card">
-    <view class="invite-title">邀请学习伙伴</view>
-    <view class="invite-desc text-gray text-sm">输入对方的用户ID，发送伙伴邀请</view>
+  <van-search value="{{search}}" placeholder="搜索用户昵称" bind:search="onSearch" bind:change="onSearchInput" bind:clear="onClearSearch" shape="round" />
 
-    <view class="form-group">
-      <view class="form-label">用户ID</view>
-      <input class="input" placeholder="请输入目标用户ID" value="{{targetId}}" bindinput="onTargetIdInput" />
+  <van-empty wx:if="{{!loading && userList.length === 0}}" description="搜索并添加学习伙伴" />
+
+  <view class="card user-item" wx:for="{{userList}}" wx:key="id">
+    <view class="flex-center" bindtap="goProfile" data-uid="{{item.id}}">
+      <image wx:if="{{item.avatar}}" class="avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+      <view wx:else class="avatar-placeholder">
+        <van-icon name="smile-o" size="22px" color="#fff" />
+      </view>
+      <view class="user-info flex-1">
+        <view class="user-name">{{item.nickname || '学习者'}}</view>
+        <view class="text-gray text-sm" wx:if="{{item.bio}}">{{item.bio}}</view>
+      </view>
     </view>
-
-    <view class="btn-primary" bindtap="doInvite">发送邀请</view>
+    <van-button type="primary" plain round size="small" icon="plus" bind:click="doInvite" data-id="{{item.id}}" custom-style="margin-top: 16rpx; width: 100%;">发送伙伴邀请</van-button>
   </view>
+
+  <van-loading wx:if="{{loading}}" size="24px" vertical>加载中...</van-loading>
 </view>

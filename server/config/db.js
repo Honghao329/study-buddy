@@ -193,6 +193,8 @@ db.exec(`
 
   INSERT OR IGNORE INTO admins (username, password) VALUES ('admin', '123456');
 
+  CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname);
+
   CREATE INDEX IF NOT EXISTS idx_notes_user ON notes(user_id);
   CREATE INDEX IF NOT EXISTS idx_notes_public ON notes(visibility, status, created_at);
   CREATE INDEX IF NOT EXISTS idx_signs_user_day ON signs(user_id, day);
@@ -202,6 +204,13 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_likes_lookup ON likes(user_id, target_id, target_type);
 `);
+
+// 迁移：给 users 表加 password 字段
+try {
+	db.prepare("SELECT password FROM users LIMIT 0").run();
+} catch (e) {
+	db.exec("ALTER TABLE users ADD COLUMN password TEXT DEFAULT ''");
+}
 
 module.exports = db;
 module.exports.dbPath = dbPath;

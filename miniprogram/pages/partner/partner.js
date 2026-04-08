@@ -5,7 +5,13 @@ Page({
   data: {
     activeTab: 0,
     myList: [],
-    pendingList: []
+    pendingList: [],
+    // discover tab
+    userList: [],
+    userSearch: '',
+    userPage: 1,
+    hasMoreUsers: true,
+    loadingUsers: false,
   },
 
   onShow() {
@@ -14,17 +20,16 @@ Page({
       setTimeout(() => wx.navigateTo({ url: '/pages/login/login' }), 1000);
       return;
     }
-    this.loadData();
+    this.loadMyList();
+    this.loadPendingList();
   },
-
-	loadData() {
-		this.loadMyList();
-		this.loadPendingList();
-	},
 
   switchTab(e) {
     const tab = Number(e.currentTarget.dataset.tab);
     this.setData({ activeTab: Number.isFinite(tab) ? tab : 0 });
+    if (tab === 2 && this.data.userList.length === 0) {
+      this.loadUserList();
+    }
   },
 
   loadMyList() {
@@ -43,9 +48,48 @@ Page({
     }).catch(() => {});
   },
 
-  goSpace(e) {
+  loadUserList() {
+    if (this.data.loadingUsers || !this.data.hasMoreUsers) return;
+    this.setData({ loadingUsers: true });
+    const { userPage, userSearch } = this.data;
+    api.get('/api/user/list', { page: userPage, size: 20, search: userSearch }).then(res => {
+      const list = (res && res.list) || [];
+      const userList = userPage === 1 ? list : this.data.userList.concat(list);
+      this.setData({ userList, loadingUsers: false, hasMoreUsers: list.length >= 20 });
+    }).catch(() => {
+      this.setData({ loadingUsers: false });
+    });
+  },
+
+  onUserSearchInput(e) {
+    this.setData({ userSearch: e.detail.value || e.detail });
+  },
+
+  onUserSearch() {
+    this.setData({ userList: [], userPage: 1, hasMoreUsers: true });
+    this.loadUserList();
+  },
+
+  onClearUserSearch() {
+    this.setData({ userSearch: '', userList: [], userPage: 1, hasMoreUsers: true });
+    this.loadUserList();
+  },
+
+  inviteUser(e) {
     const id = e.currentTarget.dataset.id;
-    wx.showToast({ title: '共享空间开发中', icon: 'none' });
+    const myInfo = wx.getStorageSync('userInfo') || {};
+    if (Number(id) === myInfo.id) {
+      wx.showToast({ title: '不能添加自己', icon: 'none' });
+      return;
+    }
+    api.post('/api/partner/invite', { targetId: id }).then(() => {
+      wx.showToast({ title: '邀请已发送', icon: 'success' });
+    }).catch(() => {});
+  },
+
+  goProfile(e) {
+    const uid = e.currentTarget.dataset.uid;
+    if (uid) wx.navigateTo({ url: '/pages/user_profile/user_profile?id=' + uid });
   },
 
   dissolve(e) {
@@ -68,7 +112,8 @@ Page({
     const id = e.currentTarget.dataset.id;
     api.post('/api/partner/accept', { id }).then(() => {
       wx.showToast({ title: '已接受', icon: 'success' });
-      this.loadData();
+      this.loadMyList();
+      this.loadPendingList();
     });
   },
 
@@ -84,7 +129,10 @@ Page({
     wx.switchTab({ url: '/pages/checkin_list/checkin_list' });
   },
 
-  goInvite() {
-    wx.navigateTo({ url: '/pages/partner_invite/partner_invite' });
-  }
+  onReachBottom() {
+    if (this.data.activeTab === 2 && this.data.hasMoreUsers) {
+      this.setData({ userPage: this.data.userPage + 1 });
+      this.loadUserList();
+    }
+  },
 });

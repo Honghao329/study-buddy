@@ -2,7 +2,7 @@
   <!-- Author Info -->
   <view class="card author-card">
     <view class="flex-between">
-      <view class="flex-center">
+      <view class="flex-center" bindtap="goProfile" data-uid="{{note.user_id}}">
         <image wx:if="{{note.author_avatar}}" class="avatar" src="{{note.author_avatar}}" mode="aspectFill"></image>
         <view wx:else class="avatar-circle">
           <van-icon name="smile-o" size="28px" color="#fff" />
@@ -59,7 +59,7 @@
 
   <view wx:if="{{comments.length > 0}}">
     <view class="card comment-card" wx:for="{{comments}}" wx:key="id">
-      <view class="flex-center">
+      <view class="flex-center" bindtap="goProfile" data-uid="{{item.user_id}}">
         <image wx:if="{{item.author_avatar}}" class="comment-avatar" src="{{item.author_avatar}}" mode="aspectFill"></image>
         <view wx:else class="avatar-circle small">
           <van-icon name="smile-o" size="20px" color="#fff" />

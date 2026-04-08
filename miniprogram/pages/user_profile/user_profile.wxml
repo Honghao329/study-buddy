@@ -1,0 +1,69 @@
+<view class="page" wx:if="{{user}}">
+	<!-- 用户信息卡片 -->
+	<view class="profile-header">
+		<view class="profile-avatar-wrap">
+			<image wx:if="{{user.avatar}}" class="profile-avatar" src="{{user.avatar}}" mode="aspectFill" />
+			<view wx:else class="profile-avatar-default">
+				<van-icon name="smile-o" size="40px" color="#fff" />
+			</view>
+		</view>
+		<view class="profile-name">{{user.nickname || '学习者'}}</view>
+		<view class="profile-bio" wx:if="{{user.bio}}">{{user.bio}}</view>
+		<view class="profile-tags" wx:if="{{user.tags && user.tags.length > 0}}">
+			<van-tag plain type="primary" size="medium" wx:for="{{user.tags}}" wx:key="*this" custom-class="profile-tag">{{item}}</van-tag>
+		</view>
+	</view>
+
+	<!-- 统计 -->
+	<view class="stats-row">
+		<view class="stat-item">
+			<view class="stat-value">{{user.note_cnt || 0}}</view>
+			<view class="stat-label">笔记</view>
+		</view>
+		<view class="stat-item">
+			<view class="stat-value">{{user.sign_days || 0}}</view>
+			<view class="stat-label">签到天数</view>
+		</view>
+		<view class="stat-item">
+			<view class="stat-value">{{user.checkin_cnt || 0}}</view>
+			<view class="stat-label">打卡次数</view>
+		</view>
+	</view>
+
+	<!-- 操作按钮 -->
+	<view class="action-row" wx:if="{{!user.is_self}}">
+		<van-button wx:if="{{user.partner_status === 'none'}}" type="primary" round size="small" icon="plus" bind:click="addFriend" custom-style="width: 260rpx;">添加伙伴</van-button>
+		<van-button wx:elif="{{user.partner_status === 'pending'}}" plain type="warning" round size="small" disabled custom-style="width: 260rpx;">已发送邀请</van-button>
+		<van-button wx:else plain type="primary" round size="small" icon="checked" disabled custom-style="width: 260rpx;">已是伙伴</van-button>
+	</view>
+
+	<!-- 公开笔记 -->
+	<view class="section-title">
+		<van-icon name="notes-o" size="18px" color="#4A90D9" />
+		<text>公开笔记</text>
+	</view>
+
+	<view class="note-list">
+		<view class="card note-card" wx:for="{{notes}}" wx:key="id" bindtap="goNoteDetail" data-id="{{item.id}}">
+			<view class="note-title">{{item.title}}</view>
+			<view class="note-content text-gray">{{item.content}}</view>
+			<view class="note-meta">
+				<text class="text-sm text-gray">{{item.created_at}}</text>
+				<view class="note-stats">
+					<van-icon name="good-job-o" size="14px" color="#999" />
+					<text class="text-sm text-gray">{{item.like_cnt || 0}}</text>
+					<van-icon name="eye-o" size="14px" color="#999" />
+					<text class="text-sm text-gray">{{item.view_cnt || 0}}</text>
+				</view>
+			</view>
+		</view>
+	</view>
+
+	<van-empty wx:if="{{!loading && notes.length === 0}}" description="暂无公开笔记" />
+	<van-loading wx:if="{{loading}}" size="24px" vertical>加载中...</van-loading>
+	<van-divider wx:if="{{!hasMore && notes.length > 0}}" contentPosition="center">没有更多了</van-divider>
+</view>
+
+<view class="loading-page" wx:if="{{!user}}">
+	<van-loading size="24px" vertical>加载中...</van-loading>
+</view>

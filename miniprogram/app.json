@@ -13,7 +13,8 @@
 		"pages/partner/partner",
 		"pages/partner_invite/partner_invite",
 		"pages/favorite/favorite",
-		"pages/login/login"
+		"pages/login/login",
+		"pages/user_profile/user_profile"
 	],
 	"window": {
 		"backgroundColor": "#f5f6fa",

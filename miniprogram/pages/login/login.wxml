@@ -34,7 +34,19 @@
 				<van-icon name="user-o" size="18px" color="#4A90D9" />
 				<text>昵称</text>
 			</view>
-			<input class="login-input" type="nickname" placeholder="输入你的昵称" value="{{nickName}}" bindinput="onNickNameInput" maxlength="20" />
+			<input class="login-input" type="text" placeholder="请输入昵称" value="{{nickName}}" bindinput="onNickNameInput" maxlength="20" />
+		</view>
+
+		<!-- 密码输入 -->
+		<view class="input-group">
+			<view class="input-label">
+				<van-icon name="shield-o" size="18px" color="#4A90D9" />
+				<text>密码</text>
+			</view>
+			<input class="login-input" type="text" password="{{!showPwd}}" placeholder="请输入密码（至少4位）" value="{{password}}" bindinput="onPasswordInput" maxlength="20" />
+			<view class="pwd-toggle" bindtap="togglePwd">
+				<van-icon name="{{showPwd ? 'eye-o' : 'closed-eye'}}" size="18px" color="#999" />
+			</view>
 		</view>
 
 		<!-- 登录按钮 -->
@@ -42,6 +54,6 @@
 			登录 / 注册
 		</van-button>
 
-		<view class="login-hint">首次登录将自动注册账号</view>
+		<view class="login-hint">首次登录将自动注册，再次登录需输入相同密码</view>
 	</view>
 </view>
