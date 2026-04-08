@@ -1,0 +1,82 @@
+/* Form */
+.form-section {
+  padding-bottom: 20rpx;
+}
+.form-card {
+  padding: 24rpx 28rpx;
+}
+.form-label {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+.form-label.no-margin {
+  margin-bottom: 0;
+}
+.required {
+  color: #e91e63;
+  margin-left: 4rpx;
+}
+.form-row {
+  min-height: 48rpx;
+}
+.form-value {
+  color: #666;
+  font-size: 28rpx;
+  gap: 8rpx;
+}
+
+/* Partner List */
+.partner-list {
+  max-height: 400rpx;
+  overflow-y: auto;
+}
+.partner-option {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 16rpx;
+  border-radius: 16rpx;
+  margin-bottom: 12rpx;
+  background: #f8fbff;
+  transition: all 0.2s;
+  gap: 16rpx;
+}
+.partner-option:last-child {
+  margin-bottom: 0;
+}
+.partner-selected {
+  background: #EBF3FC;
+  border: 2rpx solid #4A90D9;
+}
+.partner-opt-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  border: 2rpx solid #EBF3FC;
+  flex-shrink: 0;
+}
+.partner-opt-avatar-ph {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #EBF3FC, #D6E8F9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.partner-opt-name {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Role hint */
+.role-hint {
+  padding: 16rpx 20rpx;
+  background: #f8fbff;
+  border-radius: 12rpx;
+  line-height: 1.5;
+}

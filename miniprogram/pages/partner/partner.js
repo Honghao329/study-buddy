@@ -80,6 +80,10 @@ Page({
     });
   },
 
+  goPlanList(e) {
+    wx.navigateTo({ url: '/pages/plan_list/plan_list' });
+  },
+
   goInvite() {
     wx.navigateTo({ url: '/pages/partner_invite/partner_invite' });
   }

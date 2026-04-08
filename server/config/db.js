@@ -146,6 +146,45 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS plans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    frequency TEXT DEFAULT 'daily',
+    category TEXT DEFAULT '任意',
+    creator_id INTEGER NOT NULL,
+    executor_id INTEGER NOT NULL,
+    supervisor_id INTEGER NOT NULL,
+    status INTEGER DEFAULT 1,
+    points INTEGER DEFAULT 0,
+    reward TEXT DEFAULT '',
+    remind_time TEXT DEFAULT '',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (creator_id) REFERENCES users(id),
+    FOREIGN KEY (executor_id) REFERENCES users(id),
+    FOREIGN KEY (supervisor_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS plan_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    plan_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    day TEXT NOT NULL,
+    content TEXT DEFAULT '',
+    images TEXT DEFAULT '[]',
+    comment TEXT DEFAULT '',
+    score INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(plan_id, user_id, day),
+    FOREIGN KEY (plan_id) REFERENCES plans(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_plans_executor ON plans(executor_id, status);
+  CREATE INDEX IF NOT EXISTS idx_plans_supervisor ON plans(supervisor_id, status);
+  CREATE INDEX IF NOT EXISTS idx_plan_records_lookup ON plan_records(plan_id, user_id, day);
+
   INSERT OR IGNORE INTO admins (username, password) VALUES ('admin', '123456');
 
   CREATE INDEX IF NOT EXISTS idx_notes_user ON notes(user_id);

@@ -12,7 +12,10 @@
 		"pages/my_edit/my_edit",
 		"pages/partner/partner",
 		"pages/partner_invite/partner_invite",
-		"pages/favorite/favorite"
+		"pages/favorite/favorite",
+		"pages/plan_list/plan_list",
+		"pages/plan_detail/plan_detail",
+		"pages/plan_create/plan_create"
 	],
 	"window": {
 		"backgroundColor": "#f5f6fa",
