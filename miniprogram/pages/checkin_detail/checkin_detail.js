@@ -6,8 +6,10 @@ Page({
 		detail: null,
 		joining: false,
 		records: [],
-		recordPage: 1,
 		recordTotal: 0,
+		// 打卡填写
+		showCheckinForm: false,
+		checkinContent: '',
 		// 邀请监督
 		showInvite: false,
 		partners: [],
@@ -44,14 +46,33 @@ Page({
 	},
 
 	// 打卡
+	openCheckinForm() {
+		if (!api.getToken()) {
+			wx.showToast({ title: '请先登录', icon: 'none' });
+			return;
+		}
+		this.setData({ showCheckinForm: true, checkinContent: '' });
+	},
+
+	closeCheckinForm() {
+		this.setData({ showCheckinForm: false });
+	},
+
+	onCheckinContentInput(e) {
+		this.setData({ checkinContent: e.detail.value });
+	},
+
 	onJoin() {
-		if (this.data.joining || (this.data.detail && this.data.detail.is_joined)) return;
+		if (this.data.joining) return;
 		this.setData({ joining: true });
-		api.post('/api/checkin/join', { checkinId: this.data.id }).then(() => {
+		api.post('/api/checkin/join', {
+			checkinId: this.data.id,
+			content: this.data.checkinContent.trim(),
+		}).then(() => {
 			wx.showToast({ title: '打卡成功', icon: 'success' });
+			this.setData({ joining: false, showCheckinForm: false });
 			this.loadDetail(this.data.id);
 			this.loadRecords();
-			this.setData({ joining: false });
 		}).catch(() => {
 			this.setData({ joining: false });
 		});
@@ -112,6 +133,10 @@ Page({
 	},
 
 	submitComment() {
+		if (!this.data.commentText.trim()) {
+			wx.showToast({ title: '请填写评语', icon: 'none' });
+			return;
+		}
 		api.post('/api/checkin/comment_record', {
 			recordId: this.data.commentRecordId,
 			comment: this.data.commentText,

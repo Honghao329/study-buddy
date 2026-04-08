@@ -3,36 +3,45 @@
 	<view class="header-card">
 		<view class="header-title">{{detail.title}}</view>
 		<view class="header-desc" wx:if="{{detail.description}}">{{detail.description}}</view>
+		<view class="header-meta" wx:if="{{detail.start_date}}">
+			<van-icon name="clock-o" size="14px" color="rgba(255,255,255,0.7)" />
+			<text>{{detail.start_date}} ~ {{detail.end_date}}</text>
+		</view>
 	</view>
 
-	<!-- 统计 -->
+	<!-- 统计卡片 -->
+	<view class="stats-card">
+		<view class="stat-block">
+			<view class="stat-num">{{detail.join_cnt || 0}}</view>
+			<view class="stat-label">参与人次</view>
+		</view>
+		<view class="stat-divider"></view>
+		<view class="stat-block">
+			<view class="stat-num highlight">{{detail.my_total || 0}}</view>
+			<view class="stat-label">我的打卡</view>
+		</view>
+		<view class="stat-divider"></view>
+		<view class="stat-block">
+			<view class="stat-num">{{detail.view_cnt || 0}}</view>
+			<view class="stat-label">浏览量</view>
+		</view>
+	</view>
+
+	<!-- 监督者 -->
 	<view class="section">
-		<van-grid column-num="3" border="{{false}}">
-			<van-grid-item use-slot><view class="grid-item"><view class="grid-value">{{detail.join_cnt || 0}}</view><view class="grid-label">参与人数</view></view></van-grid-item>
-			<van-grid-item use-slot><view class="grid-item"><view class="grid-value accent">{{detail.my_total || 0}}</view><view class="grid-label">我的打卡</view></view></van-grid-item>
-			<van-grid-item use-slot><view class="grid-item"><view class="grid-value">{{detail.view_cnt || 0}}</view><view class="grid-label">浏览量</view></view></van-grid-item>
-		</van-grid>
-	</view>
-
-	<!-- 日期 -->
-	<view class="section date-section" wx:if="{{detail.start_date}}">
-		<van-icon name="clock-o" size="16px" color="#4A90D9" />
-		<text class="date-text">{{detail.start_date}} ~ {{detail.end_date}}</text>
-	</view>
-
-	<!-- 监督者区域 -->
-	<view class="section supervisor-section">
 		<view class="section-header">
 			<text class="section-title">伙伴监督</text>
+			<van-tag wx:if="{{detail.is_supervisor}}" type="warning" size="medium">你是监督者</van-tag>
 		</view>
 		<view wx:if="{{detail.has_supervisor}}" class="supervisor-card">
 			<view class="supervisor-info">
-				<view class="avatar-circle small">
+				<image wx:if="{{detail.supervisor_avatar}}" class="supervisor-avatar" src="{{detail.supervisor_avatar}}" mode="aspectFill" />
+				<view wx:else class="avatar-circle small">
 					<van-icon name="smile-o" size="18px" color="#fff" />
 				</view>
 				<view class="supervisor-text">
 					<text class="supervisor-name">{{detail.supervisor_display_name || '监督者'}}</text>
-					<text class="supervisor-role">监督中</text>
+					<text class="supervisor-role">{{detail.is_supervisor ? '你正在监督此任务' : '正在监督中'}}</text>
 				</view>
 			</view>
 			<van-tag type="success" size="medium">已邀请</van-tag>
@@ -49,48 +58,78 @@
 		<text class="section-title">最近参与</text>
 		<scroll-view scroll-x class="avatar-scroll">
 			<view class="avatar-item" wx:for="{{detail.recent_users}}" wx:key="nickname">
-				<view class="avatar-circle small"><van-icon name="smile-o" size="16px" color="#fff" /></view>
+				<image wx:if="{{item.avatar}}" class="avatar-small-img" src="{{item.avatar}}" mode="aspectFill" />
+				<view wx:else class="avatar-circle small"><van-icon name="smile-o" size="16px" color="#fff" /></view>
 				<text class="avatar-name">{{item.nickname || '用户'}}</text>
 			</view>
 		</scroll-view>
 	</view>
 
 	<!-- 打卡记录时间线 -->
-	<view class="section" wx:if="{{records.length > 0}}">
-		<text class="section-title">打卡记录</text>
-		<view class="timeline">
+	<view class="section">
+		<view class="section-header">
+			<text class="section-title">打卡记录</text>
+			<text class="section-sub">共 {{recordTotal || 0}} 条</text>
+		</view>
+
+		<van-empty wx:if="{{records.length === 0}}" description="暂无打卡记录，快来第一个打卡吧" />
+
+		<view class="timeline" wx:if="{{records.length > 0}}">
 			<view class="timeline-item" wx:for="{{records}}" wx:key="id">
 				<view class="timeline-dot"></view>
 				<view class="timeline-card">
 					<view class="timeline-header">
-						<text class="timeline-name">{{item.user_name || '用户'}}</text>
+						<view class="timeline-user">
+							<image wx:if="{{item.user_avatar}}" class="timeline-avatar" src="{{item.user_avatar}}" mode="aspectFill" />
+							<view wx:else class="avatar-circle tiny"><van-icon name="smile-o" size="12px" color="#fff" /></view>
+							<text class="timeline-name">{{item.user_name || '用户'}}</text>
+						</view>
 						<text class="timeline-day">{{item.day}}</text>
 					</view>
 					<view class="timeline-content" wx:if="{{item.content}}">{{item.content}}</view>
-					<!-- 监督者评价 -->
-					<view wx:if="{{item.comment}}" class="timeline-comment">
-						<van-icon name="chat-o" size="14px" color="#4A90D9" />
-						<text>评价: {{item.comment}} ({{item.score}}分)</text>
+					<view class="timeline-content empty" wx:else>已完成打卡</view>
+
+					<!-- 监督者已评价 -->
+					<view wx:if="{{item.comment}}" class="comment-box">
+						<view class="comment-header">
+							<van-icon name="chat-o" size="14px" color="#4A90D9" />
+							<text class="comment-label">监督评价</text>
+							<van-rate value="{{item.score}}" size="12" color="#ffd21e" void-color="#eee" readonly />
+						</view>
+						<text class="comment-text">{{item.comment}}</text>
 					</view>
+
 					<!-- 监督者可评价按钮 -->
 					<view wx:if="{{detail.is_supervisor && !item.comment}}" class="timeline-actions">
-						<van-button size="small" plain type="primary" data-id="{{item.id}}" bind:click="openComment">评价</van-button>
+						<van-button size="small" plain type="primary" icon="edit" data-id="{{item.id}}" bind:click="openComment">写评价</van-button>
 					</view>
 				</view>
 			</view>
 		</view>
 	</view>
 
-	<!-- 底部操作 -->
-	<view class="action-area">
-		<van-button wx:if="{{detail.is_joined}}" block round size="large" disabled>今日已打卡</van-button>
-		<van-button wx:elif="{{detail.is_supervisor}}" block round size="large" type="warning" disabled>你是监督者</van-button>
-		<van-button wx:else block round size="large" type="primary" loading="{{joining}}" bind:click="onJoin">参与打卡</van-button>
+	<!-- 底部操作区 -->
+	<view class="bottom-area">
+		<van-button wx:if="{{detail.is_joined}}" block round size="large" disabled icon="checked">今日已打卡</van-button>
+		<van-button wx:elif="{{detail.is_supervisor}}" block round size="large" type="info" disabled icon="eye-o">你是监督者（无需打卡）</van-button>
+		<van-button wx:else block round size="large" type="primary" icon="edit" bind:click="openCheckinForm">打卡</van-button>
 	</view>
 
 	<button class="share-btn" open-type="share">
 		<van-icon name="share-o" size="14px" /> 分享给好友
 	</button>
+
+	<!-- 打卡填写弹窗 -->
+	<van-popup show="{{showCheckinForm}}" position="bottom" round bind:close="closeCheckinForm" safe-area-inset-bottom>
+		<view class="popup-content">
+			<view class="popup-title">今日打卡</view>
+			<view class="form-group">
+				<text class="form-label">记录今天的学习内容（选填）</text>
+				<textarea class="checkin-textarea" placeholder="比如：今天背了50个单词，完成了第3章练习..." value="{{checkinContent}}" bindinput="onCheckinContentInput" maxlength="500" auto-height />
+			</view>
+			<van-button type="primary" block round bind:click="onJoin" loading="{{joining}}" custom-style="margin-top:24rpx">提交打卡</van-button>
+		</view>
+	</van-popup>
 
 	<!-- 邀请监督弹窗 -->
 	<van-popup show="{{showInvite}}" position="bottom" round bind:close="closeInvite">
@@ -111,11 +150,11 @@
 			<view class="popup-title">评价打卡记录</view>
 			<view class="form-group">
 				<text class="form-label">评分</text>
-				<van-rate value="{{commentScore}}" bind:change="onScoreChange" size="24px" color="#ffd21e" void-icon="star" void-color="#eee" />
+				<van-rate value="{{commentScore}}" bind:change="onScoreChange" size="28px" color="#ffd21e" void-icon="star" void-color="#eee" />
 			</view>
 			<view class="form-group">
 				<text class="form-label">评语</text>
-				<input class="comment-input" placeholder="写点评语鼓励一下..." value="{{commentText}}" bindinput="onCommentInput" />
+				<textarea class="checkin-textarea" placeholder="写点评语鼓励一下..." value="{{commentText}}" bindinput="onCommentInput" maxlength="200" auto-height />
 			</view>
 			<van-button type="primary" block round bind:click="submitComment" custom-style="margin-top:24rpx">提交评价</van-button>
 		</view>

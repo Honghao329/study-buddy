@@ -49,14 +49,14 @@ router.get('/detail/:id', optionalAuth, (req, res) => {
 
 // 参与打卡
 router.post('/join', authMiddleware, (req, res) => {
-	const { checkinId, forms } = req.body;
+	const { checkinId, content, forms } = req.body;
 	const item = db.prepare('SELECT id FROM checkins WHERE id = ? AND status = 1').get(checkinId);
 	if (!item) return res.json({ code: 404, msg: '不存在' });
 	const today = getLocalDateString();
 	const existing = db.prepare('SELECT id FROM checkin_records WHERE checkin_id = ? AND user_id = ? AND day = ?').get(checkinId, req.userId, today);
 	if (existing) return res.json({ code: 400, msg: '今日已打卡' });
 
-	db.prepare('INSERT INTO checkin_records (checkin_id, user_id, day, forms) VALUES (?, ?, ?, ?)').run(checkinId, req.userId, today, JSON.stringify(forms || {}));
+	db.prepare('INSERT INTO checkin_records (checkin_id, user_id, day, content, forms) VALUES (?, ?, ?, ?, ?)').run(checkinId, req.userId, today, content || '', JSON.stringify(forms || {}));
 	db.prepare('UPDATE checkins SET join_cnt = join_cnt + 1 WHERE id = ?').run(checkinId);
 	res.json({ code: 200, msg: '打卡成功' });
 });

@@ -20,6 +20,25 @@ const DashboardPage = {
         </div>
       </div>
 
+      <div class="quick-stats" style="margin-top:-4px">
+        <div class="quick-stat-card" style="border-left:4px solid #f56c6c">
+          <div class="stat-num" style="color:#f56c6c">{{stats.commentCount || 0}}</div>
+          <div class="stat-label">评论总数</div>
+        </div>
+        <div class="quick-stat-card" style="border-left:4px solid #409EFF">
+          <div class="stat-num" style="color:#409EFF">{{stats.partnerCount || 0}}</div>
+          <div class="stat-label">伙伴关系</div>
+        </div>
+        <div class="quick-stat-card" style="border-left:4px solid #ff9800">
+          <div class="stat-num" style="color:#ff9800">{{stats.likeCount || 0}}</div>
+          <div class="stat-label">点赞总数</div>
+        </div>
+        <div class="quick-stat-card" style="border-left:4px solid #9c27b0">
+          <div class="stat-num" style="color:#9c27b0">{{stats.favCount || 0}}</div>
+          <div class="stat-label">收藏总数</div>
+        </div>
+      </div>
+
       <el-row :gutter="20" style="margin-bottom:20px">
         <el-col :span="24">
           <el-card shadow="never" style="border-radius:12px">
@@ -28,6 +47,7 @@ const DashboardPage = {
               <el-button type="primary" @click="goPage('checkins')"><el-icon><Calendar /></el-icon> 新增打卡任务</el-button>
               <el-button type="success" @click="goPage('news')"><el-icon><Bell /></el-icon> 发布资讯</el-button>
               <el-button type="warning" @click="goPage('export')"><el-icon><Download /></el-icon> 数据导出</el-button>
+              <el-button @click="goPage('users')"><el-icon><User /></el-icon> 用户管理</el-button>
             </el-space>
           </el-card>
         </el-col>
@@ -104,11 +124,8 @@ const DashboardPage = {
   },
   methods: {
     goPage(page) {
-      // Access the parent app to switch page
       const app = this.$root;
-      if (app && app.currentPage !== undefined) {
-        app.currentPage = page;
-      }
+      if (app && app.currentPage !== undefined) app.currentPage = page;
     }
   }
 };
