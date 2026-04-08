@@ -2,8 +2,7 @@ const router = require('express').Router();
 const db = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
 const { resolvePlanAccessError } = require('../lib/plan_access');
-let getLocalDateString;
-try { getLocalDateString = require('../lib/date').getLocalDateString; } catch(e) { getLocalDateString = () => new Date().toISOString().split('T')[0]; }
+const { getLocalDateString } = require('../lib/date');
 
 // 创建计划（指定执行者和监督者）
 router.post('/create', authMiddleware, (req, res) => {
