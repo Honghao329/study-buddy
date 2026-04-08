@@ -1,7 +1,10 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const dbPath = path.join(__dirname, '..', 'data', 'study_buddy.db');
+const configuredDbPath = process.env.STUDY_BUDDY_DB_PATH || process.env.DB_PATH;
+const dbPath = configuredDbPath
+	? path.resolve(configuredDbPath)
+	: path.join(__dirname, '..', 'data', 'study_buddy.db');
 const fs = require('fs');
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
@@ -156,3 +159,4 @@ db.exec(`
 `);
 
 module.exports = db;
+module.exports.dbPath = dbPath;

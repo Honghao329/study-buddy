@@ -1,4 +1,5 @@
 const api = require('../../utils/api.js');
+const { normalizePartnerRow } = require('../../utils/normalizers');
 
 Page({
   data: {
@@ -16,25 +17,29 @@ Page({
     this.loadData();
   },
 
-  loadData() {
-    this.loadMyList();
-    this.loadPendingList();
-  },
+	loadData() {
+		this.loadMyList();
+		this.loadPendingList();
+	},
 
   switchTab(e) {
-    const tab = e.currentTarget.dataset.tab;
-    this.setData({ activeTab: tab });
+    const tab = Number(e.currentTarget.dataset.tab);
+    this.setData({ activeTab: Number.isFinite(tab) ? tab : 0 });
   },
 
   loadMyList() {
+    const currentUserId = (wx.getStorageSync('userInfo') || {}).id;
     api.get('/api/partner/my_list').then(res => {
-      this.setData({ myList: Array.isArray(res) ? res : [] });
+      const myList = (Array.isArray(res) ? res : []).map(item => normalizePartnerRow(item, currentUserId));
+      this.setData({ myList });
     }).catch(() => {});
   },
 
   loadPendingList() {
+    const currentUserId = (wx.getStorageSync('userInfo') || {}).id;
     api.get('/api/partner/pending_list').then(res => {
-      this.setData({ pendingList: Array.isArray(res) ? res : [] });
+      const pendingList = (Array.isArray(res) ? res : []).map(item => normalizePartnerRow(item, currentUserId));
+      this.setData({ pendingList });
     }).catch(() => {});
   },
 

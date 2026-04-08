@@ -13,7 +13,7 @@
       </view>
       <view class="stats-item">
         <view class="stats-num">{{stats.totalDuration}}</view>
-        <view class="stats-label">总时长(h)</view>
+	        <view class="stats-label">总时长(分钟)</view>
       </view>
     </view>
     <view class="sign-btn {{stats.todaySigned ? 'signed' : ''}}" bindtap="openSignModal">

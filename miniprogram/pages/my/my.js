@@ -1,6 +1,26 @@
 const api = require('../../utils/api.js');
 const app = getApp();
 
+function normalizeUser(user) {
+	if (!user) return null;
+	return {
+		...user,
+		nickname: user.nickname || user.nickName || '',
+		nickName: user.nickName || user.nickname || '',
+		avatar: user.avatar || user.avatarUrl || '',
+		avatarUrl: user.avatarUrl || user.avatar || '',
+	};
+}
+
+function getOrCreateDemoUid() {
+	let demoUid = wx.getStorageSync('demo_uid');
+	if (!demoUid) {
+		demoUid = `demo_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+		wx.setStorageSync('demo_uid', demoUid);
+	}
+	return demoUid;
+}
+
 Page({
 	data: {
 		logged: false,
@@ -17,8 +37,8 @@ Page({
 
 	_checkLogin() {
 		const token = wx.getStorageSync('token');
-		const user = wx.getStorageSync('userInfo');
-		if (token && user) {
+		const user = normalizeUser(wx.getStorageSync('userInfo'));
+		if (token) {
 			this.setData({ logged: true, user });
 			this._loadUserInfo();
 		} else {
@@ -28,11 +48,12 @@ Page({
 
 	_loadUserInfo() {
 		api.get('/api/user/info').then(user => {
-			if (user) {
-				wx.setStorageSync('userInfo', user);
-				app.globalData.userInfo = user;
+			const normalizedUser = normalizeUser(user);
+			if (normalizedUser) {
+				wx.setStorageSync('userInfo', normalizedUser);
+				app.globalData.userInfo = normalizedUser;
 				app.globalData.isLogin = true;
-				this.setData({ user });
+				this.setData({ user: normalizedUser });
 			}
 		}).catch(() => {});
 	},
@@ -65,44 +86,50 @@ Page({
 
 		wx.showLoading({ title: '登录中...' });
 
+		const resolveAvatarUrl = () => {
+			if (!avatarUrl) return Promise.resolve('');
+			if (/^https?:\/\//.test(avatarUrl) || avatarUrl.indexOf('/uploads/') === 0) {
+				return Promise.resolve(avatarUrl);
+			}
+			return api.uploadImage(avatarUrl).catch(() => '');
+		};
+		const demoUid = getOrCreateDemoUid();
+
 		// 调用 wx.login 获取 code
-		wx.login({
-			success: (loginRes) => {
-				const code = loginRes.code || ('user_' + Date.now());
-				api.post('/api/user/login', {
-					code,
-					nickName: nickName.trim(),
-					avatarUrl: avatarUrl || ''
-				}).then(res => {
-					wx.hideLoading();
-					if (res && res.token) {
-						wx.setStorageSync('token', res.token);
-						wx.setStorageSync('userInfo', res.user);
-						app.globalData.isLogin = true;
-						app.globalData.userInfo = res.user;
-						this._checkLogin();
-						wx.showToast({ title: '登录成功', icon: 'success' });
+			wx.login({
+				success: (loginRes) => {
+					if (!loginRes.code) {
+						wx.hideLoading();
+						wx.showToast({ title: '微信登录失败，请重试', icon: 'none' });
+						return;
 					}
+					resolveAvatarUrl().then((resolvedAvatarUrl) => {
+						return api.post('/api/user/login', {
+							code: loginRes.code,
+							demoUid,
+							nickname: nickName.trim(),
+							nickName: nickName.trim(),
+							avatarUrl: resolvedAvatarUrl
+						});
+					}).then(res => {
+						wx.hideLoading();
+						if (res && res.token) {
+							const user = normalizeUser(res.user);
+							wx.setStorageSync('token', res.token);
+							wx.setStorageSync('demo_uid', demoUid);
+							wx.setStorageSync('userInfo', user);
+							app.globalData.isLogin = true;
+							app.globalData.userInfo = user;
+							this._checkLogin();
+							wx.showToast({ title: '登录成功', icon: 'success' });
+						}
 				}).catch(() => {
 					wx.hideLoading();
 				});
 			},
 			fail: () => {
 				wx.hideLoading();
-				// 降级方案
-				const code = 'user_' + Date.now();
-				api.post('/api/user/login', {
-					code,
-					nickName: nickName.trim(),
-					avatarUrl: avatarUrl || ''
-				}).then(res => {
-					if (res && res.token) {
-						wx.setStorageSync('token', res.token);
-						wx.setStorageSync('userInfo', res.user);
-						this._checkLogin();
-						wx.showToast({ title: '登录成功', icon: 'success' });
-					}
-				});
+				wx.showToast({ title: '微信登录失败，请重试', icon: 'none' });
 			}
 		});
 	},
@@ -119,7 +146,8 @@ Page({
 	showLogout() { this.setData({ showLogoutModal: true }); },
 	hideLogout() { this.setData({ showLogoutModal: false }); },
 	doLogout() {
-		wx.clearStorageSync();
+		wx.removeStorageSync('token');
+		wx.removeStorageSync('userInfo');
 		app.globalData.isLogin = false;
 		app.globalData.userInfo = null;
 		this.setData({ logged: false, user: null, nickName: '', avatarUrl: '', showLogoutModal: false });

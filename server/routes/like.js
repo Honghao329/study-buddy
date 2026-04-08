@@ -1,10 +1,67 @@
 const router = require('express').Router();
 const db = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
+const { canViewNote } = require('../lib/access');
+
+function checkPartnerAccess(ownerId, userId) {
+	if (!userId || Number(ownerId) === Number(userId)) return false;
+
+	return !!db.prepare(
+		`SELECT 1 FROM partners
+		 WHERE status = 1
+		 AND ((user_id = ? AND target_id = ?) OR (user_id = ? AND target_id = ?))
+		 LIMIT 1`
+	).get(ownerId, userId, userId, ownerId);
+}
+
+function assertTargetAccessible(targetId, targetType, userId) {
+	if (!targetType || !targetId) {
+		return { code: 400, msg: '参数错误' };
+	}
+
+	if (targetType === 'note') {
+		const note = db.prepare('SELECT id, user_id, visibility, status FROM notes WHERE id = ?').get(targetId);
+		if (!note) return { code: 404, msg: '目标不存在' };
+
+		const isPartner = checkPartnerAccess(note.user_id, userId);
+		if (!canViewNote(note, userId, isPartner)) {
+			return { code: 403, msg: '无权操作' };
+		}
+
+		return null;
+	}
+
+	if (targetType === 'comment') {
+		const comment = db.prepare(
+			`SELECT c.id, c.status as comment_status, n.user_id as note_user_id, n.visibility, n.status
+			 FROM comments c LEFT JOIN notes n ON c.note_id = n.id
+			 WHERE c.id = ?`
+		).get(targetId);
+
+		if (!comment || !comment.note_user_id) return { code: 404, msg: '目标不存在' };
+		if (Number(comment.comment_status || 1) !== 1) return { code: 404, msg: '目标不存在' };
+
+		const note = {
+			user_id: comment.note_user_id,
+			visibility: comment.visibility,
+			status: comment.status,
+		};
+		const isPartner = checkPartnerAccess(comment.note_user_id, userId);
+		if (!canViewNote(note, userId, isPartner)) {
+			return { code: 403, msg: '无权操作' };
+		}
+
+		return null;
+	}
+
+	return { code: 400, msg: '不支持的类型' };
+}
 
 // 切换点赞
 router.post('/toggle', authMiddleware, (req, res) => {
 	const { targetId, targetType } = req.body;
+	const targetError = assertTargetAccessible(targetId, targetType, req.userId);
+	if (targetError) return res.json(targetError);
 	const existing = db.prepare(
 		'SELECT id FROM likes WHERE user_id = ? AND target_id = ? AND target_type = ?'
 	).get(req.userId, targetId, targetType);

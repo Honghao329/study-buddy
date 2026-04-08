@@ -1,11 +1,12 @@
 const router = require('express').Router();
 const db = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
+const { getLocalDateString } = require('../lib/date');
 
 // 每日签到
 router.post('/do', authMiddleware, (req, res) => {
 	const { duration, status, content } = req.body;
-	const today = new Date().toISOString().split('T')[0];
+	const today = getLocalDateString();
 
 	const existing = db.prepare('SELECT id FROM signs WHERE user_id = ? AND day = ?').get(req.userId, today);
 	if (existing) return res.json({ code: 400, msg: '今日已签到' });
@@ -17,7 +18,7 @@ router.post('/do', authMiddleware, (req, res) => {
 
 // 签到统计（合并查询）
 router.get('/stats', authMiddleware, (req, res) => {
-	const todayStr = new Date().toISOString().split('T')[0];
+	const todayStr = getLocalDateString();
 
 	const agg = db.prepare(`SELECT
 		COUNT(*) as totalDays,
@@ -29,8 +30,7 @@ router.get('/stats', authMiddleware, (req, res) => {
 	// 连续天数（限制查询最近60天即可）
 	const days = db.prepare('SELECT day FROM signs WHERE user_id = ? ORDER BY day DESC LIMIT 60').all(req.userId);
 	let streak = 0;
-	const today = new Date();
-	let checkDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+	let checkDate = new Date(`${todayStr}T00:00:00`);
 
 	for (const d of days) {
 		const signDate = new Date(d.day + 'T00:00:00');
@@ -64,7 +64,7 @@ router.get('/calendar', authMiddleware, (req, res) => {
 // 排行榜
 router.get('/rank', (req, res) => {
 	const list = db.prepare(
-		`SELECT s.user_id, u.nickname as user_name, u.avatar as user_pic, COUNT(*) as days, SUM(s.duration) as total_duration
+		`SELECT s.user_id, u.nickname as user_name, u.avatar as user_pic, COUNT(*) as days, COALESCE(SUM(s.duration), 0) as total_duration
 		 FROM signs s LEFT JOIN users u ON s.user_id = u.id
 		 GROUP BY s.user_id ORDER BY days DESC LIMIT 20`
 	).all();

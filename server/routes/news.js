@@ -15,9 +15,10 @@ router.get('/list', (req, res) => {
 });
 
 router.get('/detail/:id', (req, res) => {
-	const item = db.prepare('SELECT * FROM news WHERE id = ?').get(req.params.id);
+	const item = db.prepare('SELECT * FROM news WHERE id = ? AND status = 1').get(req.params.id);
 	if (!item) return res.json({ code: 404, msg: '不存在' });
 	db.prepare('UPDATE news SET view_cnt = view_cnt + 1 WHERE id = ?').run(req.params.id);
+	item.view_cnt = (item.view_cnt || 0) + 1;
 	item.pic = JSON.parse(item.pic || '[]');
 	res.json({ code: 200, data: item });
 });

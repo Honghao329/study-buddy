@@ -1,4 +1,5 @@
 const api = require('../../utils/api.js');
+const { normalizeAdminNoteRow } = require('../../utils/normalizers');
 
 Page({
   data: {
@@ -23,15 +24,15 @@ Page({
     this.loadList();
   },
 
-  loadList() {
-    if (this.data.loading || !this.data.hasMore) return;
-    this.setData({ loading: true });
-    const { page, size, search } = this.data;
-    api.adminGet('/api/admin/note_list', { page, size, search }).then(res => {
-      const newList = (res && res.list) ? res.list : (Array.isArray(res) ? res : []);
-      const total = (res && res.total) ? res.total : newList.length;
-      this.setData({
-        list: this.data.list.concat(newList),
+	loadList() {
+		if (this.data.loading || !this.data.hasMore) return;
+		this.setData({ loading: true });
+		const { page, size, search } = this.data;
+		api.adminGet('/api/admin/note_list', { page, size, search }).then(res => {
+			const newList = ((res && res.list) ? res.list : (Array.isArray(res) ? res : [])).map(normalizeAdminNoteRow);
+			const total = (res && res.total) ? res.total : newList.length;
+			this.setData({
+				list: this.data.list.concat(newList),
         loading: false,
         hasMore: this.data.list.length + newList.length < total
       });

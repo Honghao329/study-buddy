@@ -1,11 +1,30 @@
 const router = require('express').Router();
 const db = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
+const { resolveFavoriteToggleAction } = require('../lib/favorite');
+
+function checkPartnerAccess(ownerId, userId) {
+	if (!userId || Number(ownerId) === Number(userId)) return false;
+
+	return !!db.prepare(
+		`SELECT 1 FROM partners
+		 WHERE status = 1
+		 AND ((user_id = ? AND target_id = ?) OR (user_id = ? AND target_id = ?))
+		 LIMIT 1`
+	).get(ownerId, userId, userId, ownerId);
+}
 
 router.post('/toggle', authMiddleware, (req, res) => {
 	const { targetId, targetType, title } = req.body;
+	if (targetType !== 'note') return res.json({ code: 400, msg: '仅支持笔记收藏' });
+	const note = db.prepare('SELECT id, user_id, visibility, status FROM notes WHERE id = ?').get(targetId);
+	if (!note) return res.json({ code: 404, msg: '目标不存在' });
 	const existing = db.prepare('SELECT id FROM favorites WHERE user_id = ? AND target_id = ? AND target_type = ?').get(req.userId, targetId, targetType);
-	if (existing) {
+	const isPartner = checkPartnerAccess(note.user_id, req.userId);
+	const decision = resolveFavoriteToggleAction({ note, existingFavorite: existing, userId: req.userId, isPartner });
+	if (decision.error) return res.json(decision.error);
+
+	if (decision.action === 'delete') {
 		db.prepare('DELETE FROM favorites WHERE id = ?').run(existing.id);
 		if (targetType === 'note') db.prepare('UPDATE notes SET fav_cnt = CASE WHEN fav_cnt > 0 THEN fav_cnt - 1 ELSE 0 END WHERE id = ?').run(targetId);
 		res.json({ code: 200, data: { isFav: 0 } });

@@ -1,5 +1,29 @@
 const api = require('../../utils/api.js');
 
+function normalizeNote(note) {
+  if (!note) return null;
+  return {
+    ...note,
+    author_name: note.author_name || note.user_name || '',
+    author_avatar: note.author_avatar || note.user_pic || '',
+  };
+}
+
+function normalizeComment(comment) {
+  if (!comment) return null;
+  return {
+    ...comment,
+    author_name: comment.author_name || comment.user_name || '',
+    author_avatar: comment.author_avatar || comment.user_pic || '',
+  };
+}
+
+function requireLogin() {
+  if (api.getToken()) return true;
+  wx.showToast({ title: '请先登录', icon: 'none' });
+  return false;
+}
+
 Page({
   data: {
     id: '',
@@ -15,15 +39,10 @@ Page({
   },
 
   onLoad(options) {
-    if (!api.getToken()) {
-      wx.showToast({ title: '请先登录', icon: 'none' });
-      setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 1000);
-      return;
-    }
     if (options.id) {
       this.setData({ id: options.id });
       this.loadNote(options.id);
-      this.loadComments();
+      this.loadComments(options.id);
     }
   },
 
@@ -31,22 +50,23 @@ Page({
     wx.showLoading({ title: '加载中' });
     api.get('/api/note/detail/' + id).then(res => {
       wx.hideLoading();
+      const note = normalizeNote(res);
       this.setData({
-        note: res,
-        isLiked: res.is_liked || false,
-        isFaved: res.is_faved || false
+        note,
+        isLiked: !!(note && note.is_liked),
+        isFaved: !!(note && note.is_faved)
       });
     }).catch(() => {
       wx.hideLoading();
     });
   },
 
-  loadComments() {
+  loadComments(noteId = this.data.id) {
     if (this.data.loadingComments || !this.data.hasMoreComments) return;
     this.setData({ loadingComments: true });
-    const { id, commentPage, commentSize } = this.data;
-    api.get('/api/comment/list', { noteId: id, page: commentPage, size: commentSize }).then(res => {
-      const list = res.list || res.records || res || [];
+    const { commentPage, commentSize } = this.data;
+    api.get('/api/comment/list', { noteId, page: commentPage, size: commentSize }).then(res => {
+      const list = (res.list || res.records || res || []).map(normalizeComment);
       const comments = commentPage === 1 ? list : this.data.comments.concat(list);
       this.setData({
         comments,
@@ -60,8 +80,9 @@ Page({
 
   onReachBottom() {
     if (this.data.hasMoreComments) {
-      this.setData({ commentPage: this.data.commentPage + 1 });
-      this.loadComments();
+      const nextPage = this.data.commentPage + 1;
+      this.setData({ commentPage: nextPage });
+      this.loadComments(this.data.id);
     }
   },
 
@@ -70,6 +91,7 @@ Page({
   },
 
   sendComment() {
+    if (!requireLogin()) return;
     const content = this.data.commentText.trim();
     if (!content) {
       wx.showToast({ title: '请输入评论内容', icon: 'none' });
@@ -83,7 +105,7 @@ Page({
         commentPage: 1,
         hasMoreComments: true
       });
-      this.loadComments();
+      this.loadComments(this.data.id);
       // Update comment count locally
       if (this.data.note) {
         const note = { ...this.data.note };
@@ -94,17 +116,26 @@ Page({
   },
 
   toggleLike() {
+    if (!requireLogin()) return;
     api.post('/api/like/toggle', { targetId: this.data.id, targetType: 'note' }).then(res => {
-      const isLiked = !this.data.isLiked;
+      const isLiked = typeof (res && res.isLiked) !== 'undefined' ? !!Number(res.isLiked) : !this.data.isLiked;
       const note = { ...this.data.note };
-      note.like_cnt = (note.like_cnt || 0) + (isLiked ? 1 : -1);
+      if (note) {
+        const delta = isLiked === this.data.isLiked ? 0 : (isLiked ? 1 : -1);
+        note.like_cnt = Math.max(0, (note.like_cnt || 0) + delta);
+      }
       this.setData({ isLiked, note });
     });
   },
 
   toggleFav() {
-    api.post('/api/fav/toggle', { targetId: this.data.id, targetType: 'note' }).then(res => {
-      const isFaved = !this.data.isFaved;
+    if (!requireLogin()) return;
+    api.post('/api/fav/toggle', {
+      targetId: this.data.id,
+      targetType: 'note',
+      title: this.data.note ? this.data.note.title : ''
+    }).then(res => {
+      const isFaved = typeof (res && res.isFav) !== 'undefined' ? !!Number(res.isFav) : !this.data.isFaved;
       this.setData({ isFaved });
       wx.showToast({ title: isFaved ? '已收藏' : '已取消收藏', icon: 'none' });
     });

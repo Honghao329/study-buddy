@@ -1,5 +1,16 @@
 const api = require('../../utils/api.js');
 
+function normalizeUser(user) {
+  if (!user) return null;
+  return {
+    ...user,
+    nickname: user.nickname || user.nickName || '',
+    nickName: user.nickName || user.nickname || '',
+    avatar: user.avatar || user.avatarUrl || '',
+    avatarUrl: user.avatarUrl || user.avatar || '',
+  };
+}
+
 Page({
   data: {
     nickName: '',
@@ -8,6 +19,11 @@ Page({
   },
 
   onLoad() {
+    if (!api.getToken()) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 1000);
+      return;
+    }
     this.loadUserInfo();
   },
 
@@ -16,10 +32,11 @@ Page({
     api.get('/api/user/info').then(res => {
       wx.hideLoading();
       if (res) {
+        const user = normalizeUser(res);
         this.setData({
-          nickName: res.nickName || '',
-          bio: res.bio || '',
-          mobile: res.mobile || ''
+          nickName: user.nickName || '',
+          bio: user.bio || '',
+          mobile: user.mobile || ''
         });
       }
     }).catch(() => {
@@ -46,9 +63,14 @@ Page({
       return;
     }
     wx.showLoading({ title: '保存中' });
-    api.put('/api/user/update', { nickName, bio, mobile }).then(() => {
+    api.put('/api/user/update', {
+      nickname: nickName,
+      bio,
+      mobile
+    }).then(() => {
       wx.hideLoading();
-      const userInfo = wx.getStorageSync('userInfo') || {};
+      const userInfo = normalizeUser(wx.getStorageSync('userInfo') || {});
+      userInfo.nickname = nickName;
       userInfo.nickName = nickName;
       userInfo.bio = bio;
       userInfo.mobile = mobile;

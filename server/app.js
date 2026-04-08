@@ -4,7 +4,7 @@ const path = require('path');
 const db = require('./config/db');
 
 const app = express();
-const PORT = 3900;
+const PORT = Number(process.env.PORT || 3900);
 
 app.use(cors());
 app.use(express.json());
@@ -41,6 +41,10 @@ app.get('/', (req, res) => {
 	res.json({ msg: '学习伴侣系统 API 服务运行中', version: '1.0.0' });
 });
 
-app.listen(PORT, () => {
-	console.log(`学习伴侣系统后端已启动: http://localhost:${PORT}`);
-});
+if (require.main === module) {
+	app.listen(PORT, () => {
+		console.log(`学习伴侣系统后端已启动: http://localhost:${PORT}`);
+	});
+}
+
+module.exports = app;

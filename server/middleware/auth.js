@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const SECRET = 'study_buddy_secret_2025';
+const SECRET = process.env.JWT_SECRET || process.env.SECRET || 'study_buddy_secret_2025';
 
 function authMiddleware(req, res, next) {
 	const token = req.headers['x-token'] || req.headers['authorization'];

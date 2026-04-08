@@ -5,11 +5,23 @@ Page({
     targetId: ''
   },
 
+  onShow() {
+    if (!api.getToken()) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 1000);
+    }
+  },
+
   onTargetIdInput(e) {
     this.setData({ targetId: e.detail.value });
   },
 
   doInvite() {
+    if (!api.getToken()) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 1000);
+      return;
+    }
     const { targetId } = this.data;
     if (!targetId) {
       wx.showToast({ title: '请输入用户ID', icon: 'none' });

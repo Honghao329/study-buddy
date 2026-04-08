@@ -10,8 +10,10 @@ router.post('/invite', authMiddleware, (req, res) => {
 	if (Number(targetId) === req.userId) return res.json({ code: 400, msg: '不能邀请自己' });
 
 	const existing = db.prepare(
-		'SELECT id FROM partners WHERE user_id = ? AND target_id = ? AND status IN (0, 1)'
-	).get(req.userId, targetId);
+		`SELECT id FROM partners
+		 WHERE ((user_id = ? AND target_id = ?) OR (user_id = ? AND target_id = ?))
+		 AND status IN (0, 1)`
+	).get(req.userId, targetId, targetId, req.userId);
 	if (existing) return res.json({ code: 400, msg: '已存在邀请或伙伴关系' });
 
 	const result = db.prepare('INSERT INTO partners (user_id, target_id, status) VALUES (?, ?, 0)').run(req.userId, targetId);

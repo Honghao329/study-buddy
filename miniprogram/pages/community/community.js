@@ -59,6 +59,7 @@ Page({
 
   checkLikeStatus(noteList, startIndex) {
     if (!noteList || noteList.length === 0) return;
+    if (!api.getToken()) return;
     const ids = noteList.map(n => n.id);
     api.post('/api/like/batch_status', { targetIds: ids, targetType: 'note' }).then(res => {
       if (!res) return;
@@ -68,6 +69,7 @@ Page({
       if (Array.isArray(res)) {
         const likedSet = new Set(res);
         for (let i = startIndex; i < startIndex + noteList.length && i < notes.length; i++) {
+          if (this._likedIds.has(notes[i].id) || this._unlikedIds.has(notes[i].id)) continue;
           const isLiked = likedSet.has(notes[i].id);
           if (notes[i].is_liked !== isLiked) {
             notes[i] = { ...notes[i], is_liked: isLiked };
@@ -76,6 +78,7 @@ Page({
         }
       } else if (typeof res === 'object') {
         for (let i = startIndex; i < startIndex + noteList.length && i < notes.length; i++) {
+          if (this._likedIds.has(notes[i].id) || this._unlikedIds.has(notes[i].id)) continue;
           const isLiked = !!res[notes[i].id];
           if (notes[i].is_liked !== isLiked) {
             notes[i] = { ...notes[i], is_liked: isLiked };
@@ -134,13 +137,19 @@ Page({
   },
 
   toggleLike(e) {
+    if (!api.getToken()) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      return;
+    }
     const id = e.currentTarget.dataset.id;
     const idx = e.currentTarget.dataset.index;
-    api.post('/api/like/toggle', { targetId: id, targetType: 'note' }).then(() => {
+    api.post('/api/like/toggle', { targetId: id, targetType: 'note' }).then(res => {
+      const nextIsLiked = typeof (res && res.isLiked) !== 'undefined' ? !!Number(res.isLiked) : !this.data.notes[idx].is_liked;
       const notes = [...this.data.notes];
       const note = { ...notes[idx] };
-      note.is_liked = !note.is_liked;
-      note.like_cnt = (note.like_cnt || 0) + (note.is_liked ? 1 : -1);
+      const delta = nextIsLiked === note.is_liked ? 0 : (nextIsLiked ? 1 : -1);
+      note.is_liked = nextIsLiked;
+      note.like_cnt = Math.max(0, (note.like_cnt || 0) + delta);
       notes[idx] = note;
       this.setData({ notes });
       // Track locally so re-loads preserve state
@@ -151,7 +160,7 @@ Page({
         this._unlikedIds.add(id);
         this._likedIds.delete(id);
       }
-    });
+    }).catch(() => {});
   },
 
   goDetail(e) {

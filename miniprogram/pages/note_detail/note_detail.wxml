@@ -58,7 +58,7 @@
   <view class="section-title text-bold">评论 ({{note.comment_cnt || comments.length || 0}})</view>
 
   <view wx:if="{{comments.length > 0}}">
-    <view class="card comment-card" wx:for="{{comments}}" wx:key="_id">
+    <view class="card comment-card" wx:for="{{comments}}" wx:key="id">
       <view class="flex-center">
         <image wx:if="{{item.author_avatar}}" class="comment-avatar" src="{{item.author_avatar}}" mode="aspectFill"></image>
         <view wx:else class="avatar-circle small">

@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const db = require('../config/db');
-const { authMiddleware } = require('../middleware/auth');
+const jwt = require('jsonwebtoken');
+const { authMiddleware, SECRET } = require('../middleware/auth');
+const { getLocalDateString } = require('../lib/date');
 
 // 打卡任务列表
 router.get('/list', (req, res) => {
@@ -17,25 +19,25 @@ router.get('/list', (req, res) => {
 
 // 可选认证：有token就解析，没有也放行
 function optionalAuth(req, res, next) {
-	const token = req.headers['x-token'];
+	const token = req.headers['x-token'] || req.headers['authorization'];
 	if (token) {
 		try {
-			const jwt = require('jsonwebtoken');
-			req.userId = jwt.verify(token.replace('Bearer ', ''), require('../middleware/auth').SECRET).userId;
-		} catch(e) {}
+			req.userId = jwt.verify(token.replace('Bearer ', ''), SECRET).userId;
+		} catch (e) {}
 	}
 	next();
 }
 
 // 打卡任务详情
 router.get('/detail/:id', optionalAuth, (req, res) => {
-	const item = db.prepare('SELECT * FROM checkins WHERE id = ?').get(req.params.id);
+	const item = db.prepare('SELECT * FROM checkins WHERE id = ? AND status = 1').get(req.params.id);
 	if (!item) return res.json({ code: 404, msg: '不存在' });
 	db.prepare('UPDATE checkins SET view_cnt = view_cnt + 1 WHERE id = ?').run(req.params.id);
+	item.view_cnt = (item.view_cnt || 0) + 1;
 
 	let is_joined = false, my_total = 0;
 	if (req.userId) {
-		const today = new Date().toISOString().split('T')[0];
+		const today = getLocalDateString();
 		is_joined = !!db.prepare('SELECT 1 FROM checkin_records WHERE checkin_id = ? AND user_id = ? AND day = ?').get(req.params.id, req.userId, today);
 		my_total = db.prepare('SELECT COUNT(*) as cnt FROM checkin_records WHERE checkin_id = ? AND user_id = ?').get(req.params.id, req.userId).cnt;
 	}
@@ -55,7 +57,9 @@ router.get('/detail/:id', optionalAuth, (req, res) => {
 // 参与打卡
 router.post('/join', authMiddleware, (req, res) => {
 	const { checkinId, forms } = req.body;
-	const today = new Date().toISOString().split('T')[0];
+	const item = db.prepare('SELECT id FROM checkins WHERE id = ? AND status = 1').get(checkinId);
+	if (!item) return res.json({ code: 404, msg: '不存在' });
+	const today = getLocalDateString();
 	const existing = db.prepare('SELECT id FROM checkin_records WHERE checkin_id = ? AND user_id = ? AND day = ?').get(checkinId, req.userId, today);
 	if (existing) return res.json({ code: 400, msg: '今日已打卡' });
 

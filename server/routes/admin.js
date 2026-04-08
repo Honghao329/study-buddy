@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const db = require('../config/db');
 const { adminAuth, generateToken } = require('../middleware/auth');
+const { deleteCheckinCascade, deleteNoteCascade } = require('../lib/cleanup');
+const { normalizeNote, normalizeUser } = require('../lib/format');
 
 // 管理员登录
 router.post('/login', (req, res) => {
@@ -20,8 +22,7 @@ router.get('/user_list', adminAuth, (req, res) => {
 	if (search) { where += ' AND nickname LIKE ?'; params.push(`%${search}%`); }
 	const total = db.prepare(`SELECT COUNT(*) as cnt FROM users ${where}`).get(...params).cnt;
 	const list = db.prepare(`SELECT * FROM users ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...params, Number(size), offset);
-	list.forEach(u => { u.tags = JSON.parse(u.tags || '[]'); });
-	res.json({ code: 200, data: { list, total } });
+	res.json({ code: 200, data: { list: list.map(normalizeUser), total } });
 });
 
 // 笔记列表（管理）
@@ -35,13 +36,12 @@ router.get('/note_list', adminAuth, (req, res) => {
 	const list = db.prepare(
 		`SELECT n.*, u.nickname as user_name FROM notes n LEFT JOIN users u ON n.user_id = u.id ${where} ORDER BY n.created_at DESC LIMIT ? OFFSET ?`
 	).all(...params, Number(size), offset);
-	list.forEach(n => { n.images = JSON.parse(n.images || '[]'); n.tags = JSON.parse(n.tags || '[]'); });
-	res.json({ code: 200, data: { list, total } });
+	res.json({ code: 200, data: { list: list.map(normalizeNote), total } });
 });
 
 // 删除笔记（管理）
 router.delete('/note_del/:id', adminAuth, (req, res) => {
-	db.prepare('DELETE FROM notes WHERE id = ?').run(req.params.id);
+	deleteNoteCascade(db, req.params.id);
 	res.json({ code: 200, msg: '删除成功' });
 });
 
@@ -58,8 +58,7 @@ router.get('/checkin_list', adminAuth, (req, res) => {
 });
 
 router.delete('/checkin_del/:id', adminAuth, (req, res) => {
-	db.prepare('DELETE FROM checkins WHERE id = ?').run(req.params.id);
-	db.prepare('DELETE FROM checkin_records WHERE checkin_id = ?').run(req.params.id);
+	deleteCheckinCascade(db, req.params.id);
 	res.json({ code: 200, msg: '删除成功' });
 });
 

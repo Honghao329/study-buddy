@@ -1,4 +1,5 @@
 const api = require('../../utils/api.js');
+const { normalizeAdminCheckinRow } = require('../../utils/normalizers');
 
 Page({
   data: {
@@ -18,13 +19,13 @@ Page({
     this.loadList();
   },
 
-  loadList() {
-    this.setData({ loading: true });
-    api.adminGet('/api/admin/checkin_list').then(res => {
-      const list = Array.isArray(res) ? res : (res && res.list ? res.list : []);
-      this.setData({ list, loading: false });
-    }).catch(() => {
-      this.setData({ loading: false });
+	loadList() {
+		this.setData({ loading: true });
+		api.adminGet('/api/admin/checkin_list').then(res => {
+			const list = (Array.isArray(res) ? res : (res && res.list ? res.list : [])).map(normalizeAdminCheckinRow);
+			this.setData({ list, loading: false });
+		}).catch(() => {
+			this.setData({ loading: false });
     });
   },
 

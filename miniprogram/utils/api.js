@@ -1,10 +1,14 @@
 /**
  * API 请求封装
  */
-const BASE = 'http://localhost:3900';
+const { getRuntimeBaseUrl } = require('./config');
+const { parseUploadResponse } = require('./normalizers');
+
+const BASE = getRuntimeBaseUrl();
 
 function getToken() { return wx.getStorageSync('token') || ''; }
 function getAdminToken() { return wx.getStorageSync('admin_token') || ''; }
+function getBaseUrl() { return getRuntimeBaseUrl(); }
 
 function request(url, method = 'GET', data = {}, isAdmin = false) {
 	return new Promise((resolve, reject) => {
@@ -13,7 +17,7 @@ function request(url, method = 'GET', data = {}, isAdmin = false) {
 		else header['x-token'] = getToken();
 
 		wx.request({
-			url: BASE + url,
+			url: getBaseUrl() + url,
 			method,
 			data,
 			header,
@@ -58,21 +62,24 @@ function adminGet(url, data) {
 function adminPost(url, data) { return request(url, 'POST', data, true); }
 function adminDel(url) { return request(url, 'DELETE', {}, true); }
 
-function uploadImage(filePath) {
-	return new Promise((resolve, reject) => {
-		wx.uploadFile({
-			url: BASE + '/api/upload/image',
-			filePath,
-			name: 'file',
-			header: { 'x-token': getToken() },
-			success(res) {
-				const data = JSON.parse(res.data);
-				if (data.code === 200) resolve(BASE + data.data.url);
-				else reject(data);
-			},
-			fail: reject
+	function uploadImage(filePath) {
+		return new Promise((resolve, reject) => {
+			wx.uploadFile({
+				url: getBaseUrl() + '/api/upload/image',
+				filePath,
+				name: 'file',
+				header: { 'x-token': getToken() },
+				success(res) {
+					const data = parseUploadResponse(res.data);
+					if (data && data.code === 200 && data.data && data.data.url) {
+						resolve(getBaseUrl() + data.data.url);
+					} else {
+						reject(data || { code: 500, msg: '上传失败' });
+					}
+				},
+				fail: reject
+			});
 		});
-	});
-}
+	}
 
-module.exports = { BASE, get, post, put, del, adminGet, adminPost, adminDel, uploadImage, getToken };
+module.exports = { BASE, getBaseUrl, get, post, put, del, adminGet, adminPost, adminDel, uploadImage, getToken };

@@ -85,11 +85,11 @@ Page({
     });
   },
 
-  removeTag(e) {
-    const idx = e.currentTarget.dataset.index;
-    const tags = this.data.tags.filter((_, i) => i !== idx);
-    this.setData({ tags });
-  },
+	removeTag(e) {
+		const idx = Number(e.currentTarget.dataset.index);
+		const tags = this.data.tags.filter((_, i) => i !== idx);
+		this.setData({ tags });
+	},
 
   chooseImage() {
     const remain = 9 - this.data.images.length;
@@ -122,11 +122,11 @@ Page({
     wx.previewImage({ current: url, urls: this.data.images });
   },
 
-  removeImage(e) {
-    const idx = e.currentTarget.dataset.index;
-    const images = this.data.images.filter((_, i) => i !== idx);
-    this.setData({ images });
-  },
+	removeImage(e) {
+		const idx = Number(e.currentTarget.dataset.index);
+		const images = this.data.images.filter((_, i) => i !== idx);
+		this.setData({ images });
+	},
 
   onSubmit() {
     const { title, content, visibility, tags, images, id, isEdit, submitting } = this.data;
