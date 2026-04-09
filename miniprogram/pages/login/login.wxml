@@ -28,13 +28,13 @@
 			<text class="avatar-tip">{{avatarUrl ? '点击更换头像' : '点击选择头像（可选）'}}</text>
 		</view>
 
-		<!-- 昵称输入 -->
+		<!-- 账号输入 -->
 		<view class="input-group">
 			<view class="input-label">
 				<van-icon name="user-o" size="18px" color="#4A90D9" />
-				<text>昵称</text>
+				<text>账号（昵称）</text>
 			</view>
-			<input class="login-input" type="text" placeholder="请输入昵称" placeholder-style="line-height:88rpx;font-size:28rpx;color:#bbb;" value="{{nickName}}" bindinput="onNickNameInput" maxlength="20" />
+			<input class="login-input" type="text" placeholder="输入账号，首次自动注册" placeholder-style="line-height:88rpx;font-size:28rpx;color:#bbb;" value="{{nickName}}" bindinput="onNickNameInput" maxlength="20" />
 		</view>
 
 		<!-- 密码输入 -->

@@ -26,6 +26,7 @@ Page({
 		logged: false,
 		user: null,
 		unreadCount: 0,
+		myStats: {},
 		showLogoutModal: false,
 		nickName: '',
 		avatarUrl: '',
@@ -34,6 +35,7 @@ Page({
 	onShow() {
 		this._checkLogin();
 		this._loadUnread();
+		this._loadMyStats();
 	},
 
 	_checkLogin() {
@@ -133,6 +135,13 @@ Page({
 				wx.showToast({ title: '微信登录失败，请重试', icon: 'none' });
 			}
 		});
+	},
+
+	_loadMyStats() {
+		if (!api.getToken()) return;
+		api.get('/api/user/my_stats').then(res => {
+			if (res) this.setData({ myStats: res });
+		}).catch(() => {});
 	},
 
 	_loadUnread() {

@@ -2,7 +2,6 @@
 	<van-search value="{{search}}" placeholder="搜索社区笔记" bind:search="onSearch" bind:change="onSearchInput" bind:clear="onClearSearch" shape="round" />
 
 	<van-tabs active="{{sortIndex}}" bind:change="onSortChange" color="#4A90D9" title-active-color="#4A90D9">
-		<van-tab title="推荐"></van-tab>
 		<van-tab title="最新"></van-tab>
 		<van-tab title="最热"></van-tab>
 	</van-tabs>

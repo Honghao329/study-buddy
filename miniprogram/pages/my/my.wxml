@@ -32,6 +32,26 @@
 			</view>
 		</view>
 
+		<!-- 个人统计 -->
+		<view class="my-stats-row">
+			<view class="my-stat" bindtap="goNotes">
+				<view class="my-stat-num">{{myStats.noteCount || 0}}</view>
+				<view class="my-stat-label">笔记</view>
+			</view>
+			<view class="my-stat" bindtap="goSign">
+				<view class="my-stat-num">{{myStats.signDays || 0}}</view>
+				<view class="my-stat-label">签到天数</view>
+			</view>
+			<view class="my-stat" bindtap="goPartner">
+				<view class="my-stat-num">{{myStats.partnerCount || 0}}</view>
+				<view class="my-stat-label">伙伴</view>
+			</view>
+			<view class="my-stat">
+				<view class="my-stat-num">{{myStats.checkinCount || 0}}</view>
+				<view class="my-stat-label">打卡</view>
+			</view>
+		</view>
+
 		<!-- 功能菜单 -->
 		<view class="menu-section">
 			<view class="menu-group">

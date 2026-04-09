@@ -1,5 +1,8 @@
 const jwt = require('jsonwebtoken');
 const SECRET = process.env.JWT_SECRET || process.env.SECRET || 'study_buddy_secret_2025';
+if (!process.env.JWT_SECRET && !process.env.SECRET) {
+	console.warn('[安全警告] 未设置 JWT_SECRET 环境变量，正在使用默认密钥。生产环境请务必设置！');
+}
 
 function authMiddleware(req, res, next) {
 	const token = req.headers['x-token'] || req.headers['authorization'];

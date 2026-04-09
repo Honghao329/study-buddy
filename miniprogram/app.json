@@ -30,7 +30,7 @@
 		"backgroundColor": "#fff",
 		"list": [
 			{ "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab_home.png", "selectedIconPath": "images/tab_home_on.png" },
-			{ "pagePath": "pages/note_list/note_list", "text": "笔记", "iconPath": "images/tab_note.png", "selectedIconPath": "images/tab_note_on.png" },
+			{ "pagePath": "pages/note_list/note_list", "text": "我的笔记", "iconPath": "images/tab_note.png", "selectedIconPath": "images/tab_note_on.png" },
 			{ "pagePath": "pages/checkin_list/checkin_list", "text": "打卡", "iconPath": "images/tab_check.png", "selectedIconPath": "images/tab_check_on.png" },
 			{ "pagePath": "pages/community/community", "text": "社区", "iconPath": "images/tab_community.png", "selectedIconPath": "images/tab_community_on.png" },
 			{ "pagePath": "pages/my/my", "text": "我的", "iconPath": "images/tab_my.png", "selectedIconPath": "images/tab_my_on.png" }

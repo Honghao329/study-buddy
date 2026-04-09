@@ -143,7 +143,10 @@
 	<van-popup show="{{showInvite}}" position="bottom" round bind:close="closeInvite">
 		<view class="popup-content">
 			<view class="popup-title">选择伙伴作为监督者</view>
-			<view wx:if="{{partners.length === 0}}" class="popup-empty">暂无伙伴，先去添加伙伴吧</view>
+			<view wx:if="{{partners.length === 0}}" class="popup-empty">
+				<text>暂无伙伴</text>
+				<van-button size="small" type="primary" plain round custom-style="margin-top:16rpx" bind:click="goPartner">去发现伙伴</van-button>
+			</view>
 			<view class="partner-option" wx:for="{{partners}}" wx:key="id" data-id="{{item.id}}" bindtap="selectSupervisor">
 				<view class="avatar-circle small"><van-icon name="smile-o" size="16px" color="#fff" /></view>
 				<text class="partner-name">{{item.name}}</text>

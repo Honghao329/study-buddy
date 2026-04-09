@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const crypto = require('crypto');
 const db = require('../config/db');
 const { authMiddleware, optionalAuth, generateToken } = require('../middleware/auth');
 const { normalizeUser, parseJsonField } = require('../lib/format');
@@ -7,7 +8,10 @@ function pickFirstDefined(...values) {
 	return values.find((value) => value !== undefined && value !== null);
 }
 
-// 登录/注册（昵称+密码）
+function hashPwd(pwd) {
+	return crypto.createHash('sha256').update(pwd + '_study_buddy').digest('hex');
+}
+
 router.post('/login', (req, res) => {
 	const nickname = (pickFirstDefined(req.body.nickname, req.body.nickName, '') || '').trim();
 	const password = (req.body.password || '').trim();
@@ -16,15 +20,20 @@ router.post('/login', (req, res) => {
 	if (!nickname) return res.json({ code: 400, msg: '请输入昵称' });
 	if (!password || password.length < 4) return res.json({ code: 400, msg: '密码至少4位' });
 
+	const hashed = hashPwd(password);
+
 	let user = db.prepare('SELECT * FROM users WHERE nickname = ?').get(nickname);
 	if (user) {
-		// 已有用户 → 验证密码
-		if (user.password && user.password !== password) {
-			return res.json({ code: 401, msg: '密码错误' });
+		// 兼容旧明文密码：如果哈希不匹配，尝试明文比对后迁移
+		if (user.password && user.password !== hashed) {
+			if (user.password === password) {
+				db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashed, user.id);
+			} else {
+				return res.json({ code: 401, msg: '密码错误' });
+			}
 		}
-		// 老用户没密码 → 设置密码
 		if (!user.password) {
-			db.prepare('UPDATE users SET password = ? WHERE id = ?').run(password, user.id);
+			db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashed, user.id);
 		}
 		db.prepare('UPDATE users SET login_cnt = login_cnt + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
 		if (avatar) {
@@ -32,10 +41,9 @@ router.post('/login', (req, res) => {
 		}
 		user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
 	} else {
-		// 新用户 → 注册
 		const openid = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 		const result = db.prepare('INSERT INTO users (openid, nickname, avatar, password, login_cnt) VALUES (?, ?, ?, ?, 1)')
-			.run(openid, nickname, avatar || '', password);
+			.run(openid, nickname, avatar || '', hashed);
 		user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
 	}
 
@@ -107,14 +115,46 @@ router.get('/list', optionalAuth, (req, res) => {
 	res.json({ code: 200, data: { list, total } });
 });
 
+// 修改密码
+router.post('/change_password', authMiddleware, (req, res) => {
+	const { oldPassword, newPassword } = req.body;
+	if (!oldPassword) return res.json({ code: 400, msg: '请输入旧密码' });
+	if (!newPassword || newPassword.length < 4) return res.json({ code: 400, msg: '新密码至少4位' });
+	const user = db.prepare('SELECT password FROM users WHERE id = ?').get(req.userId);
+	if (!user) return res.json({ code: 404, msg: '用户不存在' });
+	const oldHashed = hashPwd(oldPassword);
+	if (user.password !== oldHashed && user.password !== oldPassword) {
+		return res.json({ code: 403, msg: '旧密码错误' });
+	}
+	db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashPwd(newPassword), req.userId);
+	res.json({ code: 200, msg: '密码修改成功' });
+});
+
+// 个人统计
+router.get('/my_stats', authMiddleware, (req, res) => {
+	const stats = db.prepare(`SELECT
+		(SELECT COUNT(*) FROM notes WHERE user_id = ? AND status = 1) as noteCount,
+		(SELECT COUNT(*) FROM signs WHERE user_id = ?) as signDays,
+		(SELECT COUNT(*) FROM partners WHERE (user_id = ? OR target_id = ?) AND status = 1) as partnerCount,
+		(SELECT COUNT(*) FROM checkin_records WHERE user_id = ?) as checkinCount
+	`).get(req.userId, req.userId, req.userId, req.userId, req.userId);
+	res.json({ code: 200, data: stats });
+});
+
 // 更新用户信息
 router.put('/update', authMiddleware, (req, res) => {
 	const nickname = pickFirstDefined(req.body.nickname, req.body.nickName);
 	const avatar = pickFirstDefined(req.body.avatar, req.body.avatarUrl);
 	const { mobile, tags, bio } = req.body;
+
+	if (nickname !== undefined && nickname.trim()) {
+		const existing = db.prepare('SELECT id FROM users WHERE nickname = ? AND id != ?').get(nickname.trim(), req.userId);
+		if (existing) return res.json({ code: 400, msg: '该昵称已被占用，请换一个' });
+	}
+
 	const fields = [];
 	const values = [];
-	if (nickname !== undefined) { fields.push('nickname = ?'); values.push(nickname); }
+	if (nickname !== undefined) { fields.push('nickname = ?'); values.push(nickname.trim()); }
 	if (avatar !== undefined) { fields.push('avatar = ?'); values.push(avatar); }
 	if (mobile !== undefined) { fields.push('mobile = ?'); values.push(mobile); }
 	if (tags !== undefined) { fields.push('tags = ?'); values.push(JSON.stringify(parseJsonField(tags, []))); }

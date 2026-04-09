@@ -3,6 +3,15 @@ const db = require('../config/db');
 const { authMiddleware, optionalAuth } = require('../middleware/auth');
 const { getLocalDateString } = require('../lib/date');
 
+// 用户创建打卡任务
+router.post('/create', authMiddleware, (req, res) => {
+	const { title, description, start_date, end_date } = req.body;
+	if (!title || !title.trim()) return res.json({ code: 400, msg: '请输入标题' });
+	const result = db.prepare('INSERT INTO checkins (title, description, start_date, end_date, creator_id) VALUES (?, ?, ?, ?, ?)')
+		.run(title.trim(), description || '', start_date || '', end_date || '', req.userId);
+	res.json({ code: 200, data: { id: result.lastInsertRowid } });
+});
+
 router.get('/list', (req, res) => {
 	const { page = 1, size = 10, search } = req.query;
 	const offset = (page - 1) * size;

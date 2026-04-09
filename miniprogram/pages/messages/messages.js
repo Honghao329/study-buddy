@@ -1,16 +1,11 @@
 const api = require('../../utils/api.js');
 
 Page({
-	data: {
-		list: [],
-		loading: false,
-	},
+	data: { list: [], loading: false },
 
 	onShow() {
 		if (!api.getToken()) return;
 		this.loadMessages();
-		// 全部标记已读
-		api.post('/api/message/read', {}).catch(() => {});
 	},
 
 	loadMessages() {
@@ -20,13 +15,28 @@ Page({
 		}).catch(() => { this.setData({ loading: false }); });
 	},
 
-	goCheckin(e) {
-		const id = e.currentTarget.dataset.id;
-		if (id) wx.navigateTo({ url: '/pages/checkin_detail/checkin_detail?id=' + id });
+	onMsgTap(e) {
+		const { type, id } = e.currentTarget.dataset;
+		const msgId = e.currentTarget.dataset.msgid;
+		// 单条标记已读
+		if (msgId) api.post('/api/message/read', { id: msgId }).catch(() => {});
+
+		if ((type === 'remind') && id) {
+			wx.navigateTo({ url: '/pages/checkin_detail/checkin_detail?id=' + id });
+		} else if ((type === 'like' || type === 'comment') && id) {
+			wx.navigateTo({ url: '/pages/note_detail/note_detail?id=' + id });
+		} else if (type === 'partner') {
+			wx.navigateTo({ url: '/pages/partner/partner' });
+		}
 	},
 
-	onPullDownRefresh() {
-		this.loadMessages();
-		wx.stopPullDownRefresh();
+	readAll() {
+		api.post('/api/message/read', {}).then(() => {
+			const list = this.data.list.map(m => ({ ...m, is_read: 1 }));
+			this.setData({ list });
+			wx.showToast({ title: '已全部已读', icon: 'success' });
+		});
 	},
+
+	onPullDownRefresh() { this.loadMessages(); wx.stopPullDownRefresh(); },
 });

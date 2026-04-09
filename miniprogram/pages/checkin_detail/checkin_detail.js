@@ -84,6 +84,7 @@ Page({
 	},
 
 	closeInvite() { this.setData({ showInvite: false }); },
+	goPartner() { this.setData({ showInvite: false }); wx.navigateTo({ url: '/pages/partner/partner' }); },
 
 	selectSupervisor(e) {
 		const partnerId = e.currentTarget.dataset.id;

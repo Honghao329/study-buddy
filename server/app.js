@@ -40,6 +40,42 @@ app.get('/api/home/list', (req, res) => {
 	res.json({ code: 200, data: { checkins: all, hotList } });
 });
 
+// 最新动态（首页用）
+app.get('/api/home/activity', (req, res) => {
+	const activities = [];
+	const signs = db.prepare(
+		`SELECT s.day, s.content, s.duration, u.nickname, u.avatar FROM signs s
+		 LEFT JOIN users u ON s.user_id = u.id ORDER BY s.created_at DESC LIMIT 5`
+	).all();
+	signs.forEach(s => activities.push({
+		type: 'sign', icon: 'clock-o', color: '#FF9800',
+		text: (s.nickname || '学习者') + ' 完成了签到' + (s.duration ? '（' + s.duration + '分钟）' : ''),
+		time: s.day, avatar: s.avatar || '',
+	}));
+	const records = db.prepare(
+		`SELECT cr.day, cr.content, u.nickname, u.avatar, c.title FROM checkin_records cr
+		 LEFT JOIN users u ON cr.user_id = u.id LEFT JOIN checkins c ON cr.checkin_id = c.id
+		 ORDER BY cr.created_at DESC LIMIT 5`
+	).all();
+	records.forEach(r => activities.push({
+		type: 'checkin', icon: 'todo-list-o', color: '#4A90D9',
+		text: (r.nickname || '学习者') + ' 打卡了「' + (r.title || '') + '」',
+		time: r.day, avatar: r.avatar || '',
+	}));
+	const notes = db.prepare(
+		`SELECT n.title, n.created_at, u.nickname, u.avatar FROM notes n
+		 LEFT JOIN users u ON n.user_id = u.id WHERE n.status = 1 AND n.visibility = 'public'
+		 ORDER BY n.created_at DESC LIMIT 5`
+	).all();
+	notes.forEach(n => activities.push({
+		type: 'note', icon: 'notes-o', color: '#4CAF50',
+		text: (n.nickname || '学习者') + ' 发布了笔记「' + (n.title || '') + '」',
+		time: (n.created_at || '').split(' ')[0], avatar: n.avatar || '',
+	}));
+	activities.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
+	res.json({ code: 200, data: activities.slice(0, 10) });
+});
+
 app.get('/', (req, res) => {
 	res.json({ msg: '学习伴侣系统 API 服务运行中', version: '1.0.0' });
 });

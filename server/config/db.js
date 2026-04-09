@@ -191,7 +191,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_plans_supervisor ON plans(supervisor_id, status);
   CREATE INDEX IF NOT EXISTS idx_plan_records_lookup ON plan_records(plan_id, user_id, day);
 
-  INSERT OR IGNORE INTO admins (username, password) VALUES ('admin', '123456');
+  INSERT OR IGNORE INTO admins (username, password) VALUES ('admin', 'c8887a3f4b732b4a984ccd33710fd466d53032a9ce976d75f025b59ba758d0e0');
 
   CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -207,7 +207,7 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_messages_user ON messages(user_id, is_read, created_at);
-  CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nickname_unique ON users(nickname);
 
   CREATE INDEX IF NOT EXISTS idx_notes_user ON notes(user_id);
   CREATE INDEX IF NOT EXISTS idx_notes_public ON notes(visibility, status, created_at);

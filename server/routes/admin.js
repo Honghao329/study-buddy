@@ -1,13 +1,27 @@
 const router = require('express').Router();
+const crypto = require('crypto');
 const db = require('../config/db');
 const { adminAuth, generateToken } = require('../middleware/auth');
 const { deleteCheckinCascade, deleteNoteCascade, deleteCommentCascade } = require('../lib/cleanup');
 const { normalizeNote, normalizeUser, parseJsonField } = require('../lib/format');
 
+function hashPwd(pwd) {
+	return crypto.createHash('sha256').update(pwd + '_study_buddy').digest('hex');
+}
+
 router.post('/login', (req, res) => {
 	const { username, password } = req.body;
-	const admin = db.prepare('SELECT * FROM admins WHERE username = ? AND password = ? AND status = 1').get(username, password);
+	const admin = db.prepare('SELECT * FROM admins WHERE username = ? AND status = 1').get(username);
 	if (!admin) return res.json({ code: 401, msg: '账号或密码错误' });
+	const hashed = hashPwd(password);
+	// 兼容旧明文密码
+	if (admin.password !== hashed) {
+		if (admin.password === password) {
+			db.prepare('UPDATE admins SET password = ? WHERE id = ?').run(hashed, admin.id);
+		} else {
+			return res.json({ code: 401, msg: '账号或密码错误' });
+		}
+	}
 	const token = generateToken({ adminId: admin.id, isAdmin: true });
 	res.json({ code: 200, data: { token, admin: { id: admin.id, username: admin.username } } });
 });
@@ -292,8 +306,9 @@ router.post('/change_password', adminAuth, (req, res) => {
 	if (!oldPassword || !newPassword) return res.json({ code: 400, msg: '请填写完整' });
 	const admin = db.prepare('SELECT * FROM admins WHERE id = ?').get(req.adminId);
 	if (!admin) return res.json({ code: 404, msg: '管理员不存在' });
-	if (admin.password !== oldPassword) return res.json({ code: 403, msg: '原密码错误' });
-	db.prepare('UPDATE admins SET password = ? WHERE id = ?').run(newPassword, req.adminId);
+	const oldHashed = hashPwd(oldPassword);
+	if (admin.password !== oldHashed && admin.password !== oldPassword) return res.json({ code: 403, msg: '原密码错误' });
+	db.prepare('UPDATE admins SET password = ? WHERE id = ?').run(hashPwd(newPassword), req.adminId);
 	res.json({ code: 200, msg: '密码修改成功' });
 });
 

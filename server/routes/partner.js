@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const db = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
+const { notifyPartnerInvite } = require('../lib/notify');
 
 // 发送邀请
 router.post('/invite', authMiddleware, (req, res) => {
@@ -17,6 +18,7 @@ router.post('/invite', authMiddleware, (req, res) => {
 	if (existing) return res.json({ code: 400, msg: '已存在邀请或伙伴关系' });
 
 	const result = db.prepare('INSERT INTO partners (user_id, target_id, status) VALUES (?, ?, 0)').run(req.userId, targetId);
+	notifyPartnerInvite(req.userId, targetId);
 	res.json({ code: 200, data: { id: result.lastInsertRowid } });
 });
 

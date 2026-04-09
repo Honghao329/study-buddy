@@ -4,6 +4,7 @@ const { authMiddleware, optionalAuth } = require('../middleware/auth');
 const { canViewNote } = require('../lib/access');
 const { deleteCommentCascade } = require('../lib/cleanup');
 const { normalizeComment } = require('../lib/format');
+const { notifyComment } = require('../lib/notify');
 
 function checkPartnerAccess(ownerId, userId) {
 	if (!userId || Number(ownerId) === Number(userId)) return false;
@@ -32,6 +33,7 @@ router.post('/create', authMiddleware, (req, res) => {
 
 	const result = db.prepare('INSERT INTO comments (note_id, user_id, content) VALUES (?, ?, ?)').run(noteId, req.userId, String(trimmedContent));
 	db.prepare('UPDATE notes SET comment_cnt = comment_cnt + 1 WHERE id = ?').run(noteId);
+	notifyComment(req.userId, noteId);
 	res.json({ code: 200, data: { id: result.lastInsertRowid } });
 });
 

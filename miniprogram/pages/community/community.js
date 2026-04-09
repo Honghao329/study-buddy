@@ -10,11 +10,9 @@ Page({
     search: '',
     sort: 'latest',
     sortTabs: [
-      { label: '推荐', value: 'hot' },
       { label: '最新', value: 'latest' },
-      { label: '最热', value: 'hot' }
+      { label: '最热', value: 'hot' },
     ],
-    activeSortTab: 0,
     sortIndex: 0
   },
 
@@ -100,7 +98,6 @@ Page({
     this._unlikedIds = new Set();
     this.setData({
       sortIndex: idx,
-      activeSortTab: idx,
       sort: this.data.sortTabs[idx].value,
       notes: [],
       page: 1,
@@ -140,7 +137,7 @@ Page({
 
   toggleLike(e) {
     if (!api.getToken()) {
-      wx.showToast({ title: '请先登录', icon: 'none' });
+      wx.navigateTo({ url: '/pages/login/login' });
       return;
     }
     const id = e.currentTarget.dataset.id;
@@ -178,7 +175,7 @@ Page({
 
   quickAddFriend(e) {
     if (!api.getToken()) {
-      wx.showToast({ title: '请先登录', icon: 'none' });
+      wx.navigateTo({ url: '/pages/login/login' });
       return;
     }
     const uid = e.currentTarget.dataset.uid;

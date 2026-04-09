@@ -1,11 +1,18 @@
 <view class="container">
+	<view class="msg-toolbar" wx:if="{{list.length > 0}}">
+		<text class="msg-count">共 {{list.length}} 条消息</text>
+		<text class="read-all-btn" bindtap="readAll">全部已读</text>
+	</view>
+
 	<van-empty wx:if="{{!loading && list.length === 0}}" description="暂无消息" />
 
-	<view class="card msg-item {{item.is_read ? '' : 'unread'}}" wx:for="{{list}}" wx:key="id" bindtap="goCheckin" data-id="{{item.related_id}}">
-		<view class="msg-icon-wrap">
-			<van-icon wx:if="{{item.type === 'remind'}}" name="bell" size="22px" color="#ff9800" />
-			<van-icon wx:elif="{{item.type === 'comment'}}" name="chat-o" size="22px" color="#4A90D9" />
-			<van-icon wx:else name="info-o" size="22px" color="#999" />
+	<view class="card msg-item {{item.is_read ? '' : 'unread'}}" wx:for="{{list}}" wx:key="id" bindtap="onMsgTap" data-type="{{item.type}}" data-id="{{item.related_id}}" data-msgid="{{item.id}}">
+		<view class="msg-icon-wrap {{item.type}}">
+			<van-icon wx:if="{{item.type === 'remind'}}" name="bell" size="20px" color="#ff9800" />
+			<van-icon wx:elif="{{item.type === 'like'}}" name="good-job" size="20px" color="#f56c6c" />
+			<van-icon wx:elif="{{item.type === 'comment'}}" name="chat-o" size="20px" color="#4A90D9" />
+			<van-icon wx:elif="{{item.type === 'partner'}}" name="friends-o" size="20px" color="#4CAF50" />
+			<van-icon wx:else name="info-o" size="20px" color="#999" />
 		</view>
 		<view class="msg-body">
 			<view class="msg-title">{{item.title}}</view>

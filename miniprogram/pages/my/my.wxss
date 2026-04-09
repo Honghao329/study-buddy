@@ -1,5 +1,15 @@
 .page-my { min-height: 100vh; background: #f5f6fa; }
 
+/* 个人统计 */
+.my-stats-row {
+  display: flex; background: #fff; margin: -16rpx 30rpx 20rpx;
+  border-radius: 16rpx; padding: 24rpx 0;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05); position: relative; z-index: 1;
+}
+.my-stat { flex: 1; text-align: center; }
+.my-stat-num { font-size: 36rpx; font-weight: bold; color: #4A90D9; }
+.my-stat-label { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+
 /* ========== 未登录引导 ========== */
 .not-logged { padding: 120rpx 40rpx 40rpx; text-align: center; }
 .not-logged-bg { height: 200rpx; background: linear-gradient(135deg, #4A90D9, #6BB5F0); position: absolute; top: 0; left: 0; right: 0; }

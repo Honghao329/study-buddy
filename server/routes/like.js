@@ -2,6 +2,7 @@ const router = require('express').Router();
 const db = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
 const { canViewNote } = require('../lib/access');
+const { notifyLike } = require('../lib/notify');
 
 function checkPartnerAccess(ownerId, userId) {
 	if (!userId || Number(ownerId) === Number(userId)) return false;
@@ -73,7 +74,10 @@ router.post('/toggle', authMiddleware, (req, res) => {
 		res.json({ code: 200, data: { isLiked: 0 } });
 	} else {
 		db.prepare('INSERT INTO likes (user_id, target_id, target_type) VALUES (?, ?, ?)').run(req.userId, targetId, targetType);
-		if (targetType === 'note') db.prepare('UPDATE notes SET like_cnt = like_cnt + 1 WHERE id = ?').run(targetId);
+		if (targetType === 'note') {
+			db.prepare('UPDATE notes SET like_cnt = like_cnt + 1 WHERE id = ?').run(targetId);
+			notifyLike(req.userId, targetId);
+		}
 		if (targetType === 'comment') db.prepare('UPDATE comments SET like_cnt = like_cnt + 1 WHERE id = ?').run(targetId);
 		res.json({ code: 200, data: { isLiked: 1 } });
 	}
