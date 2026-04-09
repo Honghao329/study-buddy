@@ -191,7 +191,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_plans_supervisor ON plans(supervisor_id, status);
   CREATE INDEX IF NOT EXISTS idx_plan_records_lookup ON plan_records(plan_id, user_id, day);
 
-  INSERT OR IGNORE INTO admins (username, password) VALUES ('admin', 'c8887a3f4b732b4a984ccd33710fd466d53032a9ce976d75f025b59ba758d0e0');
+  -- 默认管理员由首次启动脚本创建，不再硬编码
 
   CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -224,6 +224,16 @@ try {
 	db.prepare("SELECT password FROM users LIMIT 0").run();
 } catch (e) {
 	db.exec("ALTER TABLE users ADD COLUMN password TEXT DEFAULT ''");
+}
+
+// 首次启动：如果没有任何管理员，自动创建初始管理员
+const adminCount = db.prepare('SELECT COUNT(*) as cnt FROM admins').get().cnt;
+if (adminCount === 0) {
+	const crypto = require('crypto');
+	const initPwd = process.env.ADMIN_PASSWORD || '123456';
+	const hashed = crypto.createHash('sha256').update(initPwd + '_study_buddy').digest('hex');
+	db.prepare('INSERT INTO admins (username, password) VALUES (?, ?)').run('admin', hashed);
+	console.warn('[初始化] 已创建管理员 admin，密码: ' + initPwd + '（请立即修改）');
 }
 
 module.exports = db;

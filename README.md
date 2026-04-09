@@ -61,14 +61,15 @@ const DEFAULT_BASE_URL = 'http://192.168.x.x:3900';
 
 浏览器访问 `http://localhost:3900/admin/`
 
-初始管理员：admin / 123456，**请登录后立即修改密码**。
+首次启动会自动创建管理员（admin / 环境变量 `ADMIN_PASSWORD` 或默认 123456），控制台会打印初始密码，**请立即登录后台修改**。
 
 ## 环境变量（可选）
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
 | `PORT` | 服务端口 | 3900 |
-| `JWT_SECRET` | JWT 密钥 | **必须设置**（生产环境） |
+| `JWT_SECRET` | JWT 密钥 | **生产环境必须设置**，开发环境自动衍生 |
+| `ADMIN_PASSWORD` | 初始管理员密码 | 123456（仅首次创建时生效） |
 | `DB_PATH` | 数据库路径 | server/data/study_buddy.db |
 
 ## 项目结构

@@ -17,7 +17,7 @@ router.get('/list', (req, res) => {
 	const offset = (page - 1) * size;
 	let where = 'WHERE status = 1';
 	const params = [];
-	if (search) { where += ' AND title LIKE ?'; params.push(`%${search}%`); }
+	if (search) { where += ' AND (title LIKE ? OR description LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
 
 	const total = db.prepare(`SELECT COUNT(*) as cnt FROM checkins ${where}`).get(...params).cnt;
 	const list = db.prepare(`SELECT * FROM checkins ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...params, Number(size), offset);

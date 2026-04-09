@@ -10,6 +10,12 @@
 	border: 1rpx solid #4A90D9; border-radius: 24rpx;
 	padding: 6rpx 16rpx; white-space: nowrap;
 }
+.feed-status-tag {
+	display: flex; align-items: center; gap: 4rpx;
+	font-size: 22rpx; padding: 6rpx 16rpx; border-radius: 24rpx; white-space: nowrap;
+}
+.feed-status-tag.accepted { color: #4CAF50; background: #E8F5E9; }
+.feed-status-tag.pending { color: #FF9800; background: #FFF3E0; }
 .feed-name { font-size: 28rpx; font-weight: 600; color: #333; display: block; }
 .feed-time { display: block; margin-top: 4rpx; }
 .feed-title { font-size: 32rpx; font-weight: bold; color: #333; display: block; margin-bottom: 12rpx; }

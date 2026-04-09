@@ -14,10 +14,15 @@ Page({
     loadingUsers: false,
   },
 
+  onLoad(options) {
+    if (options.tab !== undefined) {
+      this.setData({ activeTab: Number(options.tab) });
+    }
+  },
+
   onShow() {
     if (!api.getToken()) {
-      wx.showToast({ title: '请先登录', icon: 'none' });
-      setTimeout(() => wx.navigateTo({ url: '/pages/login/login' }), 1000);
+      wx.navigateTo({ url: '/pages/login/login' });
       return;
     }
     this.loadMyList();

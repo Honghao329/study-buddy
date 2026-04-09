@@ -14,8 +14,9 @@
   <!-- 基本信息 -->
   <view class="card">
     <view class="form-group">
-      <view class="form-label">昵称 <text class="form-hint">（也是登录账号，修改后用新昵称登录）</text></view>
-      <input class="input" placeholder="请输入昵称" value="{{nickName}}" bindinput="onNickNameInput" maxlength="20" />
+      <view class="form-label">账号（昵称）</view>
+      <input class="input disabled" value="{{nickName}}" disabled />
+      <view class="form-hint-block">账号即登录名，注册后不可修改</view>
     </view>
 
     <view class="form-group">

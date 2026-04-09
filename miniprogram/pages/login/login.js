@@ -12,7 +12,9 @@ Page({
 
 	onLoad() {
 		if (api.getToken() && wx.getStorageSync('userInfo')) {
-			wx.switchTab({ url: '/pages/my/my' });
+			const pages = getCurrentPages();
+			if (pages.length > 1) { wx.navigateBack(); }
+			else { wx.switchTab({ url: '/pages/index/index' }); }
 		}
 	},
 
@@ -65,7 +67,15 @@ Page({
 					app.globalData.isLogin = true;
 					app.globalData.userInfo = res.user;
 					wx.showToast({ title: '登录成功', icon: 'success' });
-					setTimeout(() => wx.switchTab({ url: '/pages/my/my' }), 800);
+					setTimeout(() => {
+						// 如果有来源页，返回；否则去首页
+						const pages = getCurrentPages();
+						if (pages.length > 1) {
+							wx.navigateBack();
+						} else {
+							wx.switchTab({ url: '/pages/index/index' });
+						}
+					}, 800);
 				}
 			}).catch(() => { this.setData({ loading: false }); });
 		};

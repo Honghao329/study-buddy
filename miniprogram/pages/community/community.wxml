@@ -19,9 +19,14 @@
 						<text class="feed-time text-sm text-gray">{{item.created_at}}</text>
 					</view>
 				</view>
-				<view class="feed-follow-btn" catchtap="quickAddFriend" data-uid="{{item.user_id}}" data-name="{{item.user_name}}">
-					<van-icon name="plus" size="14px" color="#4A90D9" />
-					<text>加伙伴</text>
+				<view wx:if="{{item._partnerStatus === 'accepted'}}" class="feed-status-tag accepted">
+					<van-icon name="checked" size="12px" color="#4CAF50" /><text>伙伴</text>
+				</view>
+				<view wx:elif="{{item._partnerStatus === 'pending'}}" class="feed-status-tag pending">
+					<text>已邀请</text>
+				</view>
+				<view wx:elif="{{item._partnerStatus !== 'self'}}" class="feed-follow-btn" catchtap="quickAddFriend" data-uid="{{item.user_id}}" data-index="{{index}}">
+					<van-icon name="plus" size="14px" color="#4A90D9" /><text>加伙伴</text>
 				</view>
 			</view>
 			<view class="feed-body" bindtap="goDetail" data-id="{{item.id}}">

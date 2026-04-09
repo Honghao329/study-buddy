@@ -26,7 +26,7 @@ Page({
 		} else if ((type === 'like' || type === 'comment') && id) {
 			wx.navigateTo({ url: '/pages/note_detail/note_detail?id=' + id });
 		} else if (type === 'partner') {
-			wx.navigateTo({ url: '/pages/partner/partner' });
+			wx.navigateTo({ url: '/pages/partner/partner?tab=1' });
 		}
 	},
 

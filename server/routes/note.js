@@ -41,7 +41,7 @@ router.get('/my_list', authMiddleware, (req, res) => {
 	let where = 'WHERE n.user_id = ?';
 	const params = [req.userId];
 
-	if (search) { where += ' AND n.title LIKE ?'; params.push(`%${search}%`); }
+	if (search) { where += ' AND (n.title LIKE ? OR n.content LIKE ? OR n.tags LIKE ?)'; params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
 	if (visibility) { where += ' AND n.visibility = ?'; params.push(visibility); }
 
 	const total = db.prepare(`SELECT COUNT(*) as cnt FROM notes n ${where}`).get(...params).cnt;
@@ -61,7 +61,7 @@ router.get('/public_list', (req, res) => {
 	let where = "WHERE n.visibility = 'public' AND n.status = 1";
 	const params = [];
 
-	if (search) { where += ' AND n.title LIKE ?'; params.push(`%${search}%`); }
+	if (search) { where += ' AND (n.title LIKE ? OR n.content LIKE ? OR n.tags LIKE ?)'; params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
 	if (tag) { where += ' AND n.tags LIKE ?'; params.push(`%${tag}%`); }
 
 	const orderBy = sort === 'hot' ? 'n.like_cnt DESC, n.created_at DESC' : 'n.created_at DESC';

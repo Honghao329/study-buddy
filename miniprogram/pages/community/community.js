@@ -48,8 +48,8 @@ Page({
         loading: false,
         hasMore: list.length >= size
       });
-      // Check like status for the newly loaded notes
       this.checkLikeStatus(list, notes.length - list.length);
+      this.checkPartnerStatus(list, notes.length - list.length);
     }).catch(() => {
       this.setData({ loading: false });
     });
@@ -173,19 +173,39 @@ Page({
     wx.navigateTo({ url: '/pages/user_profile/user_profile?id=' + uid });
   },
 
+  checkPartnerStatus(noteList, startIndex) {
+    if (!noteList || noteList.length === 0 || !api.getToken()) return;
+    const userIds = [...new Set(noteList.map(n => n.user_id).filter(Boolean))];
+    if (userIds.length === 0) return;
+    api.post('/api/partner/batch_status', { userIds }).then(res => {
+      if (!res || typeof res !== 'object') return;
+      const notes = [...this.data.notes];
+      let changed = false;
+      for (let i = startIndex; i < startIndex + noteList.length && i < notes.length; i++) {
+        const status = res[notes[i].user_id] || 'none';
+        if (notes[i]._partnerStatus !== status) {
+          notes[i] = { ...notes[i], _partnerStatus: status };
+          changed = true;
+        }
+      }
+      if (changed) this.setData({ notes });
+    }).catch(() => {});
+  },
+
   quickAddFriend(e) {
-    if (!api.getToken()) {
-      wx.navigateTo({ url: '/pages/login/login' });
-      return;
-    }
+    if (!api.getToken()) { wx.navigateTo({ url: '/pages/login/login' }); return; }
     const uid = e.currentTarget.dataset.uid;
+    const idx = e.currentTarget.dataset.index;
     const myInfo = wx.getStorageSync('userInfo') || {};
-    if (Number(uid) === myInfo.id) {
-      wx.showToast({ title: '不能添加自己', icon: 'none' });
-      return;
-    }
+    if (Number(uid) === myInfo.id) { wx.showToast({ title: '不能添加自己', icon: 'none' }); return; }
     api.post('/api/partner/invite', { targetId: uid }).then(() => {
       wx.showToast({ title: '邀请已发送', icon: 'success' });
+      // 更新本地状态
+      const notes = [...this.data.notes];
+      if (idx !== undefined && notes[idx]) {
+        notes[idx] = { ...notes[idx], _partnerStatus: 'pending' };
+        this.setData({ notes });
+      }
     }).catch(() => {});
   }
 });

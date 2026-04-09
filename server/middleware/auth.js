@@ -1,7 +1,14 @@
 const jwt = require('jsonwebtoken');
-const SECRET = process.env.JWT_SECRET || process.env.SECRET || 'study_buddy_secret_2025';
-if (!process.env.JWT_SECRET && !process.env.SECRET) {
-	console.warn('[安全警告] 未设置 JWT_SECRET 环境变量，正在使用默认密钥。生产环境请务必设置！');
+const crypto = require('crypto');
+
+let SECRET;
+if (process.env.JWT_SECRET || process.env.SECRET) {
+	SECRET = process.env.JWT_SECRET || process.env.SECRET;
+} else {
+	// 开发环境：基于数据库路径生成确定性密钥，避免硬编码
+	const seed = (process.env.DB_PATH || __dirname) + '_study_buddy';
+	SECRET = crypto.createHash('sha256').update(seed).digest('hex').slice(0, 32);
+	console.warn('[安全警告] 未设置 JWT_SECRET 环境变量，已使用本地衍生密钥。生产环境请务必设置 JWT_SECRET！');
 }
 
 function authMiddleware(req, res, next) {

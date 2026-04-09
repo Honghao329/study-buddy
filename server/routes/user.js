@@ -106,7 +106,7 @@ router.get('/list', optionalAuth, (req, res) => {
 	const offset = (page - 1) * size;
 	let where = 'WHERE status = 1';
 	const params = [];
-	if (search) { where += ' AND nickname LIKE ?'; params.push('%' + search + '%'); }
+	if (search) { where += ' AND (nickname LIKE ? OR bio LIKE ? OR tags LIKE ?)'; params.push('%' + search + '%', '%' + search + '%', '%' + search + '%'); }
 
 	const total = db.prepare(`SELECT COUNT(*) as cnt FROM users ${where}`).get(...params).cnt;
 	const list = db.prepare(`SELECT id, nickname, avatar, bio, tags, created_at FROM users ${where} ORDER BY login_cnt DESC, id DESC LIMIT ? OFFSET ?`)

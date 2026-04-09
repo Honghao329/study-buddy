@@ -68,4 +68,22 @@ router.get('/pending_list', authMiddleware, (req, res) => {
 	res.json({ code: 200, data: list });
 });
 
+// 批量查询伙伴状态
+router.post('/batch_status', authMiddleware, (req, res) => {
+	const { userIds } = req.body;
+	if (!Array.isArray(userIds) || userIds.length === 0) return res.json({ code: 200, data: {} });
+	const result = {};
+	const rels = db.prepare(
+		`SELECT user_id, target_id, status FROM partners
+		 WHERE ((user_id = ? AND target_id IN (${userIds.map(() => '?').join(',')}))
+		    OR (target_id = ? AND user_id IN (${userIds.map(() => '?').join(',')})))
+		 AND status IN (0, 1)`
+	).all(req.userId, ...userIds, req.userId, ...userIds);
+	rels.forEach(r => {
+		const otherId = r.user_id === req.userId ? r.target_id : r.user_id;
+		result[otherId] = r.status === 1 ? 'accepted' : 'pending';
+	});
+	res.json({ code: 200, data: result });
+});
+
 module.exports = router;
