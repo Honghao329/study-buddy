@@ -2,23 +2,22 @@ const api = require('../../utils/api.js');
 const { normalizeFavoriteRow } = require('../../utils/normalizers');
 
 Page({
-  data: { list: [], loading: false },
+  data: { list: [], loading: false, loadFailed: false },
 
   onShow() {
     if (!api.getToken()) {
-      wx.showToast({ title: '请先登录', icon: 'none' });
-      setTimeout(() => wx.navigateTo({ url: '/pages/login/login' }), 1000);
+      api.requireLogin();
       return;
     }
     this.loadFavorites();
   },
 
   loadFavorites() {
-    this.setData({ loading: true });
+    this.setData({ loading: true, loadFailed: false });
     api.get('/api/fav/my_list').then(res => {
       const list = (res.list || res.records || res || []).map(normalizeFavoriteRow);
       this.setData({ list, loading: false });
-    }).catch(() => { this.setData({ loading: false }); });
+    }).catch(() => { this.setData({ loading: false, loadFailed: true }); });
   },
 
   onTapItem(e) {

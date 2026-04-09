@@ -2,7 +2,7 @@ const api = require('../../utils/api.js');
 Page({
 	data: {
 		checkins: [], notes: [], activities: [],
-		unreadCount: 0, isLogin: false,
+		unreadCount: 0, isLogin: false, loadFailed: false,
 	},
 	onShow() {
 		this.setData({ isLogin: !!api.getToken() });
@@ -10,15 +10,17 @@ Page({
 		this._loadUnread();
 	},
 	async loadData() {
+		let failed = false;
 		const [checkins, notes, activity] = await Promise.all([
-			api.get('/api/checkin/list', { page: 1, size: 6 }).catch(() => ({ list: [] })),
-			api.get('/api/note/public_list', { page: 1, size: 5, sort: 'hot' }).catch(() => ({ list: [] })),
-			api.get('/api/home/activity').catch(() => []),
+			api.get('/api/checkin/list', { page: 1, size: 6 }).catch(() => { failed = true; return { list: [] }; }),
+			api.get('/api/note/public_list', { page: 1, size: 5, sort: 'hot' }).catch(() => { failed = true; return { list: [] }; }),
+			api.get('/api/home/activity').catch(() => { failed = true; return []; }),
 		]);
 		this.setData({
 			checkins: checkins.list || [],
 			notes: notes.list || [],
 			activities: Array.isArray(activity) ? activity : [],
+			loadFailed: failed,
 		});
 	},
 	_loadUnread() {

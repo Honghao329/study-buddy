@@ -44,7 +44,7 @@ Page({
 
 	addFriend() {
 		if (!api.getToken()) {
-			wx.showToast({ title: '请先登录', icon: 'none' });
+			api.requireLogin();
 			return;
 		}
 		wx.showLoading({ title: '发送中' });

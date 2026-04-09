@@ -20,7 +20,7 @@ function normalizeComment(comment) {
 
 function requireLogin() {
   if (api.getToken()) return true;
-  wx.navigateTo({ url: '/pages/login/login' });
+  api.requireLogin();
   return false;
 }
 

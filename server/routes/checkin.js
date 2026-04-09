@@ -72,12 +72,22 @@ router.post('/join', authMiddleware, (req, res) => {
 
 // 我的打卡记录
 router.get('/my_records', authMiddleware, (req, res) => {
+	const { page = 1, size = 20 } = req.query;
+	const offset = (page - 1) * size;
+	const total = db.prepare('SELECT COUNT(*) as cnt FROM checkin_records WHERE user_id = ?').get(req.userId).cnt;
 	const list = db.prepare(
 		`SELECT cr.*, c.title as checkin_title FROM checkin_records cr
 		 LEFT JOIN checkins c ON cr.checkin_id = c.id
-		 WHERE cr.user_id = ? ORDER BY cr.created_at DESC LIMIT 50`
-	).all(req.userId);
-	res.json({ code: 200, data: list });
+		 WHERE cr.user_id = ? ORDER BY cr.created_at DESC LIMIT ? OFFSET ?`
+	).all(req.userId, Number(size), offset);
+	res.json({ code: 200, data: { list, total } });
+});
+
+// 我参与过的打卡任务ID集合（用于列表标记）
+router.get('/my_joined_ids', authMiddleware, (req, res) => {
+	const rows = db.prepare('SELECT DISTINCT checkin_id FROM checkin_records WHERE user_id = ? LIMIT 1000').all(req.userId);
+	const ids = rows.map(r => r.checkin_id);
+	res.json({ code: 200, data: ids });
 });
 
 // 邀请伙伴监督某个打卡任务

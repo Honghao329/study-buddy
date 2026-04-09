@@ -1,10 +1,11 @@
 <view class="container">
 	<view class="msg-toolbar" wx:if="{{list.length > 0}}">
-		<text class="msg-count">共 {{list.length}} 条消息</text>
+		<text class="msg-count">共 {{total}} 条消息</text>
 		<text class="read-all-btn" bindtap="readAll">全部已读</text>
 	</view>
 
-	<van-empty wx:if="{{!loading && list.length === 0}}" description="暂无消息" />
+	<van-empty wx:if="{{!loading && loadFailed && list.length === 0}}" description="加载失败，请下拉重试" image="error" />
+	<van-empty wx:if="{{!loading && !loadFailed && list.length === 0}}" description="暂无消息" />
 
 	<view class="card msg-item {{item.is_read ? '' : 'unread'}}" wx:for="{{list}}" wx:key="id" bindtap="onMsgTap" data-type="{{item.type}}" data-id="{{item.related_id}}" data-msgid="{{item.id}}">
 		<view class="msg-icon-wrap {{item.type}}">
@@ -21,4 +22,7 @@
 		</view>
 		<view wx:if="{{!item.is_read}}" class="msg-dot"></view>
 	</view>
+
+	<van-loading wx:if="{{loading}}" size="24px" vertical>加载中...</van-loading>
+	<van-divider wx:if="{{!hasMore && list.length > 0}}" contentPosition="center">没有更多了</van-divider>
 </view>

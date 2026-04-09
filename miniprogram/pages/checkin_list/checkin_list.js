@@ -29,8 +29,8 @@ Page({
     const userId = (wx.getStorageSync('userInfo') || {}).id;
     if (!userId) { this.setData({ list: allItems }); return; }
 
-    api.get('/api/checkin/my_records').then(records => {
-      const joinedSet = new Set((Array.isArray(records) ? records : []).map(r => r.checkin_id));
+    api.get('/api/checkin/my_joined_ids').then(ids => {
+      const joinedSet = new Set(Array.isArray(ids) ? ids : []);
       const list = allItems.map(item => ({
         ...item,
         _joined: joinedSet.has(item.id),
@@ -66,7 +66,7 @@ Page({
 
   // 创建
   openCreate() {
-    if (!api.getToken()) { wx.showToast({ title: '请先登录', icon: 'none' }); return; }
+    if (!api.getToken()) { api.requireLogin(); return; }
     this.setData({ showCreate: true, createForm: { title: '', description: '', start_date: '', end_date: '' } });
   },
   closeCreate() { this.setData({ showCreate: false }); },

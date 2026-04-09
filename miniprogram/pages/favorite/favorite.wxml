@@ -1,5 +1,6 @@
 <view class="container">
-  <van-empty wx:if="{{!loading && list.length === 0}}" description="暂无收藏，去社区看看吧" />
+  <van-empty wx:if="{{!loading && loadFailed && list.length === 0}}" description="加载失败，请下拉重试" image="error" />
+  <van-empty wx:if="{{!loading && !loadFailed && list.length === 0}}" description="暂无收藏，去社区看看吧" />
 
   <view class="fav-card card" wx:for="{{list}}" wx:key="id">
     <view class="fav-body" bindtap="onTapItem" data-index="{{index}}">

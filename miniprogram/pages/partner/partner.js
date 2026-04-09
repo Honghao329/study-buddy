@@ -22,7 +22,7 @@ Page({
 
   onShow() {
     if (!api.getToken()) {
-      wx.navigateTo({ url: '/pages/login/login' });
+      api.requireLogin();
       return;
     }
     this.loadMyList();
@@ -61,9 +61,26 @@ Page({
       const list = (res && res.list) || [];
       const userList = userPage === 1 ? list : this.data.userList.concat(list);
       this.setData({ userList, loadingUsers: false, hasMoreUsers: list.length >= 20 });
+      this._checkPartnerStatus(userList);
     }).catch(() => {
       this.setData({ loadingUsers: false });
     });
+  },
+
+  _checkPartnerStatus(newItems) {
+    if (!api.getToken() || newItems.length === 0) return;
+    const myId = (wx.getStorageSync('userInfo') || {}).id;
+    const userIds = newItems.map(u => u.id).filter(id => id !== myId);
+    if (userIds.length === 0) return;
+    const queriedIds = new Set(newItems.map(u => u.id));
+    api.post('/api/partner/batch_status', { userIds }).then(statusMap => {
+      if (!statusMap) return;
+      const updated = this.data.userList.map(u => {
+        if (!queriedIds.has(u.id)) return u;
+        return { ...u, _partnerStatus: statusMap[u.id] || (u.id === myId ? 'self' : 'none') };
+      });
+      this.setData({ userList: updated });
+    }).catch(() => {});
   },
 
   onUserSearchInput(e) {
@@ -81,14 +98,18 @@ Page({
   },
 
   inviteUser(e) {
-    const id = e.currentTarget.dataset.id;
+    const id = Number(e.currentTarget.dataset.id);
     const myInfo = wx.getStorageSync('userInfo') || {};
-    if (Number(id) === myInfo.id) {
+    if (id === myInfo.id) {
       wx.showToast({ title: '不能添加自己', icon: 'none' });
       return;
     }
     api.post('/api/partner/invite', { targetId: id }).then(() => {
       wx.showToast({ title: '邀请已发送', icon: 'success' });
+      const userList = this.data.userList.map(u =>
+        u.id === id ? { ...u, _partnerStatus: 'pending' } : u
+      );
+      this.setData({ userList });
     }).catch(() => {});
   },
 

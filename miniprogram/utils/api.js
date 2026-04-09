@@ -10,6 +10,20 @@ function getToken() { return wx.getStorageSync('token') || ''; }
 function getAdminToken() { return wx.getStorageSync('admin_token') || ''; }
 function getBaseUrl() { return getRuntimeBaseUrl(); }
 
+let _redirectingToLogin = false;
+function requireLogin() {
+	if (_redirectingToLogin) return;
+	const pages = getCurrentPages();
+	const cur = pages[pages.length - 1];
+	const route = cur ? '/' + cur.route : '';
+	if (route === '/pages/login/login') return;
+	_redirectingToLogin = true;
+	wx.navigateTo({
+		url: '/pages/login/login',
+		complete() { _redirectingToLogin = false; }
+	});
+}
+
 function request(url, method = 'GET', data = {}, isAdmin = false) {
 	return new Promise((resolve, reject) => {
 		const header = { 'Content-Type': 'application/json' };
@@ -24,6 +38,11 @@ function request(url, method = 'GET', data = {}, isAdmin = false) {
 			success(res) {
 				if (res.data && res.data.code === 200) {
 					resolve(res.data.data);
+				} else if (res.data && res.data.code === 401) {
+					wx.removeStorageSync('token');
+					wx.removeStorageSync('userInfo');
+					requireLogin();
+					reject(res.data);
 				} else {
 					const msg = (res.data && res.data.msg) || '请求失败';
 					wx.showToast({ title: msg, icon: 'none' });
@@ -31,7 +50,7 @@ function request(url, method = 'GET', data = {}, isAdmin = false) {
 				}
 			},
 			fail(err) {
-				wx.showToast({ title: '网络错误', icon: 'none' });
+				wx.showToast({ title: '网络错误，请检查连接', icon: 'none' });
 				reject(err);
 			}
 		});
@@ -82,4 +101,4 @@ function adminDel(url) { return request(url, 'DELETE', {}, true); }
 		});
 	}
 
-module.exports = { BASE, getBaseUrl, get, post, put, del, adminGet, adminPost, adminDel, uploadImage, getToken };
+module.exports = { BASE, getBaseUrl, get, post, put, del, adminGet, adminPost, adminDel, uploadImage, getToken, requireLogin };

@@ -114,6 +114,9 @@
 		</view>
 	</view>
 
+	<van-loading wx:if="{{loadingRecords}}" size="24px" vertical>加载中...</van-loading>
+	<van-divider wx:if="{{!hasMoreRecords && records.length > 0}}" contentPosition="center">没有更多了</van-divider>
+
 	<!-- 底部空白占位 -->
 	<view style="height: 140rpx;"></view>
 
@@ -172,6 +175,9 @@
 	</van-popup>
 </view>
 
-<view class="loading-page" wx:if="{{!detail}}">
+<view class="loading-page" wx:if="{{!detail && !detailFailed}}">
 	<van-loading size="24px" vertical>加载中...</van-loading>
+</view>
+<view class="loading-page" wx:if="{{!detail && detailFailed}}">
+	<van-empty description="加载失败，请下拉重试" image="error" />
 </view>

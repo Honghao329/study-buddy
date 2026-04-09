@@ -76,7 +76,10 @@
         </view>
       </view>
       <view class="user-action-row mt20">
-        <van-button type="primary" plain round size="small" icon="plus" bind:click="inviteUser" data-id="{{item.id}}" custom-style="width: 200rpx;">加伙伴</van-button>
+        <van-button wx:if="{{item._partnerStatus === 'accepted'}}" plain round size="small" icon="passed" disabled custom-style="width: 200rpx;">已是伙伴</van-button>
+        <van-button wx:elif="{{item._partnerStatus === 'pending'}}" plain round size="small" icon="clock-o" disabled custom-style="width: 200rpx;">已邀请</van-button>
+        <van-button wx:elif="{{item._partnerStatus === 'self'}}" plain round size="small" disabled custom-style="width: 200rpx;">自己</van-button>
+        <van-button wx:else type="primary" plain round size="small" icon="plus" bind:click="inviteUser" data-id="{{item.id}}" custom-style="width: 200rpx;">加伙伴</van-button>
         <van-button plain round size="small" bind:click="goProfile" data-uid="{{item.id}}" custom-style="width: 200rpx;">查看主页</van-button>
       </view>
     </view>

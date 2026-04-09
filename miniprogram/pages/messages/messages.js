@@ -1,24 +1,31 @@
 const api = require('../../utils/api.js');
 
 Page({
-	data: { list: [], loading: false },
+	data: { list: [], loading: false, loadFailed: false, page: 1, size: 20, total: 0, hasMore: true },
 
 	onShow() {
-		if (!api.getToken()) return;
+		if (!api.getToken()) {
+			api.requireLogin();
+			return;
+		}
+		this.setData({ list: [], page: 1, hasMore: true });
 		this.loadMessages();
 	},
 
 	loadMessages() {
-		this.setData({ loading: true });
-		api.get('/api/message/list', { page: 1, size: 50 }).then(res => {
-			this.setData({ list: (res && res.list) || [], loading: false });
-		}).catch(() => { this.setData({ loading: false }); });
+		if (this.data.loading || !this.data.hasMore) return;
+		this.setData({ loading: true, loadFailed: false });
+		const { page, size } = this.data;
+		api.get('/api/message/list', { page, size }).then(res => {
+			const items = (res && res.list) || [];
+			const list = page === 1 ? items : this.data.list.concat(items);
+			this.setData({ list, total: res.total || 0, loading: false, hasMore: items.length >= size });
+		}).catch(() => { this.setData({ loading: false, loadFailed: true }); });
 	},
 
 	onMsgTap(e) {
 		const { type, id } = e.currentTarget.dataset;
 		const msgId = e.currentTarget.dataset.msgid;
-		// 单条标记已读
 		if (msgId) api.post('/api/message/read', { id: msgId }).catch(() => {});
 
 		if ((type === 'remind') && id) {
@@ -38,5 +45,16 @@ Page({
 		});
 	},
 
-	onPullDownRefresh() { this.loadMessages(); wx.stopPullDownRefresh(); },
+	onPullDownRefresh() {
+		this.setData({ list: [], page: 1, hasMore: true });
+		this.loadMessages();
+		wx.stopPullDownRefresh();
+	},
+
+	onReachBottom() {
+		if (this.data.hasMore && !this.data.loading) {
+			this.setData({ page: this.data.page + 1 });
+			this.loadMessages();
+		}
+	},
 });

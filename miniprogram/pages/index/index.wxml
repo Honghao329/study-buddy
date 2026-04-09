@@ -18,6 +18,12 @@
 		<van-icon name="arrow" color="#ccc" size="16px" />
 	</view>
 
+	<!-- 网络错误提示 -->
+	<view wx:if="{{loadFailed && checkins.length === 0 && notes.length === 0}}" class="card" style="text-align:center;padding:32rpx;color:#f56c6c;">
+		<van-icon name="warning-o" size="24px" color="#f56c6c" />
+		<view style="margin-top:8rpx;">数据加载失败，请下拉刷新重试</view>
+	</view>
+
 	<!-- 快捷导航 -->
 	<view class="nav-grid card">
 		<view class="nav-item" bindtap="goSign">

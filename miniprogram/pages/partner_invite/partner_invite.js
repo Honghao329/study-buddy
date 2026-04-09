@@ -9,8 +9,8 @@ Page({
 
   onShow() {
     if (!api.getToken()) {
-      wx.showToast({ title: '请先登录', icon: 'none' });
-      setTimeout(() => wx.navigateTo({ url: '/pages/login/login' }), 1000);
+      api.requireLogin();
+      return;
     }
   },
 

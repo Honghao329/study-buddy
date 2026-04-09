@@ -4,9 +4,14 @@ Page({
 	data: {
 		id: '',
 		detail: null,
+		detailFailed: false,
 		joining: false,
 		records: [],
 		recordTotal: 0,
+		recordPage: 1,
+		recordSize: 20,
+		hasMoreRecords: true,
+		loadingRecords: false,
 		showCheckinForm: false,
 		checkinContent: '',
 		showInvite: false,
@@ -24,26 +29,40 @@ Page({
 	onShow() {
 		if (this.data.id) {
 			this.loadDetail(this.data.id);
+			this.setData({ records: [], recordPage: 1, hasMoreRecords: true });
 			this.loadRecords();
 		}
 	},
 
 	loadDetail(id) {
+		this.setData({ detailFailed: false });
 		api.get('/api/checkin/detail/' + id).then(res => {
 			this.setData({ detail: res });
-		}).catch(() => {});
+		}).catch(() => {
+			this.setData({ detailFailed: true });
+		});
 	},
 
 	loadRecords() {
-		api.get('/api/checkin/records/' + this.data.id, { page: 1, size: 50 }).then(res => {
-			this.setData({ records: res.list || [], recordTotal: res.total || 0 });
-		}).catch(() => {});
+		if (this.data.loadingRecords || !this.data.hasMoreRecords) return;
+		this.setData({ loadingRecords: true });
+		const { recordPage, recordSize } = this.data;
+		api.get('/api/checkin/records/' + this.data.id, { page: recordPage, size: recordSize }).then(res => {
+			const items = res.list || [];
+			const records = recordPage === 1 ? items : this.data.records.concat(items);
+			this.setData({
+				records,
+				recordTotal: res.total || 0,
+				loadingRecords: false,
+				hasMoreRecords: items.length >= recordSize,
+			});
+		}).catch(() => { this.setData({ loadingRecords: false }); });
 	},
 
 	// === 打卡 ===
 	openCheckinForm() {
 		if (!api.getToken()) {
-			wx.showToast({ title: '请先登录', icon: 'none' });
+			api.requireLogin();
 			return;
 		}
 		this.setData({ showCheckinForm: true, checkinContent: '' });
@@ -84,7 +103,7 @@ Page({
 	},
 
 	closeInvite() { this.setData({ showInvite: false }); },
-	goPartner() { this.setData({ showInvite: false }); wx.navigateTo({ url: '/pages/partner/partner' }); },
+	goPartner() { this.setData({ showInvite: false }); wx.navigateTo({ url: '/pages/partner/partner?tab=2' }); },
 
 	selectSupervisor(e) {
 		const partnerId = e.currentTarget.dataset.id;
@@ -153,8 +172,16 @@ Page({
 
 	onPullDownRefresh() {
 		this.loadDetail(this.data.id);
+		this.setData({ records: [], recordPage: 1, hasMoreRecords: true });
 		this.loadRecords();
 		wx.stopPullDownRefresh();
+	},
+
+	onReachBottom() {
+		if (this.data.hasMoreRecords && !this.data.loadingRecords) {
+			this.setData({ recordPage: this.data.recordPage + 1 });
+			this.loadRecords();
+		}
 	},
 
 	onShareAppMessage() {
