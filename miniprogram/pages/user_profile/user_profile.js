@@ -20,7 +20,7 @@ Page({
 	},
 
 	loadProfile(id) {
-		api.get('/api/user/profile/' + id).then(res => {
+		return api.get('/api/user/profile/' + id).then(res => {
 			if (res) {
 				this.setData({ user: res });
 				wx.setNavigationBarTitle({ title: res.nickname || '用户主页' });
@@ -62,10 +62,17 @@ Page({
 		wx.navigateTo({ url: '/pages/note_detail/note_detail?id=' + id });
 	},
 
+	onPullDownRefresh() {
+		this.setData({ notes: [], page: 1, hasMore: true });
+		Promise.all([this.loadProfile(this.data.userId), this.loadNotes(this.data.userId)])
+			.finally(() => wx.stopPullDownRefresh());
+	},
+
 	onReachBottom() {
 		if (this.data.hasMore) {
 			this.setData({ page: this.data.page + 1 });
 			this.loadNotes();
 		}
 	},
+	onAvatarError() { this.setData({ 'user.avatar': '' }); },
 });

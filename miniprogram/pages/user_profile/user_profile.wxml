@@ -2,7 +2,7 @@
 	<!-- 用户信息卡片 -->
 	<view class="profile-header">
 		<view class="profile-avatar-wrap">
-			<image wx:if="{{user.avatar}}" class="profile-avatar" src="{{user.avatar}}" mode="aspectFill" />
+			<image wx:if="{{user.avatar}}" class="profile-avatar" src="{{user.avatar}}" mode="aspectFill" binderror="onAvatarError" />
 			<view wx:else class="profile-avatar-default">
 				<van-icon name="smile-o" size="40px" color="#fff" />
 			</view>

@@ -54,6 +54,10 @@ Page({
     });
   },
 
+  onAvatarError(e) {
+    const idx = e.currentTarget.dataset.idx;
+    this.setData({ [`userList[${idx}].avatar`]: '' });
+  },
   goProfile(e) {
     const uid = e.currentTarget.dataset.uid;
     if (uid) wx.navigateTo({ url: '/pages/user_profile/user_profile?id=' + uid });

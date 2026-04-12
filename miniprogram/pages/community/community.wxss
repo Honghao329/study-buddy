@@ -2,7 +2,8 @@
 .feed-card { margin: 20rpx 0; padding: 28rpx; }
 .feed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
 .feed-author-row { display: flex; align-items: center; flex: 1; }
-.feed-avatar { width: 64rpx; height: 64rpx; border-radius: 50%; }
+.feed-avatar { width: 64rpx; height: 64rpx; border-radius: 50%; flex-shrink: 0; }
+.feed-avatar-default { width: 64rpx; height: 64rpx; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; }
 .feed-author-info { flex: 1; margin-left: 16rpx; }
 .feed-follow-btn {
 	display: flex; align-items: center; gap: 4rpx;

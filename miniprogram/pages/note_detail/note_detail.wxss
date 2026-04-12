@@ -101,9 +101,18 @@
   border-left: 4rpx solid #EBF3FC;
 }
 .comment-avatar {
-  width: 64rpx;
-  height: 64rpx;
+  width: 48rpx;
+  height: 48rpx;
   border-radius: 50%;
+  flex-shrink: 0;
+}
+.comment-avatar-ph {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex; align-items: center; justify-content: center;
 }
 .comment-avatar-placeholder {
   width: 64rpx;
@@ -152,6 +161,7 @@
   padding: 14rpx 24rpx;
   font-size: 28rpx;
   height: 44rpx;
+  line-height: 44rpx;
 }
 .send-btn {
   margin-left: 16rpx;

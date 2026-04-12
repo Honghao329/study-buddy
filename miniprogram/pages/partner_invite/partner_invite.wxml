@@ -5,7 +5,7 @@
 
   <view class="card user-item" wx:for="{{userList}}" wx:key="id">
     <view class="flex-center" bindtap="goProfile" data-uid="{{item.id}}">
-      <image wx:if="{{item.avatar}}" class="avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+      <image wx:if="{{item.avatar}}" class="avatar" src="{{item.avatar}}" mode="aspectFill" binderror="onAvatarError" data-idx="{{index}}"></image>
       <view wx:else class="avatar-placeholder">
         <van-icon name="smile-o" size="22px" color="#fff" />
       </view>

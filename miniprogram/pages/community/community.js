@@ -128,6 +128,11 @@ Page({
     wx.stopPullDownRefresh();
   },
 
+  onAvatarError(e) {
+    const idx = e.currentTarget.dataset.idx;
+    this.setData({ [`notes[${idx}].user_pic`]: '' });
+  },
+
   onReachBottom() {
     if (this.data.hasMore && !this.data.loading) {
       this.setData({ page: this.data.page + 1 });
@@ -137,7 +142,7 @@ Page({
 
   toggleLike(e) {
     if (!api.getToken()) {
-      wx.navigateTo({ url: '/pages/login/login' });
+      api.requireLogin();
       return;
     }
     const id = e.currentTarget.dataset.id;
@@ -193,7 +198,7 @@ Page({
   },
 
   quickAddFriend(e) {
-    if (!api.getToken()) { wx.navigateTo({ url: '/pages/login/login' }); return; }
+    if (!api.getToken()) { api.requireLogin(); return; }
     const uid = e.currentTarget.dataset.uid;
     const idx = e.currentTarget.dataset.index;
     const myInfo = wx.getStorageSync('userInfo') || {};

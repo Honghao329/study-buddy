@@ -61,7 +61,7 @@
     <van-empty wx:if="{{rankList.length === 0}}" description="暂无排行数据" />
     <view class="rank-item flex-center" wx:for="{{rankList}}" wx:key="user_id">
       <view class="rank-num {{index < 3 ? 'rank-top' : ''}}">{{index + 1}}</view>
-      <image wx:if="{{item.user_pic}}" class="rank-avatar-img" src="{{item.user_pic}}" mode="aspectFill" />
+      <image wx:if="{{item.user_pic}}" class="rank-avatar-img" src="{{item.user_pic}}" mode="aspectFill" binderror="onRankAvatarError" data-idx="{{index}}" />
       <view wx:else class="rank-avatar"><van-icon name="smile-o" size="22px" color="#fff" /></view>
       <view class="rank-info flex-1">
         <view class="rank-name">{{item.user_name || '学习者'}}</view>

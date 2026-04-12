@@ -19,7 +19,8 @@
 .search-input {
   flex: 1;
   font-size: 28rpx;
-  height: 48rpx;
+  min-height: 48rpx;
+  line-height: 1.5;
 }
 .search-clear {
   color: #999;

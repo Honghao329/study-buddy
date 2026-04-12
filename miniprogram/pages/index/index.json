@@ -1,1 +1,8 @@
-{ "navigationBarTitleText": "学习伴侣", "enablePullDownRefresh": true }
+{
+	"navigationStyle": "custom",
+	"enablePullDownRefresh": true,
+	"usingComponents": {
+		"van-tabs": "@vant/weapp/tabs/index",
+		"van-tab": "@vant/weapp/tab/index"
+	}
+}

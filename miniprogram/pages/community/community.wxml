@@ -10,9 +10,9 @@
 		<view class="card feed-card" wx:for="{{notes}}" wx:key="id">
 			<view class="feed-header">
 				<view class="feed-author-row" catchtap="goProfile" data-uid="{{item.user_id}}">
-					<image wx:if="{{item.user_pic}}" class="feed-avatar" src="{{item.user_pic}}" mode="aspectFill" />
-					<view wx:else class="avatar-circle small">
-						<van-icon name="smile-o" size="20px" color="#fff" />
+					<image wx:if="{{item.user_pic}}" class="feed-avatar" src="{{item.user_pic}}" mode="aspectFill" binderror="onAvatarError" data-idx="{{index}}" />
+					<view wx:else class="feed-avatar-default">
+						<van-icon name="smile-o" size="22px" color="#fff" />
 					</view>
 					<view class="feed-author-info">
 						<text class="feed-name">{{item.user_name || '匿名'}}</text>

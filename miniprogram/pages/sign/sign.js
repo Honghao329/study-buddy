@@ -81,6 +81,10 @@ Page({
 		this.setData({ showModal: true, duration: '', statusIndex: 1, content: '' });
 	},
 
+	onRankAvatarError(e) {
+		const idx = e.currentTarget.dataset.idx;
+		this.setData({ [`rankList[${idx}].user_pic`]: '' });
+	},
 	closeModal() { this.setData({ showModal: false }); },
 	onDurationInput(e) { this.setData({ duration: e.detail.value }); },
 	setStatus(e) { this.setData({ statusIndex: Number(e.currentTarget.dataset.idx) }); },
@@ -88,8 +92,9 @@ Page({
 
 	doSign() {
 		const { duration, statusIndex, statusValues, content } = this.data;
+		const mins = Math.max(0, Math.min(1440, parseInt(duration) || 0));
 		api.post('/api/sign/do', {
-			duration: parseInt(duration) || 0,
+			duration: mins,
 			status: statusValues[statusIndex],
 			content
 		}).then(() => {

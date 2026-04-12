@@ -72,7 +72,7 @@
 				</view>
 				<view class="menu-item" bindtap="goSign">
 					<view class="menu-icon-box" style="background:#FFF3E0;"><van-icon name="clock-o" color="#FF9800" size="22px" /></view>
-					<text class="menu-label">学习签到</text>
+					<text class="menu-label">签到日历</text>
 					<van-icon name="arrow" color="#ccc" size="16px" />
 				</view>
 				<view class="menu-item" bindtap="goPartner">

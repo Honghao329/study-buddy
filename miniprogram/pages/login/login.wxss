@@ -76,7 +76,7 @@
 	width: 100%; box-sizing: border-box;
 	border: 2rpx solid #e8eef6; border-radius: 16rpx;
 	padding: 0 24rpx; font-size: 30rpx; background: #f8fbff;
-	height: 88rpx; min-height: 88rpx;
+	height: 88rpx; min-height: 88rpx; line-height: 88rpx;
 }
 .pwd-toggle {
 	position: absolute;

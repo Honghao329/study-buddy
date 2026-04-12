@@ -77,6 +77,8 @@ Page({
 
   doCreate() {
     if (!this.data.createForm.title.trim()) { wx.showToast({ title: '请输入标题', icon: 'none' }); return; }
+    const { start_date, end_date } = this.data.createForm;
+    if (start_date && end_date && start_date > end_date) { wx.showToast({ title: '开始日期不能晚于结束日期', icon: 'none' }); return; }
     this.setData({ creating: true });
     api.post('/api/checkin/create', this.data.createForm).then(res => {
       wx.showToast({ title: '创建成功', icon: 'success' });

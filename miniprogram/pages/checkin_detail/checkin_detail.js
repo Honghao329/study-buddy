@@ -36,7 +36,7 @@ Page({
 
 	loadDetail(id) {
 		this.setData({ detailFailed: false });
-		api.get('/api/checkin/detail/' + id).then(res => {
+		return api.get('/api/checkin/detail/' + id).then(res => {
 			this.setData({ detail: res });
 		}).catch(() => {
 			this.setData({ detailFailed: true });
@@ -44,10 +44,10 @@ Page({
 	},
 
 	loadRecords() {
-		if (this.data.loadingRecords || !this.data.hasMoreRecords) return;
+		if (this.data.loadingRecords || !this.data.hasMoreRecords) return Promise.resolve();
 		this.setData({ loadingRecords: true });
 		const { recordPage, recordSize } = this.data;
-		api.get('/api/checkin/records/' + this.data.id, { page: recordPage, size: recordSize }).then(res => {
+		return api.get('/api/checkin/records/' + this.data.id, { page: recordPage, size: recordSize }).then(res => {
 			const items = res.list || [];
 			const records = recordPage === 1 ? items : this.data.records.concat(items);
 			this.setData({
@@ -171,10 +171,9 @@ Page({
 	},
 
 	onPullDownRefresh() {
-		this.loadDetail(this.data.id);
 		this.setData({ records: [], recordPage: 1, hasMoreRecords: true });
-		this.loadRecords();
-		wx.stopPullDownRefresh();
+		Promise.all([this.loadDetail(this.data.id), this.loadRecords()])
+			.finally(() => wx.stopPullDownRefresh());
 	},
 
 	onReachBottom() {
@@ -182,6 +181,18 @@ Page({
 			this.setData({ recordPage: this.data.recordPage + 1 });
 			this.loadRecords();
 		}
+	},
+
+	onAvatarError(e) {
+		const idx = e.currentTarget.dataset.idx;
+		this.setData({ [`detail.recent_users[${idx}].avatar`]: '' });
+	},
+	onSupervisorAvatarError() {
+		this.setData({ 'detail.supervisor_avatar': '' });
+	},
+	onTimelineAvatarError(e) {
+		const idx = e.currentTarget.dataset.idx;
+		this.setData({ [`records[${idx}].user_avatar`]: '' });
 	},
 
 	onShareAppMessage() {

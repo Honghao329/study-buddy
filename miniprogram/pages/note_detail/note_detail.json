@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "笔记详情"
+  "navigationBarTitleText": "笔记详情",
+  "enablePullDownRefresh": true
 }

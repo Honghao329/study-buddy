@@ -113,6 +113,15 @@ Page({
     }).catch(() => {});
   },
 
+  onAvatarError(e) {
+    const idx = e.currentTarget.dataset.idx;
+    if (this.data.activeTab === 'my') this.setData({ [`myList[${idx}].avatarUrl`]: '' });
+    else this.setData({ [`pendingList[${idx}].avatarUrl`]: '' });
+  },
+  onUserAvatarError(e) {
+    const idx = e.currentTarget.dataset.idx;
+    this.setData({ [`userList[${idx}].avatar`]: '' });
+  },
   goProfile(e) {
     const uid = e.currentTarget.dataset.uid;
     if (uid) wx.navigateTo({ url: '/pages/user_profile/user_profile?id=' + uid });

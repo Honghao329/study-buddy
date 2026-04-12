@@ -48,7 +48,7 @@ Page({
 
   loadNote(id) {
     wx.showLoading({ title: '加载中' });
-    api.get('/api/note/detail/' + id).then(res => {
+    return api.get('/api/note/detail/' + id).then(res => {
       wx.hideLoading();
       const note = normalizeNote(res);
       this.setData({
@@ -58,6 +58,7 @@ Page({
       });
     }).catch(() => {
       wx.hideLoading();
+      this.setData({ detailFailed: true });
     });
   },
 
@@ -146,9 +147,22 @@ Page({
     wx.previewImage({ current: url, urls: this.data.note.images || [] });
   },
 
+  onAuthorAvatarError() {
+    this.setData({ 'note.author_avatar': '' });
+  },
+  onCommentAvatarError(e) {
+    const idx = e.currentTarget.dataset.idx;
+    this.setData({ [`comments[${idx}].author_avatar`]: '' });
+  },
   goProfile(e) {
     const uid = e.currentTarget.dataset.uid;
     if (uid) wx.navigateTo({ url: '/pages/user_profile/user_profile?id=' + uid });
+  },
+
+  onPullDownRefresh() {
+    this.setData({ comments: [], commentPage: 1, hasMoreComments: true });
+    Promise.all([this.loadNote(this.data.id), this.loadComments(this.data.id)])
+      .finally(() => wx.stopPullDownRefresh());
   },
 
   getVisibilityText(v) {
