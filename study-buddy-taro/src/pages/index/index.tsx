@@ -1,8 +1,8 @@
-import { Image, Text, View } from "@tarojs/components";
+import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useCallback, useMemo, useState } from "react";
-import { Avatar, Badge, Button, Cell, Empty, NoticeBar, Tag } from "@taroify/core";
-import { FireOutlined, Bell, Arrow } from "@taroify/icons";
+import { Avatar, Button, Cell, Empty, Loading, NoticeBar, Tag } from "@taroify/core";
+import { Arrow, Bell } from "@taroify/icons";
 import { api, isLoggedIn } from "~/api/request";
 import { resolveImageUrl } from "~/utils/imageUrl";
 
@@ -39,6 +39,8 @@ interface Note {
   comment_cnt: number;
 }
 
+type SectionStatus = "idle" | "loading" | "success" | "error";
+
 function getGreeting(): { text: string; emoji: string } {
   const h = new Date().getHours();
   if (h < 6) return { text: "夜深了", emoji: "🌙" };
@@ -50,6 +52,7 @@ function getGreeting(): { text: string; emoji: string } {
 
 export default function IndexPage() {
   const [logged, setLogged] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
   const [signStats, setSignStats] = useState<SignStats>({
     streak: 0,
     totalDays: 0,
@@ -61,43 +64,96 @@ export default function IndexPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [unread, setUnread] = useState(0);
+  const [signStatus, setSignStatus] = useState<SectionStatus>("idle");
+  const [taskStatus, setTaskStatus] = useState<SectionStatus>("idle");
+  const [activityStatus, setActivityStatus] = useState<SectionStatus>("idle");
+  const [noteStatus, setNoteStatus] = useState<SectionStatus>("idle");
+  const [homeError, setHomeError] = useState("");
 
   const greeting = useMemo(() => getGreeting(), []);
 
   const loadAll = useCallback(async () => {
-    try {
-      const [sign, checkins, noteRes, acts] = await Promise.all([
-        api.get("/api/sign/stats").catch(() => ({})),
-        api.get("/api/checkin/list", { page: 1, size: 10 }).catch(() => ({ list: [] })),
-        api.get("/api/note/public_list", { page: 1, size: 5, sort: "hot" }).catch(() => ({ list: [] })),
-        api.get("/api/home/activity").catch(() => []),
-      ]);
+    setPageLoading(true);
+    setHomeError("");
+    setSignStatus("loading");
+    setTaskStatus("loading");
+    setActivityStatus("loading");
+    setNoteStatus("loading");
 
+    const [signRes, checkinRes, noteRes, activityRes, unreadRes] = await Promise.allSettled([
+      api.get("/api/sign/stats"),
+      api.get("/api/checkin/list", { page: 1, size: 10 }),
+      api.get("/api/note/public_list", { page: 1, size: 5, sort: "hot" }),
+      api.get("/api/home/activity"),
+      api.get("/api/message/unread_count"),
+    ]);
+
+    let failedCount = 0;
+
+    if (signRes.status === "fulfilled") {
+      const sign = signRes.value || {};
       setSignStats({
         streak: sign.streak || 0,
         totalDays: sign.totalDays || 0,
         totalDuration: sign.totalDuration || 0,
         todaySigned: !!sign.todaySigned,
       });
+      setSignStatus("success");
+    } else {
+      failedCount += 1;
+      setSignStatus("error");
+    }
 
-      const taskList = checkins.list || [];
+    if (checkinRes.status === "fulfilled") {
+      const taskList = checkinRes.value?.list || [];
       let doneIds: number[] = [];
       if (taskList.length) {
         try {
           doneIds = await api.get("/api/checkin/today_done_ids");
-        } catch {}
+        } catch {
+          doneIds = [];
+        }
       }
       const mapped = taskList.map((t: any) => ({ ...t, _joined: doneIds.includes(t.id) }));
       setTasks(mapped);
       setTodayDone(mapped.filter((t: Task) => t._joined).length);
-      setNotes(noteRes.list || []);
-      setActivities(Array.isArray(acts) ? acts : []);
+      setTaskStatus("success");
+    } else {
+      failedCount += 1;
+      setTasks([]);
+      setTodayDone(0);
+      setTaskStatus("error");
+    }
 
-      try {
-        const u = await api.get("/api/message/unread_count");
-        setUnread(u || 0);
-      } catch {}
-    } catch {}
+    if (noteRes.status === "fulfilled") {
+      setNotes(noteRes.value?.list || []);
+      setNoteStatus("success");
+    } else {
+      failedCount += 1;
+      setNotes([]);
+      setNoteStatus("error");
+    }
+
+    if (activityRes.status === "fulfilled") {
+      const items = Array.isArray(activityRes.value) ? activityRes.value : [];
+      setActivities(items);
+      setActivityStatus("success");
+    } else {
+      failedCount += 1;
+      setActivities([]);
+      setActivityStatus("error");
+    }
+
+    if (unreadRes.status === "fulfilled") {
+      setUnread(Number(unreadRes.value) || 0);
+    } else {
+      setUnread(0);
+    }
+
+    if (failedCount >= 3) {
+      setHomeError("首页数据同步失败，当前看到的不是完整内容。");
+    }
+    setPageLoading(false);
   }, []);
 
   useDidShow(() => {
@@ -116,6 +172,64 @@ export default function IndexPage() {
   const onSignTap = () => {
     goSign();
   };
+
+  const quickSign = async () => {
+    if (!logged || signStats.todaySigned) {
+      goSign();
+      return;
+    }
+
+    try {
+      await api.post("/api/sign/do", {
+        duration: 30,
+        status: "normal",
+        content: "",
+      });
+      Taro.showToast({ title: "已快速签到", icon: "success" });
+      loadAll();
+    } catch {
+      Taro.showToast({ title: "快速签到失败", icon: "none" });
+    }
+  };
+
+  const renderSectionState = ({
+    title,
+    description,
+    actionText,
+    onAction,
+    compact = false,
+  }: {
+    title: string;
+    description: string;
+    actionText?: string;
+    onAction?: () => void;
+    compact?: boolean;
+  }) => (
+    <View
+      className={`rounded-2xl bg-white ${compact ? "px-4 py-5" : "px-4 py-7"}`}
+      style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
+    >
+      <Text className="block text-base font-bold text-[#1a1a1a] text-center">{title}</Text>
+      <Text className="block text-sm text-[#999] text-center mt-2 leading-6">{description}</Text>
+      {actionText && onAction && (
+        <View className="flex justify-center mt-4">
+          <Button
+            size="small"
+            round
+            style={{
+              background: "#1CB0F6",
+              color: "#fff",
+              border: "none",
+              padding: "0 18px",
+            }}
+            onClick={onAction}
+          >
+            {actionText}
+          </Button>
+        </View>
+      )}
+    </View>
+  );
 
   /* ---------- Not logged in ---------- */
   if (!logged) {
@@ -233,48 +347,107 @@ export default function IndexPage() {
       </View>
 
       <View className="px-4 pt-3">
+        {homeError && (
+          <View className="mb-3 rounded-2xl px-4 py-3" style={{ background: "#FFF7E6", border: "1px solid #FFE7BA" }}>
+            <Text className="block text-sm font-medium text-[#D46B08]">{homeError}</Text>
+            <Text className="block text-xs text-[#AD6800] mt-1">可先浏览已加载内容，也可以重新同步。</Text>
+            <View className="mt-3">
+              <Button
+                size="small"
+                round
+                style={{ background: "#FF9500", color: "#fff", border: "none" }}
+                onClick={loadAll}
+              >
+                重新同步
+              </Button>
+            </View>
+          </View>
+        )}
+
         {/* ====== Sign-in card ====== */}
-        <View
-          className="rounded-2xl px-4 py-3.5 mb-3"
-          style={{
-            background: "#fff",
-            boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
-            borderLeft: signStats.todaySigned ? "3px solid #58CC02" : "3px solid #FF9500",
-          }}
-          onClick={onSignTap}
-        >
-          <View className="flex items-center justify-between">
-            <View className="flex items-center gap-3 min-w-0 flex-1">
-              <Text className="text-xl">🔥</Text>
-              <View className="min-w-0">
-                <View className="flex items-center gap-1">
-                  <Text className="text-lg font-bold" style={{ color: signStats.todaySigned ? "#58CC02" : "#FF9500" }}>
-                    {signStats.streak || 0}
+        {signStatus === "loading" && pageLoading ? (
+          <View
+            className="rounded-2xl px-4 py-5 mb-3 flex items-center justify-center"
+            style={{ background: "#fff", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
+          >
+            <Loading type="spinner" style={{ color: "#FF9500" }}>
+              正在同步签到状态...
+            </Loading>
+          </View>
+        ) : signStatus === "error" ? (
+          <View className="mb-3">
+            {renderSectionState({
+              title: "签到数据暂时不可用",
+              description: "连续签到和今日状态没有拉到，先重试这块信息。",
+              actionText: "重新加载",
+              onAction: loadAll,
+              compact: true,
+            })}
+          </View>
+        ) : (
+          <View
+            className="rounded-2xl px-4 py-3.5 mb-3"
+            style={{
+              background: "#fff",
+              boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
+              borderLeft: signStats.todaySigned ? "3px solid #58CC02" : "3px solid #FF9500",
+            }}
+            onClick={onSignTap}
+          >
+            <View className="flex items-center justify-between">
+              <View className="flex items-center gap-3 min-w-0 flex-1">
+                <Text className="text-xl">🔥</Text>
+                <View className="min-w-0">
+                  <View className="flex items-center gap-1">
+                    <Text className="text-lg font-bold" style={{ color: signStats.todaySigned ? "#58CC02" : "#FF9500" }}>
+                      {signStats.streak || 0}
+                    </Text>
+                    <Text className="text-sm" style={{ color: "#333" }}>天连续</Text>
+                    <Text className="text-xs" style={{ color: "#ccc", margin: "0 4px" }}>·</Text>
+                    <Text className="text-xs" style={{ color: "#999" }}>累计{signStats.totalDays || 0}天</Text>
+                  </View>
+                </View>
+              </View>
+              <View className="shrink-0 flex items-center gap-2">
+                {!signStats.todaySigned ? (
+                  <Button
+                    round
+                    size="small"
+                    style={{
+                      background: "linear-gradient(135deg, #FF9500 0%, #F97316 100%)",
+                      color: "#fff",
+                      border: "none",
+                      fontWeight: 700,
+                      boxShadow: "0 4px 12px rgba(249,115,22,0.24)",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      quickSign();
+                    }}
+                  >
+                    快速签到
+                  </Button>
+                ) : (
+                  <Text className="text-sm shrink-0" style={{ color: "#58CC02", fontWeight: "500" }}>
+                    已签到 ✓
                   </Text>
-                  <Text className="text-sm" style={{ color: "#333" }}>天连续</Text>
-                  <Text className="text-xs" style={{ color: "#ccc", margin: "0 4px" }}>·</Text>
-                  <Text className="text-xs" style={{ color: "#999" }}>累计{signStats.totalDays || 0}天</Text>
+                )}
+                <View
+                  className="flex items-center shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSignTap();
+                  }}
+                >
+                  <Text className="text-xs" style={{ color: "#999" }}>
+                    完整页
+                  </Text>
+                  <Arrow style={{ marginLeft: "2px" }} />
                 </View>
               </View>
             </View>
-            {!signStats.todaySigned ? (
-              <View
-                className="shrink-0"
-                style={{
-                  background: "#FF9500", color: "#fff",
-                  fontSize: "13px", fontWeight: "600",
-                  padding: "6px 20px", borderRadius: "999px",
-                }}
-              >
-                签到
-              </View>
-            ) : (
-              <Text className="text-sm shrink-0" style={{ color: "#58CC02", fontWeight: "500" }}>
-                已签到 ✓
-              </Text>
-            )}
           </View>
-        </View>
+        )}
 
         {/* ====== Unread messages notice bar ====== */}
         {unread > 0 && (
@@ -298,7 +471,18 @@ export default function IndexPage() {
         )}
 
         {/* ====== Today's checkin tasks ====== */}
-        {tasks.length > 0 && (
+        {taskStatus === "loading" && pageLoading && (
+          <View
+            className="mb-4 rounded-2xl bg-white px-4 py-6 flex items-center justify-center"
+            style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
+          >
+            <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+              正在加载今日打卡...
+            </Loading>
+          </View>
+        )}
+
+        {taskStatus === "success" && tasks.length > 0 && (
           <View className="mb-4">
             <View className="flex justify-between items-center mb-3 px-1">
               <View className="flex items-center gap-2">
@@ -398,7 +582,18 @@ export default function IndexPage() {
         )}
 
         {/* ====== Empty state for tasks ====== */}
-        {tasks.length === 0 && (
+        {taskStatus === "error" && (
+          <View className="mb-4">
+            {renderSectionState({
+              title: "打卡任务加载失败",
+              description: "任务清单没有拉到，先刷新看看，避免把异常当成空列表。",
+              actionText: "重试任务列表",
+              onAction: loadAll,
+            })}
+          </View>
+        )}
+
+        {taskStatus === "success" && tasks.length === 0 && (
           <View
             className="mb-4 rounded-2xl overflow-hidden"
             style={{
@@ -438,7 +633,18 @@ export default function IndexPage() {
         )}
 
         {/* ====== Recent activity feed ====== */}
-        {activities.length > 0 && (
+        {activityStatus === "error" && (
+          <View className="mb-4">
+            {renderSectionState({
+              title: "动态流暂时不可用",
+              description: "社区动态接口当前失败，不是没有内容。",
+              actionText: "重试动态",
+              onAction: loadAll,
+            })}
+          </View>
+        )}
+
+        {activityStatus === "success" && activities.length > 0 && (
           <View className="mb-4">
             <View className="flex justify-between items-center mb-3 px-1">
               <Text className="text-lg font-bold" style={{ color: "#1a1a1a" }}>
@@ -507,7 +713,18 @@ export default function IndexPage() {
         )}
 
         {/* ====== Hot notes ====== */}
-        {notes.length > 0 && (
+        {noteStatus === "error" && (
+          <View className="mb-4">
+            {renderSectionState({
+              title: "热门笔记加载失败",
+              description: "推荐内容没拉到，先重试，不要把异常误判成没人发笔记。",
+              actionText: "重试推荐",
+              onAction: loadAll,
+            })}
+          </View>
+        )}
+
+        {noteStatus === "success" && notes.length > 0 && (
           <View className="mb-4">
             <View className="flex justify-between items-center mb-3 px-1">
               <View className="flex items-center gap-2">
@@ -586,6 +803,17 @@ export default function IndexPage() {
                 </View>
               </View>
             ))}
+          </View>
+        )}
+
+        {noteStatus === "success" && notes.length === 0 && (
+          <View className="mb-4">
+            {renderSectionState({
+              title: "还没有热门笔记",
+              description: "社区还没出现可推荐的公开内容，可以先去社区逛逛或发布一篇。",
+              actionText: "去社区看看",
+              onAction: () => Taro.switchTab({ url: "/pages/community/index" }),
+            })}
           </View>
         )}
 

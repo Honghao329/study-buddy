@@ -38,6 +38,13 @@ export const PAGES = {
   [RouteNames.PRIVACY_POLICY]: "/pages/agreements/privacy-policy",
 } as const;
 
+export const TAB_ROUTE_NAMES = [
+  RouteNames.HOME,
+  RouteNames.CHECKIN_LIST,
+  RouteNames.COMMUNITY,
+  RouteNames.MY,
+] as const;
+
 export function adaptPath(path: string): string {
   return path.replace(/^\//, "");
 }
@@ -49,3 +56,13 @@ export const ADAPTED_PAGES = Object.entries(PAGES).reduce(
   }),
   {} as { [K in RouteNames]: string },
 );
+
+export const ADAPTED_TAB_PAGES = TAB_ROUTE_NAMES.map((route) => ADAPTED_PAGES[route]);
+
+export function isTabPage(path?: string) {
+  if (!path) {
+    return false;
+  }
+
+  return ADAPTED_TAB_PAGES.includes(adaptPath(path));
+}

@@ -26,6 +26,8 @@ export default function CommunityPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [appendError, setAppendError] = useState("");
   const loadingRef = useRef(false);
 
   const hasMore = list.length < total;
@@ -35,6 +37,11 @@ export default function CommunityPage() {
       if (loadingRef.current) return;
       loadingRef.current = true;
       setLoading(true);
+      if (append) {
+        setAppendError("");
+      } else {
+        setLoadError("");
+      }
       try {
         const res = await api.get<{ list: NoteItem[]; total: number }>(
           "/api/note/public_list",
@@ -45,7 +52,14 @@ export default function CommunityPage() {
         setTotal(res.total || 0);
         setPage(p);
       } catch {
-        // silently fail
+        if (append) {
+          setAppendError("更多内容加载失败，请重试。");
+        } else {
+          setList([]);
+          setTotal(0);
+          setPage(1);
+          setLoadError("社区内容加载失败");
+        }
       } finally {
         loadingRef.current = false;
         setLoading(false);
@@ -106,6 +120,37 @@ export default function CommunityPage() {
 
       {/* Card list */}
       <View className="px-3 pt-3">
+        {loading && list.length === 0 && (
+          <View className="rounded-2xl bg-white py-10" style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}>
+            <View className="flex justify-center">
+              <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+                正在加载社区内容...
+              </Loading>
+            </View>
+          </View>
+        )}
+
+        {!loading && loadError && list.length === 0 && (
+          <View
+            className="bg-white rounded-2xl px-5 py-8"
+            style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
+          >
+            <Text className="block text-base font-bold text-center text-[#1a1a1a]">社区内容暂时不可用</Text>
+            <Text className="block text-sm text-center text-[#999] mt-2">
+              热门和最新列表都没有成功返回，这不是空社区。
+            </Text>
+            <View className="flex justify-center mt-4">
+              <View
+                className="px-4 py-2 rounded-full"
+                style={{ background: "#1CB0F6" }}
+                onClick={() => fetchList(1, sort)}
+              >
+                <Text className="text-white text-sm font-medium">重新加载</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {list.map((note) => (
           <View
             key={note.id}
@@ -137,8 +182,7 @@ export default function CommunityPage() {
               </Text>
             )}
 
-            {/* Stats row */}
-            <View className="flex items-center gap-4">
+            <View className="flex items-center gap-4 mt-2">
               <Text style={{ color: "#999", fontSize: "12px" }}>👍 {note.like_cnt || 0}</Text>
               <Text style={{ color: "#999", fontSize: "12px" }}>👁 {note.view_cnt || 0}</Text>
               <Text style={{ color: "#999", fontSize: "12px" }}>💬 {note.comment_cnt || 0}</Text>
@@ -147,7 +191,7 @@ export default function CommunityPage() {
         ))}
 
         {/* Loading state */}
-        {loading && (
+        {loading && list.length > 0 && (
           <View className="py-5 flex justify-center">
             <Loading type="spinner" style={{ color: "#1CB0F6" }}>
               加载中...
@@ -156,12 +200,28 @@ export default function CommunityPage() {
         )}
 
         {/* Empty state */}
-        {!loading && list.length === 0 && (
+        {!loading && !loadError && list.length === 0 && (
           <View className="pt-20">
             <Empty>
               <Empty.Image />
               <Empty.Description>暂无笔记，快去发布第一篇吧</Empty.Description>
             </Empty>
+          </View>
+        )}
+
+        {!loading && appendError && list.length > 0 && (
+          <View
+            className="mb-3 rounded-2xl px-4 py-3"
+            style={{ background: "#FFF7E6", border: "1px solid #FFE7BA" }}
+          >
+            <Text className="block text-sm text-[#D46B08]">{appendError}</Text>
+            <Text
+              className="block text-sm font-medium mt-2"
+              style={{ color: "#1CB0F6" }}
+              onClick={() => fetchList(page + 1, sort, true)}
+            >
+              继续重试加载更多
+            </Text>
           </View>
         )}
 

@@ -1,8 +1,8 @@
 import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useState } from "react";
-import { Avatar, Button, Cell, Field, Loading } from "@taroify/core";
-import { api } from "~/api/request";
+import { Avatar, Button, Cell, Empty, Field, Loading } from "@taroify/core";
+import { api, isLoggedIn } from "~/api/request";
 import { joinApiUrl } from "~/utils/apiBase";
 import { resolveImageUrl } from "~/utils/imageUrl";
 
@@ -18,16 +18,27 @@ export default function MyEditPage() {
   const [avatar, setAvatar] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [requiresLogin, setRequiresLogin] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   const fetchUserInfo = async () => {
+    if (!isLoggedIn()) {
+      setRequiresLogin(true);
+      setLoadError("");
+      setLoading(false);
+      return;
+    }
+
+    setRequiresLogin(false);
     setLoading(true);
     try {
       const res = await api.get<UserInfo>("/api/user/info");
       setNickname(res.nickname || "");
       setBio(res.bio || "");
       setAvatar(resolveImageUrl(res.avatar));
-    } catch {
-      // silently fail
+      setLoadError("");
+    } catch (error: any) {
+      setLoadError(error?.message || "资料加载失败，请稍后重试");
     } finally {
       setLoading(false);
     }
@@ -38,6 +49,10 @@ export default function MyEditPage() {
   });
 
   const handleChooseAvatar = async () => {
+    if (!isLoggedIn()) {
+      goLogin();
+      return;
+    }
     try {
       const chooseRes = await Taro.chooseImage({
         count: 1,
@@ -73,6 +88,10 @@ export default function MyEditPage() {
   };
 
   const handleSave = async () => {
+    if (!isLoggedIn()) {
+      goLogin();
+      return;
+    }
     if (saving) return;
     if (!nickname.trim()) {
       Taro.showToast({ title: "请输入昵称", icon: "none" });
@@ -96,6 +115,12 @@ export default function MyEditPage() {
     }
   };
 
+  const goLogin = () => {
+    Taro.navigateTo({
+      url: `/pages/login/index?redirect=${encodeURIComponent("/pages/my-edit/index")}`,
+    });
+  };
+
   if (loading) {
     return (
       <View
@@ -105,6 +130,46 @@ export default function MyEditPage() {
         <Loading type="spinner" style={{ color: "#1CB0F6" }}>
           加载中...
         </Loading>
+      </View>
+    );
+  }
+
+  if (requiresLogin) {
+    return (
+      <View className="min-h-screen flex flex-col items-center justify-center px-6" style={{ backgroundColor: "#F7F8FA" }}>
+        <Empty>
+          <Empty.Image />
+          <Empty.Description>登录后才能编辑个人资料</Empty.Description>
+        </Empty>
+        <Button
+          round
+          size="small"
+          className="mt-4"
+          style={{ backgroundColor: "#1CB0F6", color: "#fff", border: "none", fontWeight: "bold" }}
+          onClick={goLogin}
+        >
+          去登录
+        </Button>
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View className="min-h-screen flex flex-col items-center justify-center px-6" style={{ backgroundColor: "#F7F8FA" }}>
+        <Empty>
+          <Empty.Image />
+          <Empty.Description>{loadError}</Empty.Description>
+        </Empty>
+        <Button
+          round
+          size="small"
+          className="mt-4"
+          style={{ backgroundColor: "#1CB0F6", color: "#fff", border: "none", fontWeight: "bold" }}
+          onClick={fetchUserInfo}
+        >
+          重试
+        </Button>
       </View>
     );
   }

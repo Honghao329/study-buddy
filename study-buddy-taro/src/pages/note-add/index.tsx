@@ -1,20 +1,17 @@
 import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
-import { useState } from "react";
-import { Button, Cell, Field, Switch } from "@taroify/core";
+import { useRef, useState } from "react";
+import { Button, Cell, Empty, Field, Loading, Switch } from "@taroify/core";
 import { Edit } from "@taroify/icons";
-import { api } from "~/api/request";
+import { api, isLoggedIn } from "~/api/request";
 
 const MAX_CONTENT = 5000;
 const MAX_TITLE = 100;
 
 interface NoteData {
-  id: number;
   title: string;
   content: string;
   visibility: string;
-  images: string[];
-  tags: string[];
 }
 
 export default function NoteAddPage() {
@@ -22,37 +19,96 @@ export default function NoteAddPage() {
   const [content, setContent] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState("");
-  const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [requiresLogin, setRequiresLogin] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const loadedRef = useRef(false);
+  const routeKeyRef = useRef("");
 
+  const editMode = !!editId;
   const canSubmit = title.trim().length > 0 && content.trim().length > 0;
+
+  const fetchEditNote = async (id: string) => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const res = await api.get<NoteData>(`/api/note/detail/${id}`);
+      setTitle(res.title || "");
+      setContent(res.content || "");
+      setIsPublic(res.visibility === "public");
+      loadedRef.current = true;
+    } catch {
+      setLoadError("笔记加载失败，请重新进入或稍后重试");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useDidShow(() => {
     const params = Taro.getCurrentInstance().router?.params || {};
     const id = params.id || "";
     const isEdit = params.edit === "1" && !!id;
+    const routeKey = `${isEdit ? "edit" : "create"}:${id || "new"}`;
 
-    if (isEdit && !loaded) {
-      setEditMode(true);
+    if (routeKeyRef.current !== routeKey) {
+      routeKeyRef.current = routeKey;
+      loadedRef.current = false;
+      setLoadError("");
+      setSubmitting(false);
+    }
+
+    if (!isLoggedIn()) {
+      setRequiresLogin(true);
+      setLoading(false);
+      setLoadError("");
+      setEditId("");
+      setTitle("");
+      setContent("");
+      setIsPublic(true);
+      Taro.setNavigationBarTitle({ title: isEdit ? "编辑笔记" : "发布笔记" });
+      return;
+    }
+
+    setRequiresLogin(false);
+
+    if (isEdit && !loadedRef.current) {
       setEditId(id);
       Taro.setNavigationBarTitle({ title: "编辑笔记" });
-      // Load existing note data
-      api.get<NoteData>(`/api/note/detail/${id}`).then((res) => {
-        setTitle(res.title || "");
-        setContent(res.content || "");
-        setIsPublic(res.visibility === "public");
-        setLoaded(true);
-      }).catch(() => {
-        Taro.showToast({ title: "加载笔记失败", icon: "none" });
-      });
+      fetchEditNote(id);
     } else if (!isEdit) {
-      setEditMode(false);
       setEditId("");
+      setTitle("");
+      setContent("");
+      setIsPublic(true);
+      setLoading(false);
+      setLoadError("");
+      loadedRef.current = true;
+      Taro.setNavigationBarTitle({ title: "发布笔记" });
     }
   });
 
+  const goLogin = () => {
+    Taro.navigateTo({
+      url: `/pages/login/index?redirect=${encodeURIComponent("/pages/note-add/index")}`,
+    });
+  };
+
+  const reloadEdit = () => {
+    loadedRef.current = false;
+    setLoadError("");
+    const id = Taro.getCurrentInstance().router?.params?.id || "";
+    if (id) {
+      setEditId(id);
+      fetchEditNote(id);
+    }
+  };
+
   const handlePublish = async () => {
+    if (!isLoggedIn()) {
+      goLogin();
+      return;
+    }
     if (!canSubmit || submitting) return;
     setSubmitting(true);
     try {
@@ -80,6 +136,56 @@ export default function NoteAddPage() {
       setSubmitting(false);
     }
   };
+
+  if (requiresLogin) {
+    return (
+      <View className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: "#F7F8FA" }}>
+        <Empty>
+          <Empty.Image />
+          <Empty.Description>登录后才能发布或编辑笔记</Empty.Description>
+        </Empty>
+        <Button
+          round
+          size="small"
+          className="mt-4"
+          style={{ background: "#58CC02", color: "#fff", border: "none", fontWeight: 700 }}
+          onClick={goLogin}
+        >
+          去登录
+        </Button>
+      </View>
+    );
+  }
+
+  if (loading) {
+    return (
+      <View className="min-h-screen flex items-center justify-center" style={{ background: "#F7F8FA" }}>
+        <Loading type="spinner" style={{ color: "#58CC02" }}>
+          加载中...
+        </Loading>
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: "#F7F8FA" }}>
+        <Empty>
+          <Empty.Image />
+          <Empty.Description>{loadError}</Empty.Description>
+        </Empty>
+        <Button
+          round
+          size="small"
+          className="mt-4"
+          style={{ background: "#58CC02", color: "#fff", border: "none", fontWeight: 700 }}
+          onClick={reloadEdit}
+        >
+          重试
+        </Button>
+      </View>
+    );
+  }
 
   return (
     <View className="min-h-screen" style={{ background: "#F7F8FA" }}>

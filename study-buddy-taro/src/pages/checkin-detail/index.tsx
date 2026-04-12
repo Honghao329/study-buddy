@@ -1,11 +1,18 @@
 import { Image, Text, View } from "@tarojs/components";
-import Taro, { useDidShow } from "@tarojs/taro";
-import { useCallback, useState } from "react";
-import { Avatar, Button, Cell, Divider, Empty, Tag } from "@taroify/core";
-import { ClockOutlined, FireOutlined } from "@taroify/icons";
+import Taro, { useDidShow, useReachBottom } from "@tarojs/taro";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Avatar, Button, Empty, Loading, Tag } from "@taroify/core";
+import {
+  CalendarOutlined,
+  ClockOutlined,
+  EyeOutlined,
+  FireOutlined,
+  UserOutlined,
+} from "@taroify/icons";
+import ContentMetrics from "~/components/ContentMetrics";
+import InputPopup from "~/components/InputPopup";
 import { api, isLoggedIn } from "~/api/request";
 import { formatRelativeTimestamp } from "~/utils/timeFormatter";
-import InputPopup from "~/components/InputPopup";
 import { resolveImageUrl } from "~/utils/imageUrl";
 
 interface CheckinDetail {
@@ -13,14 +20,26 @@ interface CheckinDetail {
   title: string;
   description: string;
   join_cnt: number;
+  view_cnt: number;
   creator_id: number;
-  creator_name: string;
-  creator_avatar: string;
   supervisor_id: number;
-  supervisor_name: string;
+  supervisor_display_name: string;
+  supervisor_avatar: string;
   created_at: string;
+  has_supervisor?: boolean;
+  is_supervisor?: boolean;
   is_joined?: boolean;
   my_total?: number;
+  recent_users?: RecentUser[];
+  start_date?: string;
+  end_date?: string;
+}
+
+interface RecentUser {
+  user_id: number;
+  nickname: string;
+  avatar: string;
+  day: string;
 }
 
 interface CheckinRecord {
@@ -36,53 +55,87 @@ interface CheckinRecord {
   comment_by: string;
 }
 
+interface CreatorProfile {
+  id: number;
+  nickname: string;
+  avatar: string;
+  bio: string;
+  note_cnt: number;
+  sign_days: number;
+  checkin_cnt: number;
+  partner_status: "none" | "pending" | "accepted";
+  created_at: string;
+}
+
+const PAGE_SIZE = 20;
+
 export default function CheckinDetailPage() {
   const { id } = Taro.getCurrentInstance().router?.params || {};
+  const logged = isLoggedIn();
 
   const [detail, setDetail] = useState<CheckinDetail | null>(null);
+  const [creator, setCreator] = useState<CreatorProfile | null>(null);
   const [records, setRecords] = useState<CheckinRecord[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [todayDone, setTodayDone] = useState(false);
   const [joined, setJoined] = useState(false);
+  const [todayDone, setTodayDone] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [recordsLoading, setRecordsLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [recordsError, setRecordsError] = useState("");
   const [checkinOpen, setCheckinOpen] = useState(false);
   const [checkinContent, setCheckinContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const loadingRef = useRef(false);
 
   const loadDetail = useCallback(async () => {
-    if (!id) return;
-    try {
-      const data = await api.get<CheckinDetail>(`/api/checkin/detail/${id}`);
-      setDetail(data);
-      setTodayDone(Boolean(data.is_joined));
-      setJoined(Boolean((data.my_total || 0) > 0));
-      setLoadError("");
-    } catch {
-      setDetail(null);
-      setLoadError("任务加载失败");
-      Taro.showToast({ title: "加载失败", icon: "none" });
-    }
+    if (!id) return null;
+    const res = await api.get<CheckinDetail>(`/api/checkin/detail/${id}`);
+    setDetail(res);
+    setTodayDone(Boolean(res?.is_joined));
+    setJoined(Boolean((res?.my_total || 0) > 0));
+    return res;
   }, [id]);
 
+  const loadCreator = useCallback(async (creatorId: number) => {
+    if (!creatorId) {
+      setCreator(null);
+      return;
+    }
+
+    try {
+      const res = await api.get<CreatorProfile>(`/api/user/profile/${creatorId}`);
+      setCreator(res);
+    } catch {
+      setCreator(null);
+    }
+  }, []);
+
   const loadRecords = useCallback(
-    async (p = 1, append = false) => {
-      if (!id || !isLoggedIn()) return;
+    async (nextPage = 1, append = false) => {
+      if (!id || loadingRef.current) return;
+
+      loadingRef.current = true;
+      setRecordsLoading(true);
+      setRecordsError("");
       try {
         const res = await api.get<{ list: CheckinRecord[]; total: number }>(
           `/api/checkin/records/${id}`,
-          { page: p, size: 20 }
+          { page: nextPage, size: PAGE_SIZE },
         );
-        const list = res?.list || [];
+        const list = res.list || [];
         setRecords((prev) => (append ? [...prev, ...list] : list));
-        setHasMore((p - 1) * 20 + list.length < (res?.total || 0));
-        setPage(p);
-      } catch {
-        /* silent */
+        setHasMore((nextPage - 1) * PAGE_SIZE + list.length < (res.total || 0));
+        setPage(nextPage);
+      } catch (error: any) {
+        setRecordsError(error?.message || "打卡记录加载失败");
+      } finally {
+        loadingRef.current = false;
+        setRecordsLoading(false);
       }
     },
-    [id]
+    [id],
   );
 
   const loadPage = useCallback(async () => {
@@ -91,72 +144,190 @@ export default function CheckinDetailPage() {
     setRecords([]);
     setPage(1);
     setHasMore(true);
-    setTodayDone(false);
     setJoined(false);
+    setTodayDone(false);
     setCheckinOpen(false);
     setCheckinContent("");
     setSubmitting(false);
-    await Promise.all([loadDetail(), isLoggedIn() ? loadRecords(1) : Promise.resolve()]);
-    setLoading(false);
-  }, [loadDetail, loadRecords]);
+    setRecordsLoading(false);
+    setRecordsError("");
+    loadingRef.current = false;
+
+    try {
+      const detailRes = await loadDetail();
+      if (detailRes) {
+        await loadCreator(detailRes.creator_id);
+      }
+
+      await loadRecords(1, false);
+    } catch (error: any) {
+      const message = error?.message || "任务加载失败";
+      setLoadError(message);
+      Taro.showToast({ title: message, icon: "none" });
+    } finally {
+      setLoading(false);
+    }
+  }, [loadCreator, loadDetail, loadRecords]);
 
   useDidShow(() => {
     loadPage();
   });
 
+  useReachBottom(() => {
+    if (!loading && hasMore && !loadingRef.current && !recordsError) {
+      loadRecords(page + 1, true);
+    }
+  });
+
+  const goLogin = () => {
+    Taro.navigateTo({
+      url: `/pages/login/index?redirect=${encodeURIComponent(
+        `/pages/checkin-detail/index?id=${id}`,
+      )}`,
+    });
+  };
+
   const openCheckinPopup = () => {
+    if (!isLoggedIn()) {
+      Taro.showToast({ title: "请先登录", icon: "none" });
+      goLogin();
+      return;
+    }
+
     setCheckinContent("");
     setCheckinOpen(true);
   };
 
   const submitCheckin = async () => {
     if (!id || submitting) return;
+
+    const cleanContent = checkinContent.trim();
+    if (cleanContent.length < 5) {
+      Taro.showToast({ title: "至少写 5 个字的打卡内容", icon: "none" });
+      return;
+    }
+
     setSubmitting(true);
     try {
       await api.post("/api/checkin/join", {
         checkinId: Number(id),
-        content: checkinContent.trim(),
+        content: cleanContent,
       });
       Taro.showToast({ title: "打卡成功", icon: "success" });
+      setCheckinOpen(false);
       setTodayDone(true);
       setJoined(true);
-      setCheckinOpen(false);
-      loadRecords(1);
-      loadDetail();
-    } catch {
-      Taro.showToast({ title: "打卡失败", icon: "none" });
+      await Promise.all([loadRecords(1, false), loadDetail()]);
+    } catch (error: any) {
+      Taro.showToast({ title: error?.message || "打卡失败", icon: "none" });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const loadMore = () => {
-    if (hasMore) {
-      loadRecords(page + 1, true);
-    }
+  const reload = () => {
+    loadPage();
   };
 
-  if (loading) {
+  const retryRecords = () => {
+    loadRecords(1, false);
+  };
+
+  const ctaState = useMemo(() => {
+    if (!logged) {
+      return {
+        label: "登录后参与",
+        disabled: false,
+        tone: "info",
+      };
+    }
+
+    if (!joined) {
+      return {
+        label: "首次打卡并加入",
+        disabled: false,
+        tone: "info",
+      };
+    }
+
+    if (todayDone) {
+      return {
+        label: "今日已打卡",
+        disabled: true,
+        tone: "neutral",
+      };
+    }
+
+    return {
+      label: "今日打卡",
+      disabled: false,
+      tone: "success",
+    };
+  }, [joined, logged, todayDone]);
+
+  const summaryMetrics = useMemo(() => {
+    const recentCount = detail?.recent_users?.length || 0;
+
+    return [
+      {
+        key: "join",
+        icon: <FireOutlined size="16" />,
+        label: "参与人数",
+        value: detail?.join_cnt || 0,
+        tone: "success" as const,
+      },
+      {
+        key: "view",
+        icon: <EyeOutlined size="16" />,
+        label: "浏览次数",
+        value: detail?.view_cnt || 0,
+        tone: "info" as const,
+      },
+      {
+        key: "mine",
+        icon: <ClockOutlined size="16" />,
+        label: "我的记录",
+        value: detail?.my_total || 0,
+        tone: "warning" as const,
+      },
+      {
+        key: "recent",
+        icon: <CalendarOutlined size="16" />,
+        label: "最近参与",
+        value: recentCount,
+        tone: "primary" as const,
+      },
+    ];
+  }, [detail]);
+
+  if (loading && !detail) {
     return (
-      <View className="min-h-screen flex items-center justify-center" style={{ background: "#F7F8FA" }}>
-        <Text className="text-sm" style={{ color: "#999" }}>加载中...</Text>
+      <View className="min-h-screen flex items-center justify-center" style={{ background: "#F8FAFC" }}>
+        <Loading type="spinner" style={{ color: "#0F766E" }}>
+          加载中...
+        </Loading>
       </View>
     );
   }
 
   if (loadError || !detail) {
     return (
-      <View className="min-h-screen flex flex-col items-center justify-center px-8" style={{ background: "#F7F8FA" }}>
+      <View className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: "#F8FAFC" }}>
         <Empty>
           <Empty.Image />
           <Empty.Description>{loadError || "任务不存在"}</Empty.Description>
         </Empty>
         <Button
-          color="primary"
-          shape="round"
+          round
           size="small"
-          style={{ marginTop: "16px", background: "#58CC02", borderColor: "#58CC02" }}
-          onClick={loadPage}
+          className="mt-4"
+          style={{
+            background: "linear-gradient(135deg, #0F766E 0%, #16A34A 100%)",
+            color: "#fff",
+            border: "none",
+            fontWeight: 700,
+          }}
+          onClick={reload}
         >
           重试
         </Button>
@@ -165,268 +336,418 @@ export default function CheckinDetailPage() {
   }
 
   return (
-    <View className="min-h-screen pb-40" style={{ background: "#F7F8FA" }}>
-      {/* Hero header with gradient */}
-      <View
-        className="px-4 pt-4 pb-6"
-        style={{
-          background: "linear-gradient(135deg, #58CC02 0%, #46a302 100%)",
-          borderRadius: "0 0 24px 24px",
-        }}
-      >
-        <Text className="block text-xl font-bold text-white mb-2 leading-snug">
-          {detail.title}
-        </Text>
-        {detail.description && (
-          <Text className="block text-sm text-white mb-3 leading-relaxed" style={{ opacity: 0.85 }}>
-            {detail.description}
-          </Text>
-        )}
-        <View className="flex items-center gap-3 mt-3">
-          <Tag color="primary" shape="round" size="medium" style={{ background: "rgba(255,255,255,0.2)", color: "#fff", borderColor: "transparent" }}>
-            {detail.join_cnt} 人参与
-          </Tag>
-          {detail.supervisor_name && (
-            <Tag shape="round" size="medium" style={{ background: "rgba(255,255,255,0.2)", color: "#fff", borderColor: "transparent" }}>
-              监督: {detail.supervisor_name}
-            </Tag>
-          )}
-        </View>
-      </View>
+    <View className="min-h-screen pb-10" style={{ background: "#F8FAFC" }}>
+      <View className="px-4 pt-4">
+        <View
+          className="relative overflow-hidden rounded-[28px] px-5 py-5"
+          style={{
+            background: "linear-gradient(135deg, #0F172A 0%, #0F766E 52%, #16A34A 120%)",
+            boxShadow: "0 16px 40px rgba(15, 23, 42, 0.14)",
+          }}
+        >
+          <View className="absolute -right-10 -top-8 h-28 w-28 rounded-full bg-white/10" />
+          <View className="absolute bottom-0 left-6 h-16 w-16 rounded-full bg-emerald-300/10" />
 
-      {/* Creator info card */}
-      <View
-        className="mx-3 -mt-4 bg-white rounded-2xl p-4"
-        style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}
-      >
-        <Cell
-          style={{ padding: 0 }}
-          title={
-            <View className="flex items-center">
-              <Avatar
-                src={resolveImageUrl(detail.creator_avatar)}
+          <View className="flex items-start justify-between gap-4">
+            <View className="min-w-0 flex-1">
+              <Text className="block text-xl font-semibold text-white">{detail.title}</Text>
+              {detail.description ? (
+                <Text className="mt-2 block text-sm leading-6 text-white/75">
+                  {detail.description}
+                </Text>
+              ) : (
+                <Text className="mt-2 block text-sm leading-6 text-white/60">
+                  这是一个打卡任务，完成后会记录你的学习过程。
+                </Text>
+              )}
+            </View>
+            <View
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10"
+              style={{ border: "1px solid rgba(255,255,255,0.14)" }}
+            >
+              <FireOutlined size="20" color="#fff" />
+            </View>
+          </View>
+
+          <View className="mt-4 flex flex-wrap gap-2">
+            <Tag
+              shape="rounded"
+              size="small"
+              style={{
+                background: "rgba(255,255,255,0.14)",
+                color: "#fff",
+                borderColor: "transparent",
+              }}
+            >
+              {detail.join_cnt || 0} 人参与
+            </Tag>
+            <Tag
+              shape="rounded"
+              size="small"
+              style={{
+                background: "rgba(255,255,255,0.14)",
+                color: "#fff",
+                borderColor: "transparent",
+              }}
+            >
+              创建于 {formatRelativeTimestamp(detail.created_at)}
+            </Tag>
+            {detail.supervisor_display_name ? (
+              <Tag
+                shape="rounded"
                 size="small"
-                shape="circle"
-                style={{ marginRight: "10px" }}
+                style={{
+                  background: "rgba(255,255,255,0.14)",
+                  color: "#fff",
+                  borderColor: "transparent",
+                }}
+              >
+                监督者 {detail.supervisor_display_name}
+              </Tag>
+            ) : null}
+          </View>
+        </View>
+
+        <View className="mt-4">
+          <ContentMetrics variant="tiles" items={summaryMetrics} />
+        </View>
+
+        <View className="mt-4 rounded-3xl bg-white p-4 shadow-sm" style={{ boxShadow: "0 1px 10px rgba(15, 23, 42, 0.05)" }}>
+          <View className="flex items-center justify-between">
+            <View>
+              <Text className="block text-sm font-semibold text-slate-900">创建者</Text>
+              <Text className="mt-1 block text-xs text-slate-500">查看任务创建者的公开资料</Text>
+            </View>
+            {creator?.id ? (
+              <Button
+                shape="round"
+                size="small"
+                style={{
+                  background: "#F1F5F9",
+                  color: "#334155",
+                  border: "none",
+                  fontWeight: 700,
+                }}
+                onClick={() => Taro.navigateTo({ url: `/pages/user-profile/index?id=${creator.id}` })}
+              >
+                查看主页
+              </Button>
+            ) : null}
+          </View>
+
+          <View className="mt-4 flex items-start">
+            <Avatar
+              src={resolveImageUrl(creator?.avatar || detail.supervisor_avatar)}
+              size="large"
+              style={{ flexShrink: 0, background: "#E2E8F0" }}
+            >
+              {!creator?.avatar && !detail.supervisor_avatar ? (
+                <UserOutlined size="24" color="#64748B" />
+              ) : null}
+            </Avatar>
+            <View className="ml-3 flex-1 min-w-0">
+              <Text className="block text-base font-semibold text-slate-900">
+                {creator?.nickname || detail.supervisor_display_name || "未设置创建者信息"}
+              </Text>
+              <Text className="mt-1 block text-sm leading-6 text-slate-600">
+                {creator?.bio || "创建者还没有填写简介。"}
+              </Text>
+              <Text className="mt-2 block text-xs text-slate-400">
+                创建于 {creator?.created_at ? formatRelativeTimestamp(creator.created_at) : formatRelativeTimestamp(detail.created_at)}
+              </Text>
+            </View>
+          </View>
+
+          {creator ? (
+            <View className="mt-4">
+              <ContentMetrics
+                variant="inline"
+                items={[
+                  {
+                    key: "notes",
+                    icon: <UserOutlined size="14" />,
+                    label: "公开笔记",
+                    value: creator.note_cnt || 0,
+                    tone: "primary",
+                  },
+                  {
+                    key: "sign-days",
+                    icon: <CalendarOutlined size="14" />,
+                    label: "签到天数",
+                    value: creator.sign_days || 0,
+                    tone: "warning",
+                  },
+                  {
+                    key: "checkin",
+                    icon: <FireOutlined size="14" />,
+                    label: "打卡次数",
+                    value: creator.checkin_cnt || 0,
+                    tone: "success",
+                  },
+                ]}
               />
-              <View>
-                <Text className="block text-sm font-medium" style={{ color: "#333" }}>
-                  {detail.creator_name}
-                </Text>
-                <Text className="block text-xs" style={{ color: "#999", marginTop: "2px" }}>
-                  创建于 {formatRelativeTimestamp(detail.created_at)}
-                </Text>
+            </View>
+          ) : null}
+        </View>
+
+        <View className="mt-4 rounded-3xl bg-white p-4 shadow-sm" style={{ boxShadow: "0 1px 10px rgba(15, 23, 42, 0.05)" }}>
+          <View className="flex items-center justify-between">
+            <View className="min-w-0 flex-1">
+              <Text className="block text-sm font-semibold text-slate-900">任务参与状态</Text>
+              <Text className="mt-1 block text-xs text-slate-500">
+                {joined
+                  ? todayDone
+                    ? "你已经参与并完成了今天的打卡。"
+                    : "你已经参与过这个任务，今天可以继续打卡。"
+                  : "首次参与会自动加入任务。"}
+              </Text>
+            </View>
+            <Tag
+              shape="rounded"
+              size="small"
+              style={{
+                background: todayDone ? "rgba(22,163,74,0.12)" : "rgba(14,165,233,0.10)",
+                color: todayDone ? "#16A34A" : "#0EA5E9",
+                borderColor: "transparent",
+              }}
+            >
+              {ctaState.label}
+            </Tag>
+          </View>
+
+          <Button
+            block
+            shape="round"
+            size="large"
+            className="mt-4"
+            disabled={ctaState.disabled}
+            style={{
+              background: ctaState.disabled
+                ? "#CBD5E1"
+                : ctaState.tone === "success"
+                  ? "linear-gradient(135deg, #16A34A 0%, #0F766E 100%)"
+                  : "linear-gradient(135deg, #0F766E 0%, #0EA5E9 100%)",
+              color: "#fff",
+              border: "none",
+              fontWeight: 700,
+              boxShadow: ctaState.disabled ? "none" : "0 10px 22px rgba(15, 118, 110, 0.22)",
+            }}
+            onClick={ctaState.disabled ? undefined : openCheckinPopup}
+          >
+            {ctaState.label}
+          </Button>
+        </View>
+
+        <View className="mt-4 rounded-3xl bg-white p-4 shadow-sm" style={{ boxShadow: "0 1px 10px rgba(15, 23, 42, 0.05)" }}>
+          <View className="flex items-center justify-between">
+            <View className="flex items-center gap-2">
+              <Text className="text-base font-semibold text-slate-900">最近参与</Text>
+              <View className="rounded-full bg-slate-100 px-2 py-1 text-[10px] text-slate-500">
+                参与者速览
               </View>
             </View>
-          }
-        />
-      </View>
+            <Text className="text-xs text-slate-400">{detail.recent_users?.length || 0} 人</Text>
+          </View>
 
-      {/* Action button */}
-      <View className="mx-3 mt-4">
-        {!joined ? (
-          <Button
-            color="primary"
-            shape="round"
-            block
-            size="large"
-            style={{
-              background: "#1CB0F6",
-              borderColor: "#1CB0F6",
-              fontWeight: 600,
-              fontSize: "16px",
-              boxShadow: "0 4px 12px rgba(28,176,246,0.3)",
-            }}
-            onClick={openCheckinPopup}
-          >
-            加入任务
-          </Button>
-        ) : todayDone ? (
-          <Button
-            shape="round"
-            block
-            size="large"
-            disabled
-            style={{
-              background: "#E8F5E9",
-              borderColor: "#E8F5E9",
-              color: "#58CC02",
-              fontWeight: 600,
-              fontSize: "16px",
-            }}
-          >
-            今日已打卡
-          </Button>
-        ) : (
-          <Button
-            color="success"
-            shape="round"
-            block
-            size="large"
-            style={{
-              background: "#58CC02",
-              borderColor: "#58CC02",
-              fontWeight: 600,
-              fontSize: "16px",
-              boxShadow: "0 4px 12px rgba(88,204,2,0.3)",
-            }}
-            onClick={openCheckinPopup}
-          >
-            打卡
-          </Button>
-        )}
-      </View>
-
-      {/* Records section header */}
-      <View className="mx-3 mt-5 mb-3 flex items-center justify-between">
-        <View className="flex items-center">
-          <View
-            className="w-1 h-4 rounded-full mr-2"
-            style={{ background: "#58CC02" }}
-          />
-          <Text className="text-base font-bold" style={{ color: "#333" }}>
-            打卡记录
-          </Text>
-        </View>
-        {records.length > 0 && (
-          <Tag color="primary" variant="outlined" shape="round" size="small" style={{ color: "#58CC02", borderColor: "#58CC02" }}>
-            共 {records.length} 条
-          </Tag>
-        )}
-      </View>
-
-      {/* Records list */}
-      {records.length === 0 ? (
-        <View
-          className="mx-3 bg-white rounded-2xl py-8"
-          style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
-        >
-          <Empty>
-            <Empty.Image />
-            <Empty.Description>暂无打卡记录</Empty.Description>
-          </Empty>
-        </View>
-      ) : (
-        <View className="mx-3">
-          {records.map((record, idx) => (
-            <View key={record.id}>
-              <View
-                className="bg-white rounded-2xl p-4 mb-3"
-                style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
-              >
-                {/* User row */}
-                <View className="flex items-center mb-3">
-                  <Avatar
-                    src={resolveImageUrl(record.user_avatar)}
-                    size="small"
-                    shape="circle"
-                    style={{ marginRight: "10px", flexShrink: 0 }}
-                  />
-                  <View className="flex-1 min-w-0">
-                    <Text className="text-sm font-medium truncate" style={{ color: "#333" }}>
-                      {record.user_name}
+          {detail.recent_users && detail.recent_users.length > 0 ? (
+            <View className="mt-4 flex flex-wrap gap-3">
+              {detail.recent_users.slice(0, 8).map((item) => (
+                <View key={`${item.user_id}-${item.day}`} className="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2">
+                  <Avatar src={resolveImageUrl(item.avatar)} size="small" style={{ flexShrink: 0 }} />
+                  <View className="min-w-0">
+                    <Text className="block max-w-[96px] truncate text-sm font-medium text-slate-900">
+                      {item.nickname || "匿名"}
+                    </Text>
+                    <Text className="block text-[10px] text-slate-400">
+                      {item.day.slice(5, 10)}
                     </Text>
                   </View>
-                  <Text className="text-xs" style={{ color: "#bbb" }}>
-                    {formatRelativeTimestamp(record.created_at)}
-                  </Text>
                 </View>
+              ))}
+            </View>
+          ) : (
+            <Empty>
+              <Empty.Image />
+              <Empty.Description>还没有参与者</Empty.Description>
+            </Empty>
+          )}
+        </View>
 
-                {/* Content */}
-                <Text className="block text-sm leading-relaxed mb-2" style={{ color: "#666" }}>
-                  {record.content}
-                </Text>
+        <View className="mt-4 rounded-3xl bg-white p-4 shadow-sm" style={{ boxShadow: "0 1px 10px rgba(15, 23, 42, 0.05)" }}>
+          <Text className="block text-sm font-semibold text-slate-900">打卡记录</Text>
+          <Text className="mt-1 block text-xs text-slate-500">
+            这里展示所有参与者的记录、内容和监督反馈。
+          </Text>
 
-                {/* Optional image */}
-                {record.image && (
-                  <Image
-                    className="w-full rounded-xl mb-2"
-                    style={{ height: "160px" }}
-                    src={record.image}
-                    mode="aspectFill"
-                    onClick={() =>
-                      Taro.previewImage({
-                        current: record.image,
-                        urls: [record.image],
-                      })
-                    }
-                  />
-                )}
-
-                {/* Duration tag */}
-                {record.duration > 0 && (
-                  <View className="flex items-center mb-2">
+          {!logged ? (
+            <View className="mt-4 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-5">
+              <Text className="block text-sm font-medium text-sky-900">登录后可参与打卡</Text>
+              <Text className="mt-1 block text-xs leading-5 text-sky-700">
+                当前先展示任务概览和记录，登录后还能提交自己的打卡内容。
+              </Text>
+              <Button
+                round
+                size="small"
+                className="mt-3"
+                style={{
+                  background: "#fff",
+                  color: "#0369A1",
+                  border: "1px solid rgba(3,105,161,0.12)",
+                  fontWeight: 700,
+                }}
+                onClick={goLogin}
+              >
+                去登录
+              </Button>
+            </View>
+          ) : recordsError && records.length === 0 && !recordsLoading ? (
+            <View className="mt-4 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-5">
+              <Text className="block text-sm font-medium text-rose-900">打卡记录加载失败</Text>
+              <Text className="mt-1 block text-xs leading-5 text-rose-700">{recordsError}</Text>
+              <Button
+                round
+                size="small"
+                className="mt-3"
+                style={{
+                  background: "#fff",
+                  color: "#BE123C",
+                  border: "1px solid rgba(190,24,93,0.12)",
+                  fontWeight: 700,
+                }}
+                onClick={retryRecords}
+              >
+                重试
+              </Button>
+            </View>
+          ) : records.length === 0 && !loading && !recordsLoading ? (
+            <View className="mt-4">
+              <Empty>
+                <Empty.Image />
+                <Empty.Description>还没有人完成打卡</Empty.Description>
+              </Empty>
+            </View>
+          ) : (
+            <View className="mt-4 space-y-3">
+              {records.map((record) => (
+                <View
+                  key={record.id}
+                  className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                  style={{ boxShadow: "0 1px 6px rgba(15, 23, 42, 0.04)" }}
+                >
+                  <View className="flex items-center justify-between">
+                    <View className="flex items-center min-w-0 flex-1">
+                      <Avatar
+                        src={resolveImageUrl(record.user_avatar)}
+                        size="small"
+                        style={{ flexShrink: 0 }}
+                      />
+                      <View className="ml-3 min-w-0">
+                        <Text className="block truncate text-sm font-semibold text-slate-900">
+                          {record.user_name || "匿名"}
+                        </Text>
+                        <Text className="block text-[11px] text-slate-400">
+                          {formatRelativeTimestamp(record.created_at)}
+                        </Text>
+                      </View>
+                    </View>
                     <Tag
-                      color="primary"
-                      shape="round"
+                      shape="rounded"
                       size="small"
                       style={{
-                        background: "rgba(88,204,2,0.1)",
-                        color: "#58CC02",
+                        background: "rgba(15,118,110,0.10)",
+                        color: "#0F766E",
                         borderColor: "transparent",
                       }}
                     >
-                      <ClockOutlined size="12" style={{ marginRight: "4px" }} />
-                      学习 {record.duration} 分钟
+                      {record.duration || 0} 分钟
                     </Tag>
                   </View>
-                )}
 
-                {/* Supervisor comment */}
-                {record.comment && (
-                  <View
-                    className="rounded-xl p-3 mt-2"
-                    style={{ background: "#FFF9F0", border: "1px solid #FFE8CC" }}
-                  >
-                    <View className="flex items-center mb-1">
-                      <FireOutlined size="14" style={{ color: "#FF9500", marginRight: "4px" }} />
-                      <Text className="text-xs font-medium" style={{ color: "#FF9500" }}>
-                        {record.comment_by} 点评
+                  <Text className="mt-3 block text-sm leading-6 text-slate-700">
+                    {record.content || "没有填写文字记录。"}
+                  </Text>
+
+                  {record.image ? (
+                    <Image
+                      className="mt-3 w-full rounded-2xl"
+                      style={{ height: "180px" }}
+                      src={resolveImageUrl(record.image)}
+                      mode="aspectFill"
+                      onClick={() =>
+                        Taro.previewImage({
+                          current: resolveImageUrl(record.image),
+                          urls: [resolveImageUrl(record.image)],
+                        })
+                      }
+                    />
+                  ) : null}
+
+                  {record.comment ? (
+                    <View className="mt-3 rounded-2xl bg-white px-3 py-3">
+                      <Text className="block text-[11px] font-medium text-emerald-600">监督反馈</Text>
+                      <Text className="mt-1 block text-sm leading-6 text-slate-700">
+                        {record.comment}
                       </Text>
+                      {record.comment_by ? (
+                        <Text className="mt-2 block text-[11px] text-slate-400">
+                          {record.comment_by}
+                        </Text>
+                      ) : null}
                     </View>
-                    <Text className="text-sm leading-relaxed" style={{ color: "#666" }}>
-                      {record.comment}
-                    </Text>
-                  </View>
-                )}
-              </View>
-
-              {/* Divider between records */}
-              {idx < records.length - 1 && (
-                <Divider style={{ margin: "0 0 12px 0", borderColor: "transparent" }} />
-              )}
+                  ) : null}
+                </View>
+              ))}
             </View>
-          ))}
+          )}
 
-          {/* Load more / end */}
-          {hasMore ? (
-            <View className="py-3 flex items-center justify-center" onClick={loadMore}>
+          {logged && recordsError && records.length > 0 ? (
+            <View className="mt-4 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4">
+              <Text className="block text-sm font-medium text-amber-900">更多记录暂时没拉下来</Text>
+              <Text className="mt-1 block text-xs leading-5 text-amber-700">{recordsError}</Text>
               <Button
-                variant="text"
+                round
                 size="small"
-                style={{ color: "#1CB0F6" }}
+                className="mt-3"
+                style={{
+                  background: "#fff",
+                  color: "#92400E",
+                  border: "1px solid rgba(146,64,14,0.12)",
+                  fontWeight: 700,
+                }}
+                onClick={() => loadRecords(page + 1, true)}
               >
-                加载更多
+                重试加载更多
               </Button>
             </View>
-          ) : records.length > 0 ? (
-            <Divider style={{ color: "#ccc", fontSize: "12px" }}>没有更多了</Divider>
+          ) : null}
+
+          {recordsLoading && records.length > 0 ? (
+            <View className="py-4 flex justify-center">
+              <Loading type="spinner" style={{ color: "#0F766E" }}>
+                加载中...
+              </Loading>
+            </View>
+          ) : null}
+
+          {!recordsLoading && records.length > 0 && hasMore && !recordsError ? (
+            <View className="pt-4 text-center">
+              <Text className="text-xs text-slate-400">继续下滑加载更多记录</Text>
+            </View>
           ) : null}
         </View>
-      )}
+      </View>
 
       <InputPopup
         open={checkinOpen}
         value={checkinContent}
-        title={joined ? "打卡内容" : "加入任务"}
-        placeholder="输入打卡内容..."
-        buttonText={submitting ? "提交中..." : "提交"}
-        maxLength={2000}
-        onClose={() => setCheckinOpen(false)}
+        title={joined ? "今日打卡" : "首次打卡并加入"}
+        placeholder="至少写 5 个字，记录今天的学习内容、时长或收获"
+        buttonText="提交打卡"
+        onClose={() => !submitting && setCheckinOpen(false)}
         onChange={setCheckinContent}
         onSubmit={submitCheckin}
         isLoading={submitting}
-        isDisabled={submitting}
+        isDisabled={ctaState.disabled || checkinContent.trim().length < 5}
       />
     </View>
   );

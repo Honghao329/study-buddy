@@ -2,7 +2,7 @@ import type { NavigationMenuProps } from "./types";
 import { View } from "@tarojs/components";
 import { getCurrentPages } from "@tarojs/taro";
 import { useCallback, useEffect, useState } from "react";
-import { ADAPTED_PAGES, RouteNames } from "~/constants/routes";
+import { RouteNames, adaptPath, isTabPage } from "~/constants/routes";
 import { navigateBack, reLaunch } from "~/utils/route";
 
 // 菜单按钮组件
@@ -24,25 +24,16 @@ function MenuButton({ menuButton, homeUrl }: NavigationMenuProps) {
     const pages = getCurrentPages();
     if (pages.length > 0) {
       const currentPage = pages[pages.length - 1];
-      let currentUrl = currentPage?.route || currentPage?.__route__;
-
-      if (currentUrl && currentUrl[0] === "/") {
-        currentUrl = currentUrl.substring(1);
-      }
-      const currentRoute = currentUrl?.split("?")[0];
-      const tabPages = [
-        homeUrl,
-        ADAPTED_PAGES[RouteNames.CHECKIN_LIST],
-        ADAPTED_PAGES[RouteNames.COMMUNITY],
-        ADAPTED_PAGES[RouteNames.MY],
-      ];
-      const isNoMenuPage = !!currentRoute && tabPages.includes(currentRoute);
+      const currentUrl = currentPage?.route || currentPage?.__route__ || "";
+      const currentRoute = adaptPath(currentUrl.split("?")[0]);
+      const normalizedHomeUrl = adaptPath(homeUrl);
+      const isNoMenuPage = isTabPage(currentRoute);
 
       // 判断是否显示返回按钮, 非白名单且多于一页时显示
       setShowBackButton(pages.length > 1 && !isNoMenuPage);
 
       // 判断是否显示首页按钮, 非白名单且当前页层级大于 2 且不是首页时显示
-      setShowHomeButton(pages.length > 2 && currentRoute !== homeUrl && !isNoMenuPage);
+      setShowHomeButton(pages.length > 2 && currentRoute !== normalizedHomeUrl && !isNoMenuPage);
     }
   }, [homeUrl]);
 

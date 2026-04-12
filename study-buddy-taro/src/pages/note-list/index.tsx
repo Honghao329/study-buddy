@@ -2,8 +2,10 @@ import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow, usePullDownRefresh, useReachBottom } from "@tarojs/taro";
 import { useCallback, useRef, useState } from "react";
 import { Button, Divider, Empty, Loading, Tag } from "@taroify/core";
-import { Plus } from "@taroify/icons";
-import { api } from "~/api/request";
+import { CommentOutlined, Edit, EyeOutlined, LikeOutlined, Plus } from "@taroify/icons";
+import LoginGateCard from "~/components/LoginGateCard";
+import ContentMetrics from "~/components/ContentMetrics";
+import { api, isLoggedIn } from "~/api/request";
 import { formatRelativeTimestamp } from "~/utils/timeFormatter";
 
 interface NoteItem {
@@ -20,19 +22,45 @@ interface NoteItem {
 const PAGE_SIZE = 20;
 
 export default function NoteListPage() {
+  const [logged, setLogged] = useState(isLoggedIn());
   const [list, setList] = useState<NoteItem[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [appendError, setAppendError] = useState("");
   const loadingRef = useRef(false);
+  const currentPath = "/pages/note-list/index";
 
   const hasMore = list.length < total;
+
+  const resetListState = () => {
+    setList([]);
+    setPage(1);
+    setTotal(0);
+    setLoading(false);
+    setLoadError("");
+    setAppendError("");
+    loadingRef.current = false;
+  };
+
+  const goLogin = () => {
+    Taro.navigateTo({
+      url: `/pages/login/index?redirect=${encodeURIComponent(currentPath)}`,
+    });
+  };
 
   const fetchList = useCallback(
     async (p: number, append = false) => {
       if (loadingRef.current) return;
       loadingRef.current = true;
       setLoading(true);
+      if (append) {
+        setAppendError("");
+      } else {
+        setLoadError("");
+        setAppendError("");
+      }
       try {
         const res = await api.get<{ list: NoteItem[]; total: number }>(
           "/api/note/my_list",
@@ -43,7 +71,14 @@ export default function NoteListPage() {
         setTotal(res.total || 0);
         setPage(p);
       } catch {
-        // silently fail
+        if (append) {
+          setAppendError("更多笔记加载失败，请重试。");
+        } else {
+          setList([]);
+          setTotal(0);
+          setPage(1);
+          setLoadError("我的笔记加载失败");
+        }
       } finally {
         loadingRef.current = false;
         setLoading(false);
@@ -53,17 +88,34 @@ export default function NoteListPage() {
   );
 
   useDidShow(() => {
+    const currentLogged = isLoggedIn();
+    setLogged(currentLogged);
+
+    if (!currentLogged) {
+      resetListState();
+      return;
+    }
+
     loadingRef.current = false;
     fetchList(1);
   });
 
   usePullDownRefresh(async () => {
+    if (!isLoggedIn()) {
+      Taro.stopPullDownRefresh();
+      return;
+    }
+
     loadingRef.current = false;
     await fetchList(1);
     Taro.stopPullDownRefresh();
   });
 
   useReachBottom(() => {
+    if (!logged) {
+      return;
+    }
+
     if (!loading && hasMore) {
       fetchList(page + 1, true);
     }
@@ -76,6 +128,21 @@ export default function NoteListPage() {
   const goAdd = () => {
     Taro.navigateTo({ url: "/pages/note-add/index" });
   };
+
+  if (!logged) {
+    return (
+      <View className="min-h-screen px-4 py-4" style={{ background: "#F8FAFC" }}>
+        <LoginGateCard
+          icon={<Edit size="20" color="#fff" />}
+          title="登录后查看我的笔记"
+          description="你可以查看、编辑和管理自己的发布记录，也能更快回到未完成的内容。"
+          highlights={["草稿管理", "发布记录", "历史回看"]}
+          actionText="去登录"
+          onAction={goLogin}
+        />
+      </View>
+    );
+  }
 
   return (
     <View className="min-h-screen pb-10" style={{ background: "#F7F8FA" }}>
@@ -97,6 +164,42 @@ export default function NoteListPage() {
 
       {/* Note cards */}
       <View className="px-3 -mt-3">
+        {loading && list.length === 0 && (
+          <View
+            className="bg-white rounded-2xl py-10"
+            style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
+          >
+            <View className="flex justify-center">
+              <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+                正在加载我的笔记...
+              </Loading>
+            </View>
+          </View>
+        )}
+
+        {!loading && loadError && list.length === 0 && (
+          <View
+            className="bg-white rounded-2xl mt-6 px-5 py-8"
+            style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
+          >
+            <Text className="block text-base font-bold text-center text-[#1a1a1a]">笔记列表加载失败</Text>
+            <Text className="block text-sm text-center text-[#999] mt-2">
+              当前没有成功拿到你的内容，这不是空列表。
+            </Text>
+            <View className="flex justify-center mt-4">
+              <Button
+                color="primary"
+                shape="round"
+                size="small"
+                style={{ background: "#1CB0F6", borderColor: "#1CB0F6" }}
+                onClick={() => fetchList(1)}
+              >
+                重新加载
+              </Button>
+            </View>
+          </View>
+        )}
+
         {list.map((note) => (
           <View
             key={note.id}
@@ -122,7 +225,7 @@ export default function NoteListPage() {
                   {note.title}
                 </Text>
                 <Tag
-                  shape="round"
+                  shape="rounded"
                   size="small"
                   style={{
                     flexShrink: 0,
@@ -154,13 +257,36 @@ export default function NoteListPage() {
               )}
 
               {/* Stats row */}
-              <View className="flex items-center justify-between">
-                <View className="flex items-center gap-3">
-                  <Text style={{ color: "#999", fontSize: "12px" }}>👍 {note.like_cnt || 0}</Text>
-                  <Text style={{ color: "#999", fontSize: "12px" }}>👁 {note.view_cnt || 0}</Text>
-                  <Text style={{ color: "#999", fontSize: "12px" }}>💬 {note.comment_cnt || 0}</Text>
+              <View className="flex items-center justify-between gap-3">
+                <View className="flex-1">
+                  <ContentMetrics
+                    variant="inline"
+                    items={[
+                      {
+                        key: "like",
+                        icon: <LikeOutlined size="14" />,
+                        label: "点赞",
+                        value: note.like_cnt || 0,
+                        tone: "danger",
+                      },
+                      {
+                        key: "view",
+                        icon: <EyeOutlined size="14" />,
+                        label: "阅读",
+                        value: note.view_cnt || 0,
+                        tone: "info",
+                      },
+                      {
+                        key: "comment",
+                        icon: <CommentOutlined size="14" />,
+                        label: "评论",
+                        value: note.comment_cnt || 0,
+                        tone: "primary",
+                      },
+                    ]}
+                  />
                 </View>
-                <Text className="text-xs" style={{ color: "#ccc" }}>
+                <Text className="text-xs shrink-0" style={{ color: "#ccc" }}>
                   {formatRelativeTimestamp(note.created_at)}
                 </Text>
               </View>
@@ -169,7 +295,7 @@ export default function NoteListPage() {
         ))}
 
         {/* Loading state */}
-        {loading && (
+        {loading && list.length > 0 && (
           <View className="py-5 flex justify-center">
             <Loading type="spinner" style={{ color: "#1CB0F6" }}>
               加载中...
@@ -178,7 +304,7 @@ export default function NoteListPage() {
         )}
 
         {/* Empty state */}
-        {!loading && list.length === 0 && (
+        {!loading && !loadError && list.length === 0 && (
           <View
             className="bg-white rounded-2xl mt-6 py-10"
             style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
@@ -204,6 +330,22 @@ export default function NoteListPage() {
                 写第一篇笔记
               </Button>
             </View>
+          </View>
+        )}
+
+        {!loading && appendError && list.length > 0 && (
+          <View
+            className="rounded-2xl px-4 py-3 mb-3"
+            style={{ background: "#FFF7E6", border: "1px solid #FFE7BA" }}
+          >
+            <Text className="block text-sm text-[#D46B08]">{appendError}</Text>
+            <Text
+              className="block text-sm font-medium mt-2"
+              style={{ color: "#1CB0F6" }}
+              onClick={() => fetchList(page + 1, true)}
+            >
+              继续重试加载更多
+            </Text>
           </View>
         )}
 

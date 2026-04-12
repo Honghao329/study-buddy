@@ -1,8 +1,8 @@
-import { Text, View } from "@tarojs/components";
+import { Input, Text, View } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useCallback, useRef, useState } from "react";
-import { Avatar, Button, Cell, Divider, Empty, Field, Loading, Tag } from "@taroify/core";
-import { Like, LikeOutlined, Star, StarOutlined, CommentOutlined, Edit as EditIcon, DeleteOutlined } from "@taroify/icons";
+import { Avatar, Button, Cell, Divider, Empty, Loading, Tag } from "@taroify/core";
+import { CommentOutlined, DeleteOutlined, Edit as EditIcon, Like, LikeOutlined, Star, StarOutlined } from "@taroify/icons";
 import { api, isLoggedIn } from "~/api/request";
 import { formatRelativeTimestamp } from "~/utils/timeFormatter";
 import { resolveImageUrl } from "~/utils/imageUrl";
@@ -54,12 +54,22 @@ export default function NoteDetailPage() {
   const [loading, setLoading] = useState(true);
   const [commentLoading, setCommentLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [commentError, setCommentError] = useState("");
+  const [commentLoaded, setCommentLoaded] = useState(false);
   const loadingRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
 
   const noteId = Taro.getCurrentInstance().router?.params?.id || "";
+  const currentPath = noteId ? `/pages/note-detail/index?id=${noteId}` : "/pages/note-detail/index";
+  const commentSectionId = "note-comment-section";
 
-  const isOwner = note ? getCurrentUserId() === Number(note.user_id) : false;
+  const currentUserId = getCurrentUserId();
+  const isOwner = note ? currentUserId === Number(note.user_id) : false;
+  const goLogin = () => {
+    Taro.navigateTo({
+      url: `/pages/login/index?redirect=${encodeURIComponent(currentPath)}`,
+    });
+  };
 
   const fetchNote = useCallback(async () => {
     const id = noteId;
@@ -113,6 +123,12 @@ export default function NoteDetailPage() {
       if (!id || loadingRef.current) return;
       loadingRef.current = true;
       setCommentLoading(true);
+      if (append) {
+        setCommentError("");
+      } else {
+        setCommentLoaded(false);
+        setCommentError("");
+      }
       try {
         const res = await api.get<{ list: CommentItem[]; total: number }>(
           "/api/comment/list",
@@ -122,8 +138,19 @@ export default function NoteDetailPage() {
         setComments((prev) => (append ? [...prev, ...items] : items));
         setCommentTotal(res.total || 0);
         setCommentPage(p);
+        setCommentLoaded(true);
+        setCommentError("");
+        setNote((prev) => (prev ? { ...prev, comment_cnt: res.total || 0 } : prev));
       } catch {
-        // ignore
+        if (append) {
+          setCommentError("更多评论加载失败，请重试。");
+        } else {
+          setComments([]);
+          setCommentTotal(0);
+          setCommentPage(1);
+          setCommentLoaded(true);
+          setCommentError("评论加载失败");
+        }
       } finally {
         loadingRef.current = false;
         setCommentLoading(false);
@@ -144,6 +171,8 @@ export default function NoteDetailPage() {
     setLikeCnt(0);
     setCommentInput("");
     setCommentLoading(false);
+    setCommentLoaded(false);
+    setCommentError("");
 
     const ok = await fetchNote();
     if (ok) {
@@ -166,6 +195,7 @@ export default function NoteDetailPage() {
     if (!id) return;
     if (!isLoggedIn()) {
       Taro.showToast({ title: "请先登录", icon: "none" });
+      goLogin();
       return;
     }
     try {
@@ -184,12 +214,14 @@ export default function NoteDetailPage() {
     if (!id) return;
     if (!isLoggedIn()) {
       Taro.showToast({ title: "请先登录", icon: "none" });
+      goLogin();
       return;
     }
     try {
       await api.post("/api/fav/toggle", { targetType: "note", targetId: Number(id) });
+      const wasFavored = favored;
       setFavored((prev) => !prev);
-      Taro.showToast({ title: favored ? "已取消收藏" : "已收藏", icon: "none" });
+      Taro.showToast({ title: wasFavored ? "已取消收藏" : "已收藏", icon: "none" });
     } catch {
       Taro.showToast({ title: "操作失败", icon: "none" });
     }
@@ -203,8 +235,10 @@ export default function NoteDetailPage() {
     try {
       await api.post("/api/comment/create", { noteId: Number(id), content });
       setCommentInput("");
+      setCommentError("");
       Taro.showToast({ title: "评论成功", icon: "none" });
-      fetchComments(1);
+      setNote((prev) => (prev ? { ...prev, comment_cnt: prev.comment_cnt + 1 } : prev));
+      await fetchComments(1);
     } catch {
       Taro.showToast({ title: "评论失败", icon: "none" });
     } finally {
@@ -234,6 +268,13 @@ export default function NoteDetailPage() {
           }
         }
       },
+    });
+  };
+
+  const scrollToComments = () => {
+    Taro.pageScrollTo({
+      selector: `#${commentSectionId}`,
+      duration: 240,
     });
   };
 
@@ -297,7 +338,7 @@ export default function NoteDetailPage() {
             </Text>
           </View>
           <Tag
-            shape="round"
+            shape="rounded"
             size="medium"
             style={{
               background: note.is_public ? "rgba(88,204,2,0.1)" : "rgba(153,153,153,0.1)",
@@ -323,74 +364,66 @@ export default function NoteDetailPage() {
           </Text>
         </View>
 
-        {/* Stats bar + owner actions */}
+        {/* Action bar */}
         <View
           className="px-4 py-3 flex items-center"
           style={{ borderTop: "1px solid #f5f5f5" }}
         >
-          <View className="flex items-center gap-4 flex-1">
-            <Text style={{ color: "#999", fontSize: "12px" }}>👁 {note.view_cnt || 0}</Text>
-            <Text style={{ color: "#999", fontSize: "12px" }}>💬 {note.comment_cnt || 0}</Text>
+          <View
+            className="flex items-center mr-5"
+            style={{ cursor: "pointer" }}
+            onClick={toggleLike}
+          >
+            {liked ? <Like size="18" color="#E11D48" /> : <LikeOutlined size="18" color="#999" />}
+            <Text className="text-xs ml-1" style={{ color: liked ? "#E11D48" : "#999" }}>
+              {likeCnt || 0}
+            </Text>
           </View>
+          <View
+            className="flex items-center mr-5"
+            style={{ cursor: "pointer" }}
+            onClick={toggleFav}
+          >
+            {favored ? <Star size="18" color="#D97706" /> : <StarOutlined size="18" color="#999" />}
+            <Text className="text-xs ml-1" style={{ color: favored ? "#D97706" : "#999" }}>
+              {favored ? "已收藏" : "收藏"}
+            </Text>
+          </View>
+          <View
+            className="flex items-center"
+            style={{ cursor: "pointer" }}
+            onClick={scrollToComments}
+          >
+            <CommentOutlined size="18" color="#999" />
+            <Text className="text-xs ml-1" style={{ color: "#999" }}>
+              {commentTotal || 0}
+            </Text>
+          </View>
+          <View className="flex-1" />
           {isOwner && (
-            <View className="flex items-center gap-2">
-              <Button
-                variant="text"
-                size="mini"
-                icon={<EditIcon size="16" />}
-                style={{ color: "#1CB0F6", padding: "0 8px" }}
+            <View className="flex items-center">
+              <View
+                className="flex items-center mr-4"
+                style={{ cursor: "pointer" }}
                 onClick={handleEdit}
               >
-                编辑
-              </Button>
-              <Button
-                variant="text"
-                size="mini"
-                icon={<DeleteOutlined size="16" />}
-                style={{ color: "#FF4D4F", padding: "0 8px" }}
+                <EditIcon size="18" color="#1CB0F6" />
+              </View>
+              <View
+                className="flex items-center"
+                style={{ cursor: "pointer" }}
                 onClick={handleDelete}
               >
-                删除
-              </Button>
+                <DeleteOutlined size="18" color="#FF4D4F" />
+              </View>
             </View>
           )}
         </View>
       </View>
 
-      {/* Action bar */}
-      <View
-        className="mx-3 mt-3 bg-white rounded-2xl flex items-center justify-around py-2"
-        style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
-      >
-        <Button
-          variant="text"
-          icon={liked ? <Like size="22" color="#FF4D4F" /> : <LikeOutlined size="22" />}
-          style={{ color: liked ? "#FF4D4F" : "#999" }}
-          onClick={toggleLike}
-        >
-          {likeCnt || "点赞"}
-        </Button>
-        <View className="w-px h-5" style={{ background: "#eee" }} />
-        <Button
-          variant="text"
-          icon={favored ? <Star size="22" color="#FF9500" /> : <StarOutlined size="22" />}
-          style={{ color: favored ? "#FF9500" : "#999" }}
-          onClick={toggleFav}
-        >
-          {favored ? "已收藏" : "收藏"}
-        </Button>
-        <View className="w-px h-5" style={{ background: "#eee" }} />
-        <Button
-          variant="text"
-          icon={<CommentOutlined size="22" />}
-          style={{ color: "#999" }}
-        >
-          {commentTotal || "评论"}
-        </Button>
-      </View>
-
       {/* Comment section */}
       <View
+        id={commentSectionId}
         className="mx-3 mt-3 bg-white rounded-2xl overflow-hidden"
         style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
       >
@@ -402,7 +435,7 @@ export default function NoteDetailPage() {
           </Text>
           {commentTotal > 0 && (
             <Tag
-              shape="round"
+              shape="rounded"
               size="small"
               style={{
                 marginLeft: "8px",
@@ -419,7 +452,36 @@ export default function NoteDetailPage() {
         <Divider style={{ margin: "0 16px", borderColor: "#f5f5f5" }} />
 
         {/* Comments list */}
-        {comments.length === 0 && !commentLoading && (
+        {commentLoading && comments.length === 0 && (
+          <View className="py-6 flex justify-center">
+            <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+              正在加载评论...
+            </Loading>
+          </View>
+        )}
+
+        {!commentLoading && commentLoaded && !!commentError && comments.length === 0 && (
+          <View className="py-6 px-4">
+            <View className="rounded-2xl bg-[#FFF7E6] px-4 py-5" style={{ border: "1px solid #FFE7BA" }}>
+              <Text className="block text-center text-base font-semibold text-[#D46B08]">评论暂时不可用</Text>
+              <Text className="block text-center text-sm text-[#AD6800] mt-2">
+                评论接口加载失败，这不是没有人回复。
+              </Text>
+              <View className="flex justify-center mt-4">
+                <Button
+                  size="small"
+                  round
+                  style={{ background: "#1CB0F6", color: "#fff", border: "none" }}
+                  onClick={() => fetchComments(1)}
+                >
+                  重新加载评论
+                </Button>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {comments.length === 0 && !commentLoading && !commentError && commentLoaded && (
           <View className="py-6">
             <Empty>
               <Empty.Image />
@@ -462,7 +524,7 @@ export default function NoteDetailPage() {
           </View>
         ))}
 
-        {commentLoading && (
+        {commentLoading && comments.length > 0 && (
           <View className="py-4 flex justify-center">
             <Loading type="spinner" style={{ color: "#1CB0F6" }}>
               加载中...
@@ -470,7 +532,22 @@ export default function NoteDetailPage() {
           </View>
         )}
 
-        {!commentLoading && comments.length > 0 && comments.length < commentTotal && (
+        {!commentLoading && commentError && comments.length > 0 && (
+          <View className="px-4 pb-3">
+            <View className="rounded-2xl bg-[#FFF7E6] px-4 py-3" style={{ border: "1px solid #FFE7BA" }}>
+              <Text className="block text-sm text-[#D46B08]">{commentError}</Text>
+              <Text
+                className="block text-sm font-medium mt-2"
+                style={{ color: "#1CB0F6" }}
+                onClick={() => fetchComments(commentPage + 1, true)}
+              >
+                继续重试加载更多
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {!commentLoading && !commentError && comments.length > 0 && comments.length < commentTotal && (
           <View className="py-3 text-center" onClick={loadMoreComments}>
             <Button variant="text" size="small" style={{ color: "#1CB0F6" }}>
               加载更多评论
@@ -488,26 +565,37 @@ export default function NoteDetailPage() {
       {/* Fixed bottom comment input bar */}
       {isLoggedIn() ? (
         <View
-          className="fixed bottom-0 left-0 right-0 bg-white flex items-end px-3 py-2 z-30"
+          className="fixed bottom-0 left-0 right-0 bg-white flex items-center px-3 py-2"
           style={{
+            zIndex: 999,
             borderTop: "1px solid #f0f0f0",
             paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
             boxShadow: "0 -2px 12px rgba(0,0,0,0.04)",
           }}
         >
-          <View className="flex-1 mr-2">
-            <Field
-              type="textarea"
+          <View
+            className="flex-1 mr-2"
+            style={{
+              background: "#F7F8FA",
+              borderRadius: "16px",
+              padding: "0 14px",
+            }}
+          >
+            <Input
+              type="text"
               placeholder="写一条评论..."
               value={commentInput}
-              onChange={(e) => setCommentInput(e)}
-              autoHeight
+              onInput={(e) => setCommentInput(e.detail.value)}
+              confirmType="send"
+              onConfirm={sendComment}
               style={{
-                background: "#F7F8FA",
-                borderRadius: "16px",
-                padding: "8px 14px",
+                height: "36px",
+                lineHeight: "36px",
                 fontSize: "14px",
-                maxHeight: "100px",
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                width: "100%",
               }}
             />
           </View>
@@ -520,7 +608,6 @@ export default function NoteDetailPage() {
               background: commentInput.trim() ? "#58CC02" : "#e0e0e0",
               borderColor: commentInput.trim() ? "#58CC02" : "#e0e0e0",
               flexShrink: 0,
-              marginBottom: "4px",
             }}
             onClick={sendComment}
           >
@@ -529,8 +616,9 @@ export default function NoteDetailPage() {
         </View>
       ) : (
         <View
-          className="fixed bottom-0 left-0 right-0 bg-white flex items-center justify-center px-3 py-3 z-30"
+          className="fixed bottom-0 left-0 right-0 bg-white flex items-center justify-center px-3 py-3"
           style={{
+            zIndex: 999,
             borderTop: "1px solid #f0f0f0",
             paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
             boxShadow: "0 -2px 12px rgba(0,0,0,0.04)",
@@ -540,7 +628,7 @@ export default function NoteDetailPage() {
             variant="text"
             size="small"
             style={{ color: "#1CB0F6", fontSize: "14px" }}
-            onClick={() => Taro.navigateTo({ url: "/pages/login/index" })}
+            onClick={goLogin}
           >
             登录后评论
           </Button>

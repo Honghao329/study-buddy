@@ -1,49 +1,77 @@
-import { Input, Text, View } from "@tarojs/components"
-import Taro from "@tarojs/taro"
-import { useRef, useState } from "react"
-import { Button } from "@taroify/core"
-import { api, setToken } from "~/api/request"
+import { Input, Text, View } from "@tarojs/components";
+import Taro from "@tarojs/taro";
+import { useMemo, useRef, useState } from "react";
+import { Button } from "@taroify/core";
+import { api, setToken } from "~/api/request";
+import { isTabPage } from "~/constants/routes";
 
 export default function LoginPage() {
-  const nicknameRef = useRef("")
-  const passwordRef = useRef("")
-  const [loading, setLoading] = useState(false)
+  const nicknameRef = useRef("");
+  const passwordRef = useRef("");
+  const [loading, setLoading] = useState(false);
+  const params = Taro.getCurrentInstance().router?.params || {};
+  const redirect = useMemo(() => {
+    const raw = params.redirect;
+    if (!raw) return "";
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return String(raw);
+    }
+  }, [params.redirect]);
+
+  const navigateAfterLogin = () => {
+    if (!redirect) {
+      Taro.switchTab({ url: "/pages/index/index" });
+      return;
+    }
+
+    const routeOnly = redirect.split("?")[0];
+    if (isTabPage(routeOnly)) {
+      Taro.switchTab({ url: routeOnly });
+      return;
+    }
+
+    Taro.redirectTo({ url: redirect }).catch(() => {
+      Taro.switchTab({ url: "/pages/index/index" });
+    });
+  };
 
   const handleLogin = async () => {
-    const nickname = nicknameRef.current.trim()
-    const password = passwordRef.current
+    const nickname = nicknameRef.current.trim();
+    const password = passwordRef.current;
 
     if (!nickname) {
-      Taro.showToast({ title: "请输入昵称", icon: "none" })
-      return
+      Taro.showToast({ title: "请输入昵称", icon: "none" });
+      return;
     }
     if (!password) {
-      Taro.showToast({ title: "请输入密码", icon: "none" })
-      return
+      Taro.showToast({ title: "请输入密码", icon: "none" });
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
       const res = await api.post<{ token: string; user: any }>(
         "/api/user/login",
-        { nickname, password }
-      )
-      setToken(res.token)
-      Taro.setStorageSync("userInfo", res.user)
-      Taro.showToast({ title: "登录成功", icon: "success", duration: 1000 })
+        { nickname, password },
+      );
+      setToken(res.token);
+      Taro.setStorageSync("userInfo", res.user);
+      Taro.showToast({ title: "登录成功", icon: "success", duration: 1000 });
       setTimeout(() => {
-        Taro.switchTab({ url: "/pages/index/index" })
-      }, 800)
+        navigateAfterLogin();
+      }, 800);
     } catch (err: any) {
       Taro.showToast({
         title: err.message || "登录失败，请重试",
         icon: "none",
         duration: 2000,
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <View
@@ -67,12 +95,28 @@ export default function LoginPage() {
         记录学习，结伴成长
       </Text>
 
+      {redirect ? (
+        <View
+          className="mb-4 w-full rounded-2xl px-4 py-3"
+          style={{ background: "#F0FDF4", border: "1px solid #BBF7D0" }}
+        >
+          <Text className="block text-sm font-medium" style={{ color: "#166534" }}>
+            登录后将返回刚才的页面
+          </Text>
+          <Text className="mt-1 block text-xs" style={{ color: "#15803D" }}>
+            继续完成你刚才的操作。
+          </Text>
+        </View>
+      ) : null}
+
       <View
         className="w-full rounded-2xl px-5 pt-6 pb-7 mb-6"
         style={{ background: "#fff", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}
       >
         <View className="mb-4">
-          <Text className="text-sm font-medium mb-2 block" style={{ color: "#666" }}>昵称</Text>
+          <Text className="text-sm font-medium mb-2 block" style={{ color: "#666" }}>
+            昵称
+          </Text>
           <Input
             className="w-full text-base"
             style={{
@@ -83,12 +127,16 @@ export default function LoginPage() {
             }}
             placeholder="请输入昵称"
             placeholderStyle="color: #C0C0C0"
-            onInput={(e) => { nicknameRef.current = e.detail.value }}
+            onInput={(e) => {
+              nicknameRef.current = e.detail.value;
+            }}
           />
         </View>
 
         <View className="mb-6">
-          <Text className="text-sm font-medium mb-2 block" style={{ color: "#666" }}>密码</Text>
+          <Text className="text-sm font-medium mb-2 block" style={{ color: "#666" }}>
+            密码
+          </Text>
           <Input
             className="w-full text-base"
             style={{
@@ -100,7 +148,9 @@ export default function LoginPage() {
             password
             placeholder="请输入密码"
             placeholderStyle="color: #C0C0C0"
-            onInput={(e) => { passwordRef.current = e.detail.value }}
+            onInput={(e) => {
+              passwordRef.current = e.detail.value;
+            }}
           />
         </View>
 
@@ -123,14 +173,16 @@ export default function LoginPage() {
         </Button>
       </View>
 
-      <View className="flex flex-col items-center mt-4">
-        <Text className="text-xs leading-6" style={{ color: "#C0C0C0" }}>
-          测试账号：user1 / 123456
-        </Text>
-        <Text className="text-xs leading-6" style={{ color: "#C0C0C0" }}>
-          测试账号：user2 / 123456
-        </Text>
-      </View>
+      {process.env.NODE_ENV !== "production" ? (
+        <View className="flex flex-col items-center mt-4">
+          <Text className="text-xs leading-6" style={{ color: "#C0C0C0" }}>
+            测试账号：user1 / 123456
+          </Text>
+          <Text className="text-xs leading-6" style={{ color: "#C0C0C0" }}>
+            测试账号：user2 / 123456
+          </Text>
+        </View>
+      ) : null}
     </View>
-  )
+  );
 }

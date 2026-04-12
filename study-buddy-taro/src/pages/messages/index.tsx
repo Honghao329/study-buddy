@@ -1,9 +1,10 @@
 import { View } from "@tarojs/components";
-import { useDidShow, useReachBottom } from "@tarojs/taro";
+import Taro, { useDidShow, useReachBottom } from "@tarojs/taro";
 import { useCallback, useRef, useState } from "react";
 import { Avatar, Badge, Button, Cell, Empty, Loading, Popup } from "@taroify/core";
-import { Cross } from "@taroify/icons";
-import { api } from "~/api/request";
+import { Bell, Cross } from "@taroify/icons";
+import LoginGateCard from "~/components/LoginGateCard";
+import { api, isLoggedIn } from "~/api/request";
 import { resolveImageUrl } from "~/utils/imageUrl";
 import { formatRelativeTimestamp } from "~/utils/timeFormatter";
 
@@ -20,20 +21,47 @@ interface MessageItem {
 const PAGE_SIZE = 20;
 
 export default function MessagesPage() {
+  const [logged, setLogged] = useState(isLoggedIn());
   const [list, setList] = useState<MessageItem[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [appendError, setAppendError] = useState("");
   const loadingRef = useRef(false);
   const [detail, setDetail] = useState<MessageItem | null>(null);
+  const currentPath = "/pages/messages/index";
 
   const hasMore = list.length < total;
+
+  const goLogin = () => {
+    Taro.navigateTo({
+      url: `/pages/login/index?redirect=${encodeURIComponent(currentPath)}`,
+    });
+  };
+
+  const resetState = () => {
+    setList([]);
+    setPage(1);
+    setTotal(0);
+    setLoading(false);
+    setLoadError("");
+    setAppendError("");
+    setDetail(null);
+    loadingRef.current = false;
+  };
 
   const fetchList = useCallback(
     async (p: number, append = false) => {
       if (loadingRef.current) return;
       loadingRef.current = true;
       setLoading(true);
+      setLoadError("");
+      if (append) {
+        setAppendError("");
+      } else {
+        setAppendError("");
+      }
       try {
         const res = await api.get<{ list: MessageItem[]; total: number }>(
           "/api/message/list",
@@ -43,8 +71,15 @@ export default function MessagesPage() {
         setList((prev) => (append ? [...prev, ...items] : items));
         setTotal(res.total || 0);
         setPage(p);
-      } catch {
-        /* ignore */
+      } catch (error: any) {
+        if (append) {
+          setAppendError(error?.message || "更多消息加载失败");
+        } else {
+          setList([]);
+          setTotal(0);
+          setPage(1);
+          setLoadError(error?.message || "消息加载失败");
+        }
       } finally {
         loadingRef.current = false;
         setLoading(false);
@@ -54,10 +89,22 @@ export default function MessagesPage() {
   );
 
   useDidShow(() => {
+    const currentLogged = isLoggedIn();
+    setLogged(currentLogged);
+
+    if (!currentLogged) {
+      resetState();
+      return;
+    }
+
     fetchList(1);
   });
 
   useReachBottom(() => {
+    if (!logged) {
+      return;
+    }
+
     if (!loading && hasMore) {
       fetchList(page + 1, true);
     }
@@ -83,10 +130,47 @@ export default function MessagesPage() {
     setDetail(null);
   };
 
+  if (!logged) {
+    return (
+      <View className="min-h-screen px-4 py-4" style={{ background: "#F8FAFC" }}>
+        <LoginGateCard
+          icon={<Bell size="20" color="#fff" />}
+          title="登录后查看消息"
+          description="未读通知、评论提醒和伙伴邀请都只会出现在当前账号下。"
+          highlights={["未读提醒", "评论通知", "伙伴邀请"]}
+          actionText="去登录"
+          onAction={goLogin}
+        />
+      </View>
+    );
+  }
+
   return (
     <View className="min-h-screen pb-40" style={{ backgroundColor: "#F7F8FA" }}>
       {/* Message list */}
       <View className="px-12 pt-12">
+        {loadError && list.length === 0 ? (
+          <View
+            className="mb-4 rounded-2xl bg-white px-5 py-8"
+            style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
+          >
+            <Empty>
+              <Empty.Image />
+              <Empty.Description>{loadError}</Empty.Description>
+            </Empty>
+            <View className="flex justify-center mt-4">
+              <Button
+                size="small"
+                round
+                style={{ background: "#1CB0F6", color: "#fff", border: "none" }}
+                onClick={() => fetchList(1)}
+              >
+                重新加载
+              </Button>
+            </View>
+          </View>
+        ) : null}
+
         <View
           className="rounded-2xl overflow-hidden"
           style={{ backgroundColor: "#fff", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
@@ -143,7 +227,7 @@ export default function MessagesPage() {
         )}
 
         {/* Empty */}
-        {!loading && list.length === 0 && (
+        {!loading && !loadError && list.length === 0 && (
           <View className="pt-60">
             <Empty>
               <Empty.Image />
@@ -159,6 +243,19 @@ export default function MessagesPage() {
             style={{ fontSize: "13px", color: "#ccc" }}
           >
             -- 已经到底了 --
+          </View>
+        )}
+
+        {!loading && appendError && list.length > 0 && (
+          <View className="mt-4 rounded-2xl bg-[#FFF7E6] px-4 py-3" style={{ border: "1px solid #FFE7BA" }}>
+            <View style={{ fontSize: "13px", color: "#D46B08" }}>{appendError}</View>
+            <View
+              className="mt-2"
+              style={{ fontSize: "12px", color: "#1CB0F6" }}
+              onClick={() => fetchList(page + 1, true)}
+            >
+              继续重试加载更多
+            </View>
           </View>
         )}
       </View>
