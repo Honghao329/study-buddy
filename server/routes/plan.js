@@ -3,6 +3,7 @@ const db = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
 const { resolvePlanAccessError } = require('../lib/plan_access');
 const { getLocalDateString } = require('../lib/date');
+const { sanitizePage, clampInt, trimText } = require('../lib/validate');
 
 // 创建计划（指定执行者和监督者）
 router.post('/create', authMiddleware, (req, res) => {
@@ -115,7 +116,7 @@ router.post('/comment', authMiddleware, (req, res) => {
 	if (!record) return res.json({ code: 404, msg: '记录不存在' });
 	if (record.supervisor_id !== req.userId) return res.json({ code: 403, msg: '只有监督者可以评价' });
 
-	db.prepare('UPDATE plan_records SET comment = ?, score = ? WHERE id = ?').run(comment || '', score || 0, recordId);
+	db.prepare('UPDATE plan_records SET comment = ?, score = ? WHERE id = ?').run(trimText(comment, 500), clampInt(score, 0, 10, 0), recordId);
 	res.json({ code: 200, msg: '评价成功' });
 });
 
@@ -124,14 +125,13 @@ router.get('/records/:id', authMiddleware, (req, res) => {
 	const plan = db.prepare('SELECT * FROM plans WHERE id = ?').get(req.params.id);
 	const accessError = resolvePlanAccessError(plan, req.userId);
 	if (accessError) return res.json(accessError);
-	const { page = 1, size = 20 } = req.query;
-	const offset = (page - 1) * size;
+	const { size, offset } = sanitizePage(req.query);
 	const list = db.prepare(
 		`SELECT pr.*, u.nickname as user_name, u.avatar as user_avatar
 		 FROM plan_records pr LEFT JOIN users u ON pr.user_id = u.id
 		 WHERE pr.plan_id = ?
 		 ORDER BY pr.created_at DESC LIMIT ? OFFSET ?`
-	).all(req.params.id, Number(size), offset);
+	).all(req.params.id, size, offset);
 
 	list.forEach(item => { item.images = JSON.parse(item.images || '[]'); });
 	const total = db.prepare('SELECT COUNT(*) as cnt FROM plan_records WHERE plan_id = ?').get(req.params.id).cnt;

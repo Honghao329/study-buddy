@@ -5,8 +5,8 @@ const CommentsPage = {
       <div class="search-bar">
         <el-input v-model="noteId" placeholder="按笔记ID筛选" clearable style="width:160px" @clear="load" />
         <el-input v-model="search" placeholder="搜索评论内容" clearable style="width:240px" @clear="load" @keyup.enter="load" />
-        <el-button type="primary" @click="load">查询</el-button>
-        <el-tag>共 {{total}} 条评论</el-tag>
+        <el-button @click="load">查询</el-button>
+        <el-tag type="info" effect="plain">共 {{total}} 条评论</el-tag>
       </div>
       <el-table :data="list" stripe border v-loading="loading">
         <el-table-column prop="id" label="ID" width="60" />
@@ -16,12 +16,12 @@ const CommentsPage = {
         <el-table-column prop="created_at" label="时间" width="160" />
         <el-table-column label="状态" width="80">
           <template #default="{row}">
-            <el-tag :type="row.status===1?'success':'info'" size="small">{{row.status===1?'正常':'隐藏'}}</el-tag>
+            <el-tag :type="row.status===1?'':'info'" size="small">{{row.status===1?'正常':'隐藏'}}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="130" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right">
           <template #default="{row}">
-            <el-button size="small" text :type="row.status===1?'warning':'success'" @click="toggleStatus(row)">
+            <el-button size="small" text @click="toggleStatus(row)">
               {{row.status===1?'隐藏':'显示'}}
             </el-button>
             <el-popconfirm title="确定删除该评论？" @confirm="del(row)">

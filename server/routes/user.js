@@ -2,7 +2,8 @@ const router = require('express').Router();
 const crypto = require('crypto');
 const db = require('../config/db');
 const { authMiddleware, optionalAuth, generateToken } = require('../middleware/auth');
-const { normalizeUser, parseJsonField } = require('../lib/format');
+const { normalizeUser, parseJsonField, fillAvatarsList } = require('../lib/format');
+const { sanitizePage, trimText } = require('../lib/validate');
 
 function pickFirstDefined(...values) {
 	return values.find((value) => value !== undefined && value !== null);
@@ -88,31 +89,30 @@ router.get('/profile/:id', optionalAuth, (req, res) => {
 
 // 某用户的公开笔记
 router.get('/user_notes/:id', (req, res) => {
-	const { page = 1, size = 10 } = req.query;
-	const offset = (page - 1) * size;
+	const { size, offset } = sanitizePage(req.query);
 	const list = db.prepare(
 		`SELECT n.*, u.nickname as user_name, u.avatar as user_pic
 		 FROM notes n LEFT JOIN users u ON n.user_id = u.id
 		 WHERE n.user_id = ? AND n.status = 1 AND n.visibility = 'public'
 		 ORDER BY n.created_at DESC LIMIT ? OFFSET ?`
-	).all(req.params.id, Number(size), offset);
+	).all(req.params.id, size, offset);
 	const total = db.prepare("SELECT COUNT(*) as cnt FROM notes WHERE user_id = ? AND status = 1 AND visibility = 'public'").get(req.params.id).cnt;
 	res.json({ code: 200, data: { list, total } });
 });
 
 // 用户列表（发现用户）
 router.get('/list', optionalAuth, (req, res) => {
-	const { page = 1, size = 20, search } = req.query;
-	const offset = (page - 1) * size;
+	const { size, offset } = sanitizePage(req.query);
+	const { search } = req.query;
 	let where = 'WHERE status = 1';
 	const params = [];
 	if (search) { where += ' AND (nickname LIKE ? OR bio LIKE ? OR tags LIKE ?)'; params.push('%' + search + '%', '%' + search + '%', '%' + search + '%'); }
 
 	const total = db.prepare(`SELECT COUNT(*) as cnt FROM users ${where}`).get(...params).cnt;
 	const list = db.prepare(`SELECT id, nickname, avatar, bio, tags, created_at FROM users ${where} ORDER BY login_cnt DESC, id DESC LIMIT ? OFFSET ?`)
-		.all(...params, Number(size), offset);
+		.all(...params, size, offset);
 	list.forEach(u => { u.tags = parseJsonField(u.tags, []); });
-	res.json({ code: 200, data: { list, total } });
+	res.json({ code: 200, data: { list: fillAvatarsList(list), total } });
 });
 
 // 修改密码

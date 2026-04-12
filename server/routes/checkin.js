@@ -2,25 +2,32 @@ const router = require('express').Router();
 const db = require('../config/db');
 const { authMiddleware, optionalAuth } = require('../middleware/auth');
 const { getLocalDateString } = require('../lib/date');
+const { sanitizePage, trimText, clampInt } = require('../lib/validate');
+const { fillAvatars, fillAvatarsList } = require('../lib/format');
 
 // 用户创建打卡任务
 router.post('/create', authMiddleware, (req, res) => {
-	const { title, description, start_date, end_date } = req.body;
-	if (!title || !title.trim()) return res.json({ code: 400, msg: '请输入标题' });
+	const { start_date, end_date } = req.body;
+	const title = trimText(req.body.title, 100);
+	const description = trimText(req.body.description, 500);
+	if (!title) return res.json({ code: 400, msg: '请输入标题' });
+	if (start_date && end_date && start_date > end_date) {
+		return res.json({ code: 400, msg: '开始日期不能晚于结束日期' });
+	}
 	const result = db.prepare('INSERT INTO checkins (title, description, start_date, end_date, creator_id) VALUES (?, ?, ?, ?, ?)')
-		.run(title.trim(), description || '', start_date || '', end_date || '', req.userId);
+		.run(title, description, start_date || '', end_date || '', req.userId);
 	res.json({ code: 200, data: { id: result.lastInsertRowid } });
 });
 
 router.get('/list', (req, res) => {
-	const { page = 1, size = 10, search } = req.query;
-	const offset = (page - 1) * size;
+	const { size, offset } = sanitizePage(req.query);
+	const { search } = req.query;
 	let where = 'WHERE status = 1';
 	const params = [];
 	if (search) { where += ' AND (title LIKE ? OR description LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
 
 	const total = db.prepare(`SELECT COUNT(*) as cnt FROM checkins ${where}`).get(...params).cnt;
-	const list = db.prepare(`SELECT * FROM checkins ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...params, Number(size), offset);
+	const list = db.prepare(`SELECT * FROM checkins ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...params, size, offset);
 	res.json({ code: 200, data: { list, total } });
 });
 
@@ -52,7 +59,8 @@ router.get('/detail/:id', optionalAuth, (req, res) => {
 
 	item.is_joined = is_joined;
 	item.my_total = my_total;
-	item.recent_users = recent_users;
+	item.recent_users = fillAvatarsList(recent_users);
+	fillAvatars(item);
 	res.json({ code: 200, data: item });
 });
 
@@ -65,21 +73,20 @@ router.post('/join', authMiddleware, (req, res) => {
 	const existing = db.prepare('SELECT id FROM checkin_records WHERE checkin_id = ? AND user_id = ? AND day = ?').get(checkinId, req.userId, today);
 	if (existing) return res.json({ code: 400, msg: '今日已打卡' });
 
-	db.prepare('INSERT INTO checkin_records (checkin_id, user_id, day, content, forms) VALUES (?, ?, ?, ?, ?)').run(checkinId, req.userId, today, content || '', JSON.stringify(forms || {}));
+	db.prepare('INSERT INTO checkin_records (checkin_id, user_id, day, content, forms) VALUES (?, ?, ?, ?, ?)').run(checkinId, req.userId, today, trimText(content, 2000), JSON.stringify(forms || {}));
 	db.prepare('UPDATE checkins SET join_cnt = join_cnt + 1 WHERE id = ?').run(checkinId);
 	res.json({ code: 200, msg: '打卡成功' });
 });
 
 // 我的打卡记录
 router.get('/my_records', authMiddleware, (req, res) => {
-	const { page = 1, size = 20 } = req.query;
-	const offset = (page - 1) * size;
+	const { size, offset } = sanitizePage(req.query);
 	const total = db.prepare('SELECT COUNT(*) as cnt FROM checkin_records WHERE user_id = ?').get(req.userId).cnt;
 	const list = db.prepare(
 		`SELECT cr.*, c.title as checkin_title FROM checkin_records cr
 		 LEFT JOIN checkins c ON cr.checkin_id = c.id
 		 WHERE cr.user_id = ? ORDER BY cr.created_at DESC LIMIT ? OFFSET ?`
-	).all(req.userId, Number(size), offset);
+	).all(req.userId, size, offset);
 	res.json({ code: 200, data: { list, total } });
 });
 
@@ -90,29 +97,44 @@ router.get('/my_joined_ids', authMiddleware, (req, res) => {
 	res.json({ code: 200, data: ids });
 });
 
+// 今日已打卡的任务ID集合（用于首页今日中心）
+router.get('/today_done_ids', authMiddleware, (req, res) => {
+	const today = getLocalDateString();
+	const rows = db.prepare('SELECT DISTINCT checkin_id FROM checkin_records WHERE user_id = ? AND day = ?').all(req.userId, today);
+	res.json({ code: 200, data: rows.map(r => r.checkin_id) });
+});
+
 // 邀请伙伴监督某个打卡任务
 router.post('/invite_supervisor', authMiddleware, (req, res) => {
 	const { checkinId, supervisorId } = req.body;
 	const item = db.prepare('SELECT * FROM checkins WHERE id = ?').get(checkinId);
 	if (!item) return res.json({ code: 404, msg: '打卡任务不存在' });
 
+	// 只有任务创建者或已参与者才能邀请监督
+	const isCreator = item.creator_id === req.userId;
+	const isParticipant = !!db.prepare(
+		'SELECT 1 FROM checkin_records WHERE checkin_id = ? AND user_id = ?'
+	).get(checkinId, req.userId);
+	if (!isCreator && !isParticipant) return res.json({ code: 403, msg: '只有创建者或参与者才能邀请监督' });
+
 	const supervisor = db.prepare('SELECT id, nickname FROM users WHERE id = ?').get(supervisorId);
 	if (!supervisor) return res.json({ code: 404, msg: '用户不存在' });
 
-	// 校验是否为伙伴关系
 	const isPartner = db.prepare(
 		'SELECT 1 FROM partners WHERE status = 1 AND ((user_id = ? AND target_id = ?) OR (user_id = ? AND target_id = ?))'
 	).get(req.userId, supervisorId, supervisorId, req.userId);
 	if (!isPartner) return res.json({ code: 403, msg: '只能邀请伙伴作为监督者' });
 
-	db.prepare('UPDATE checkins SET supervisor_id = ?, supervisor_name = ?, creator_id = ? WHERE id = ?')
-		.run(supervisorId, supervisor.nickname || '', req.userId, checkinId);
+	// 不再覆写 creator_id，只设监督者
+	db.prepare('UPDATE checkins SET supervisor_id = ?, supervisor_name = ? WHERE id = ?')
+		.run(supervisorId, supervisor.nickname || '', checkinId);
 	res.json({ code: 200, msg: '已邀请监督' });
 });
 
 // 监督者评价某条打卡记录
 router.post('/comment_record', authMiddleware, (req, res) => {
-	const { recordId, comment, score } = req.body;
+	const { recordId, comment } = req.body;
+	const score = clampInt(req.body.score, 0, 10, 0);
 	const record = db.prepare(
 		`SELECT cr.*, c.supervisor_id FROM checkin_records cr
 		 LEFT JOIN checkins c ON cr.checkin_id = c.id WHERE cr.id = ?`
@@ -120,21 +142,20 @@ router.post('/comment_record', authMiddleware, (req, res) => {
 	if (!record) return res.json({ code: 404, msg: '记录不存在' });
 	if (record.supervisor_id !== req.userId) return res.json({ code: 403, msg: '只有监督者可以评价' });
 
-	db.prepare('UPDATE checkin_records SET comment = ?, score = ? WHERE id = ?').run(comment || '', score || 0, recordId);
+	db.prepare('UPDATE checkin_records SET comment = ?, score = ? WHERE id = ?').run(trimText(comment, 500), score, recordId);
 	res.json({ code: 200, msg: '评价成功' });
 });
 
-// 打卡记录时间线（含评价）
-router.get('/records/:id', optionalAuth, (req, res) => {
-	const { page = 1, size = 20 } = req.query;
-	const offset = (page - 1) * size;
+// 打卡记录时间线（含评价）— 需登录
+router.get('/records/:id', authMiddleware, (req, res) => {
+	const { size, offset } = sanitizePage(req.query);
 	const list = db.prepare(
 		`SELECT cr.*, u.nickname as user_name, u.avatar as user_avatar
 		 FROM checkin_records cr LEFT JOIN users u ON cr.user_id = u.id
 		 WHERE cr.checkin_id = ? ORDER BY cr.created_at DESC LIMIT ? OFFSET ?`
-	).all(req.params.id, Number(size), offset);
+	).all(req.params.id, size, offset);
 	const total = db.prepare('SELECT COUNT(*) as cnt FROM checkin_records WHERE checkin_id = ?').get(req.params.id).cnt;
-	res.json({ code: 200, data: { list, total } });
+	res.json({ code: 200, data: { list: fillAvatarsList(list), total } });
 });
 
 module.exports = router;

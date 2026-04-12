@@ -9,7 +9,7 @@ const PartnersPage = {
           <el-option label="已拒绝" :value="8" />
           <el-option label="已解除" :value="9" />
         </el-select>
-        <el-tag>共 {{list.length}} 条记录</el-tag>
+        <el-tag type="info" effect="plain">共 {{list.length}} 条记录</el-tag>
       </div>
       <el-empty v-if="list.length===0 && !loading" description="暂无伙伴关系数据" />
       <el-table v-else :data="list" stripe border v-loading="loading">
@@ -17,7 +17,7 @@ const PartnersPage = {
         <el-table-column label="发起方" min-width="120">
           <template #default="{row}">
             <div style="display:flex;align-items:center;gap:8px">
-              <el-avatar :size="28" :src="row.user_pic" style="background:#4A90D9">{{(row.user_name||'用')[0]}}</el-avatar>
+              <el-avatar :size="28" :src="row.user_pic" style="background:#4091f7">{{(row.user_name||'用')[0]}}</el-avatar>
               <span>{{row.user_name||'用户'+row.user_id}}</span>
             </div>
           </template>
@@ -25,24 +25,22 @@ const PartnersPage = {
         <el-table-column label="接收方" min-width="120">
           <template #default="{row}">
             <div style="display:flex;align-items:center;gap:8px">
-              <el-avatar :size="28" :src="row.target_pic" style="background:#67c23a">{{(row.target_name||'用')[0]}}</el-avatar>
+              <el-avatar :size="28" :src="row.target_pic" style="background:#22c55e">{{(row.target_name||'用')[0]}}</el-avatar>
               <span>{{row.target_name||'用户'+row.target_id}}</span>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="{row}">
-            <el-tag :type="{0:'warning',1:'success',8:'danger',9:'info'}[row.status]" size="small">
-              {{statusText(row.status)}}
-            </el-tag>
+            <el-tag type="info" size="small">{{statusText(row.status)}}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="160" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{row}">
-            <el-button v-if="row.status===0" size="small" text type="success" @click="setStatus(row,1)">接受</el-button>
-            <el-button v-if="row.status===0" size="small" text type="warning" @click="setStatus(row,8)">拒绝</el-button>
-            <el-button v-if="row.status===1" size="small" text type="warning" @click="setStatus(row,9)">解除</el-button>
+            <el-button v-if="row.status===0" size="small" text @click="setStatus(row,1)">接受</el-button>
+            <el-button v-if="row.status===0" size="small" text @click="setStatus(row,8)">拒绝</el-button>
+            <el-button v-if="row.status===1" size="small" text @click="setStatus(row,9)">解除</el-button>
             <el-popconfirm title="确定删除该记录？" @confirm="del(row.id)">
               <template #reference><el-button size="small" text type="danger">删除</el-button></template>
             </el-popconfirm>
@@ -68,8 +66,7 @@ const PartnersPage = {
     },
     async del(id) {
       await adminApi.del('/api/admin/partner_del/' + id);
-      ElementPlus.ElMessage.success('已删除');
-      this.load();
+      ElementPlus.ElMessage.success('已删除'); this.load();
     }
   }
 };

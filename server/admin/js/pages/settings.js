@@ -4,18 +4,18 @@ const SettingsPage = {
     <PageContainer title="系统设置">
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-card shadow="never" style="border-radius:12px">
+          <el-card shadow="never">
             <template #header><strong>当前管理员</strong></template>
             <el-descriptions :column="1" border v-if="adminInfo">
               <el-descriptions-item label="ID">{{adminInfo.id}}</el-descriptions-item>
               <el-descriptions-item label="用户名">{{adminInfo.username}}</el-descriptions-item>
               <el-descriptions-item label="创建时间">{{adminInfo.created_at || '-'}}</el-descriptions-item>
             </el-descriptions>
-            <div v-else style="text-align:center;padding:20px;color:#999">加载中...</div>
+            <div v-else style="text-align:center;padding:20px;color:#9ca3af">加载中...</div>
           </el-card>
         </el-col>
         <el-col :span="12">
-          <el-card shadow="never" style="border-radius:12px">
+          <el-card shadow="never">
             <template #header><strong>修改密码</strong></template>
             <el-form :model="pwdForm" label-width="100px" style="max-width:400px">
               <el-form-item label="原密码">
@@ -28,7 +28,7 @@ const SettingsPage = {
                 <el-input v-model="pwdForm.confirmPassword" type="password" show-password placeholder="再次输入新密码" />
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" :loading="saving" @click="changePassword">修改密码</el-button>
+                <el-button :loading="saving" @click="changePassword">修改密码</el-button>
               </el-form-item>
             </el-form>
           </el-card>

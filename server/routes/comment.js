@@ -5,6 +5,7 @@ const { canViewNote } = require('../lib/access');
 const { deleteCommentCascade } = require('../lib/cleanup');
 const { normalizeComment } = require('../lib/format');
 const { notifyComment } = require('../lib/notify');
+const { sanitizePage, trimText } = require('../lib/validate');
 
 function checkPartnerAccess(ownerId, userId) {
 	if (!userId || Number(ownerId) === Number(userId)) return false;
@@ -20,7 +21,7 @@ function checkPartnerAccess(ownerId, userId) {
 // 发表评论
 router.post('/create', authMiddleware, (req, res) => {
 	const { noteId, content } = req.body;
-	const trimmedContent = String(content || '').trim();
+	const trimmedContent = trimText(content, 2000);
 	if (!trimmedContent) return res.json({ code: 400, msg: '评论内容不能为空' });
 
 	const note = db.prepare('SELECT id, user_id, visibility, status FROM notes WHERE id = ?').get(noteId);
@@ -47,8 +48,8 @@ router.delete('/delete/:id', authMiddleware, (req, res) => {
 
 // 获取评论列表
 router.get('/list', optionalAuth, (req, res) => {
-	const { noteId, page = 1, size = 20 } = req.query;
-	const offset = (page - 1) * size;
+	const { noteId } = req.query;
+	const { size, offset } = sanitizePage(req.query);
 	const note = db.prepare('SELECT id, user_id, visibility, status FROM notes WHERE id = ?').get(noteId);
 	if (!note) return res.json({ code: 404, msg: '笔记不存在' });
 
@@ -62,7 +63,7 @@ router.get('/list', optionalAuth, (req, res) => {
 		`SELECT c.*, u.nickname as user_name, u.avatar as user_pic
 		 FROM comments c LEFT JOIN users u ON c.user_id = u.id
 		 WHERE c.note_id = ? AND c.status = 1 ORDER BY c.created_at DESC LIMIT ? OFFSET ?`
-	).all(noteId, Number(size), offset);
+	).all(noteId, size, offset);
 	res.json({ code: 200, data: { list: list.map(normalizeComment), total } });
 });
 

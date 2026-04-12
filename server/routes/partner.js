@@ -2,6 +2,7 @@ const router = require('express').Router();
 const db = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
 const { notifyPartnerInvite } = require('../lib/notify');
+const { fillAvatarsList } = require('../lib/format');
 
 // 发送邀请
 router.post('/invite', authMiddleware, (req, res) => {
@@ -55,7 +56,7 @@ router.get('/my_list', authMiddleware, (req, res) => {
 		 WHERE (p.user_id = ? OR p.target_id = ?) AND p.status = 1
 		 ORDER BY p.created_at DESC`
 	).all(req.userId, req.userId);
-	res.json({ code: 200, data: list });
+	res.json({ code: 200, data: fillAvatarsList(list) });
 });
 
 // 待处理邀请
@@ -65,7 +66,7 @@ router.get('/pending_list', authMiddleware, (req, res) => {
 		 FROM partners p LEFT JOIN users u ON p.user_id = u.id
 		 WHERE p.target_id = ? AND p.status = 0 ORDER BY p.created_at DESC`
 	).all(req.userId);
-	res.json({ code: 200, data: list });
+	res.json({ code: 200, data: fillAvatarsList(list) });
 });
 
 // 批量查询伙伴状态

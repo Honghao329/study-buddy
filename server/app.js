@@ -10,6 +10,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
 
 // 路由
@@ -23,7 +24,7 @@ app.use('/api/checkin', require('./routes/checkin'));
 app.use('/api/news', require('./routes/news'));
 app.use('/api/fav', require('./routes/fav'));
 app.use('/api/upload', require('./routes/upload'));
-app.use('/api/plan', require('./routes/plan'));
+// app.use('/api/plan', require('./routes/plan')); // P2: 半成品，暂不暴露
 app.use('/api/message', require('./routes/message'));
 app.use('/api/admin', require('./routes/admin'));
 

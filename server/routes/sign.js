@@ -2,17 +2,21 @@ const router = require('express').Router();
 const db = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
 const { getLocalDateString } = require('../lib/date');
+const { clampInt, checkEnum, trimText } = require('../lib/validate');
+const { fillAvatarsList } = require('../lib/format');
 
 // 每日签到
 router.post('/do', authMiddleware, (req, res) => {
-	const { duration, status, content } = req.body;
+	const safeDuration = clampInt(req.body.duration, 0, 1440, 0);
+	const safeStatus = checkEnum(req.body.status, ['efficient', 'normal', 'tired'], 'normal');
+	const safeContent = trimText(req.body.content, 500);
 	const today = getLocalDateString();
 
 	const existing = db.prepare('SELECT id FROM signs WHERE user_id = ? AND day = ?').get(req.userId, today);
 	if (existing) return res.json({ code: 400, msg: '今日已签到' });
 
 	db.prepare('INSERT INTO signs (user_id, day, duration, status, content) VALUES (?, ?, ?, ?, ?)')
-		.run(req.userId, today, duration || 0, status || 'normal', content || '');
+		.run(req.userId, today, safeDuration, safeStatus, safeContent);
 	res.json({ code: 200, data: { day: today } });
 });
 
@@ -68,7 +72,7 @@ router.get('/rank', (req, res) => {
 		 FROM signs s LEFT JOIN users u ON s.user_id = u.id
 		 GROUP BY s.user_id ORDER BY days DESC LIMIT 20`
 	).all();
-	res.json({ code: 200, data: list });
+	res.json({ code: 200, data: fillAvatarsList(list) });
 });
 
 module.exports = router;

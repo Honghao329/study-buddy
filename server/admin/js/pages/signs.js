@@ -11,20 +11,20 @@ const SignsPage = {
         <el-table :data="rankList" stripe border v-loading="loadingRank">
           <el-table-column type="index" label="排名" width="70">
             <template #default="{$index}">
-              <el-tag v-if="$index<3" :type="['danger','warning',''][$index]" size="small" round>{{$index+1}}</el-tag>
+              <el-tag v-if="$index<3" type="info" size="small" round>{{$index+1}}</el-tag>
               <span v-else>{{$index+1}}</span>
             </template>
           </el-table-column>
           <el-table-column label="用户" width="200">
             <template #default="{row}">
               <div style="display:flex;align-items:center;gap:8px">
-                <el-avatar :size="28" :src="row.user_pic" style="background:#4A90D9">{{(row.user_name||'学')[0]}}</el-avatar>
+                <el-avatar :size="28" :src="row.user_pic" style="background:#4091f7">{{(row.user_name||'学')[0]}}</el-avatar>
                 <span>{{row.user_name||'匿名'}}</span>
               </div>
             </template>
           </el-table-column>
           <el-table-column prop="days" label="签到天数" width="120">
-            <template #default="{row}"><strong style="color:#4A90D9">{{row.days}}</strong> 天</template>
+            <template #default="{row}"><strong>{{row.days}}</strong> 天</template>
           </el-table-column>
           <el-table-column prop="total_duration" label="总学习时长" width="140">
             <template #default="{row}">{{row.total_duration||0}} 分钟</template>
@@ -38,8 +38,8 @@ const SignsPage = {
       <template v-if="activeTab==='records'">
         <div class="search-bar">
           <el-input v-model="search" placeholder="搜索用户昵称" clearable @clear="loadRecords" @keyup.enter="loadRecords" style="width:240px" />
-          <el-button type="primary" @click="loadRecords">搜索</el-button>
-          <el-tag>共 {{recordTotal}} 条记录</el-tag>
+          <el-button @click="loadRecords">搜索</el-button>
+          <el-tag type="info" effect="plain">共 {{recordTotal}} 条记录</el-tag>
         </div>
         <el-table :data="recordList" stripe border v-loading="loadingRecords">
           <el-table-column prop="id" label="ID" width="60" />
@@ -84,8 +84,7 @@ const SignsPage = {
     },
     async delRecord(id) {
       await adminApi.del('/api/admin/sign_del/' + id);
-      ElementPlus.ElMessage.success('已删除');
-      this.loadRecords();
+      ElementPlus.ElMessage.success('已删除'); this.loadRecords();
     }
   }
 };

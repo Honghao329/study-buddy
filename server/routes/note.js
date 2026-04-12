@@ -4,6 +4,9 @@ const { authMiddleware, optionalAuth } = require('../middleware/auth');
 const { canViewNote } = require('../lib/access');
 const { deleteNoteCascade } = require('../lib/cleanup');
 const { normalizeNote, parseJsonField } = require('../lib/format');
+const { sanitizePage, checkEnum, trimText } = require('../lib/validate');
+
+const VISIBILITY_VALUES = ['public', 'private', 'partner'];
 
 function checkPartnerAccess(ownerId, userId) {
 	if (!userId || Number(ownerId) === Number(userId)) return false;
@@ -19,16 +22,17 @@ function checkPartnerAccess(ownerId, userId) {
 // 创建笔记
 router.post('/create', authMiddleware, (req, res) => {
 	const { title, content, images, visibility, tags } = req.body;
-	const noteTitle = String(title || '').trim();
+	const noteTitle = trimText(title, 200);
 	if (!noteTitle) return res.json({ code: 400, msg: '标题不能为空' });
+	const safeVisibility = checkEnum(visibility, VISIBILITY_VALUES, 'public');
 	const result = db.prepare(
 		'INSERT INTO notes (user_id, title, content, images, visibility, tags) VALUES (?, ?, ?, ?, ?, ?)'
 	).run(
 		req.userId,
 		noteTitle,
-		String(content || ''),
+		trimText(content, 10000),
 		JSON.stringify(parseJsonField(images, [])),
-		visibility || 'public',
+		safeVisibility,
 		JSON.stringify(parseJsonField(tags, []))
 	);
 	res.json({ code: 200, data: { id: result.lastInsertRowid } });
@@ -36,8 +40,8 @@ router.post('/create', authMiddleware, (req, res) => {
 
 // 获取我的笔记列表
 router.get('/my_list', authMiddleware, (req, res) => {
-	const { page = 1, size = 10, search, visibility } = req.query;
-	const offset = (page - 1) * size;
+	const { size, offset } = sanitizePage(req.query);
+	const { search, visibility } = req.query;
 	let where = 'WHERE n.user_id = ?';
 	const params = [req.userId];
 
@@ -49,15 +53,15 @@ router.get('/my_list', authMiddleware, (req, res) => {
 		`SELECT n.*, u.nickname as user_name, u.avatar as user_pic
 		 FROM notes n LEFT JOIN users u ON n.user_id = u.id ${where}
 		 ORDER BY n.created_at DESC LIMIT ? OFFSET ?`
-	).all(...params, Number(size), offset);
+	).all(...params, size, offset);
 
 	res.json({ code: 200, data: { list: list.map(normalizeNote), total } });
 });
 
 // 获取公开笔记列表（社区广场）
 router.get('/public_list', (req, res) => {
-	const { page = 1, size = 10, search, tag, sort = 'new' } = req.query;
-	const offset = (page - 1) * size;
+	const { size, offset } = sanitizePage(req.query);
+	const { search, tag, sort = 'new' } = req.query;
 	let where = "WHERE n.visibility = 'public' AND n.status = 1";
 	const params = [];
 
@@ -71,7 +75,7 @@ router.get('/public_list', (req, res) => {
 		`SELECT n.*, u.nickname as user_name, u.avatar as user_pic
 		 FROM notes n LEFT JOIN users u ON n.user_id = u.id ${where}
 		 ORDER BY ${orderBy} LIMIT ? OFFSET ?`
-	).all(...params, Number(size), offset);
+	).all(...params, size, offset);
 
 	res.json({ code: 200, data: { list: list.map(normalizeNote), total } });
 });
@@ -110,15 +114,16 @@ router.put('/update/:id', authMiddleware, (req, res) => {
 	if (!note) return res.json({ code: 403, msg: '无权操作' });
 
 	const { title, content, images, visibility, tags } = req.body;
-	const noteTitle = String(title || '').trim();
+	const noteTitle = trimText(title, 200);
 	if (!noteTitle) return res.json({ code: 400, msg: '标题不能为空' });
+	const safeVisibility = checkEnum(visibility, VISIBILITY_VALUES, 'public');
 	db.prepare(
 		`UPDATE notes SET title = ?, content = ?, images = ?, visibility = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
 	).run(
 		noteTitle,
-		String(content || ''),
+		trimText(content, 10000),
 		JSON.stringify(parseJsonField(images, [])),
-		visibility || 'public',
+		safeVisibility,
 		JSON.stringify(parseJsonField(tags, [])),
 		req.params.id
 	);

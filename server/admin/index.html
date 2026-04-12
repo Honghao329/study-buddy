@@ -11,8 +11,11 @@
 <div id="app">
   <el-container class="main-layout">
     <el-aside width="220px" class="sidebar">
-      <div class="logo">学习伴侣</div>
-      <el-menu :default-active="currentPage" @select="changePage" background-color="#001529" text-color="#ffffffb3" active-text-color="#409EFF">
+      <div class="logo">
+        <span class="logo-icon">📖</span>
+        <span>学习伴侣</span>
+      </div>
+      <el-menu :default-active="currentPage" @select="changePage" background-color="#001529" text-color="rgba(254,254,254,0.65)" active-text-color="#ffffff">
         <el-menu-item index="dashboard"><el-icon><DataAnalysis /></el-icon><span>数据概览</span></el-menu-item>
         <el-sub-menu index="content">
           <template #title><el-icon><FolderOpened /></el-icon><span>内容管理</span></template>
@@ -37,7 +40,7 @@
         </el-sub-menu>
       </el-menu>
       <div class="sidebar-bottom">
-        <el-button text type="danger" @click="doLogout"><el-icon><SwitchButton /></el-icon> 退出登录</el-button>
+        <el-button text @click="doLogout"><el-icon><SwitchButton /></el-icon> 退出登录</el-button>
       </div>
     </el-aside>
 
@@ -50,7 +53,7 @@
           </el-breadcrumb>
         </div>
         <div class="topbar-right">
-          <el-avatar :size="32" style="background:#4A90D9">{{adminName[0]}}</el-avatar>
+          <el-avatar :size="30" style="background:#4091f7;font-size:12px">{{adminName[0]}}</el-avatar>
           <span class="admin-name">{{adminName}}</span>
         </div>
       </el-header>
@@ -64,6 +67,7 @@
 <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/element-plus@2.4.4/dist/index.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="js/api.js"></script>
 <script src="js/components/layout.js"></script>
 <script src="js/pages/dashboard.js"></script>

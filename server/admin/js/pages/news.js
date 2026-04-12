@@ -7,15 +7,15 @@ const NewsPage = {
         <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
         <el-table-column prop="cate" label="分类" width="100">
           <template #default="{row}">
-            <el-tag size="small" type="info">{{row.cate||'未分类'}}</el-tag>
+            <el-tag size="small" type="info" effect="plain">{{row.cate||'未分类'}}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="description" label="描述" show-overflow-tooltip />
         <el-table-column prop="view_cnt" label="浏览" width="70" />
         <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right">
           <template #default="{row}">
-            <el-button size="small" text type="primary" @click="editRow(row)">编辑</el-button>
+            <el-button size="small" text @click="editRow(row)">编辑</el-button>
             <el-popconfirm title="确定删除？" @confirm="del(row.id)">
               <template #reference><el-button size="small" text type="danger">删除</el-button></template>
             </el-popconfirm>
@@ -34,7 +34,7 @@ const NewsPage = {
         </el-form>
         <template #footer>
           <el-button @click="showDialog=false">取消</el-button>
-          <el-button type="primary" :loading="submitting" @click="save">{{isEdit?'保存':'发布'}}</el-button>
+          <el-button :loading="submitting" @click="save">{{isEdit?'保存':'发布'}}</el-button>
         </template>
       </el-dialog>
     </PageContainer>
@@ -49,20 +49,13 @@ const NewsPage = {
       this.loading = false;
     },
     openAdd() {
-      this.isEdit = false;
-      this.editId = null;
+      this.isEdit = false; this.editId = null;
       this.form = { title: '', cate: '', description: '', content: '' };
       this.showDialog = true;
     },
     editRow(row) {
-      this.isEdit = true;
-      this.editId = row.id;
-      this.form = {
-        title: row.title || '',
-        cate: row.cate || '',
-        description: row.description || '',
-        content: row.content || ''
-      };
+      this.isEdit = true; this.editId = row.id;
+      this.form = { title: row.title || '', cate: row.cate || '', description: row.description || '', content: row.content || '' };
       this.showDialog = true;
     },
     async save() {
@@ -70,25 +63,17 @@ const NewsPage = {
       this.submitting = true;
       if (this.isEdit) {
         const res = await adminApi.put('/api/admin/news_edit/' + this.editId, this.form);
-        if (res.code === 200) {
-          ElementPlus.ElMessage.success('保存成功');
-          this.showDialog = false;
-          this.load();
-        } else {
-          ElementPlus.ElMessage.error(res.msg || '保存失败');
-        }
+        if (res.code === 200) { ElementPlus.ElMessage.success('保存成功'); this.showDialog = false; this.load(); }
+        else { ElementPlus.ElMessage.error(res.msg || '保存失败'); }
       } else {
         await adminApi.post('/api/admin/news_create', this.form);
-        ElementPlus.ElMessage.success('发布成功');
-        this.showDialog = false;
-        this.load();
+        ElementPlus.ElMessage.success('发布成功'); this.showDialog = false; this.load();
       }
       this.submitting = false;
     },
     async del(id) {
       await adminApi.del('/api/admin/news_del/' + id);
-      ElementPlus.ElMessage.success('已删除');
-      this.load();
+      ElementPlus.ElMessage.success('已删除'); this.load();
     }
   }
 };

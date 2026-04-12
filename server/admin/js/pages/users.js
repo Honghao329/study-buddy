@@ -7,14 +7,14 @@ const UsersPage = {
         <el-select v-model="statusFilter" placeholder="状态" clearable style="width:100px" @change="load">
           <el-option label="正常" :value="1" /><el-option label="禁用" :value="9" />
         </el-select>
-        <el-button type="primary" @click="load">搜索</el-button>
-        <el-tag>共 {{total}} 位用户</el-tag>
+        <el-button @click="load">搜索</el-button>
+        <el-tag type="info" effect="plain">共 {{total}} 位用户</el-tag>
       </div>
       <el-table :data="list" stripe border v-loading="loading" @row-click="viewUser" style="cursor:pointer">
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column label="头像" width="60">
           <template #default="{row}">
-            <el-avatar :size="32" :src="row.avatar" style="background:#4A90D9">{{(row.nickname||'用')[0]}}</el-avatar>
+            <el-avatar :size="32" :src="row.avatar" style="background:#4091f7">{{(row.nickname||'用')[0]}}</el-avatar>
           </template>
         </el-table-column>
         <el-table-column prop="nickname" label="昵称" min-width="100" />
@@ -23,21 +23,21 @@ const UsersPage = {
         <el-table-column prop="login_cnt" label="登录" width="60" />
         <el-table-column label="标签" width="140">
           <template #default="{row}">
-            <el-tag v-for="t in (row.tags||[])" :key="t" size="small" style="margin:2px">{{t}}</el-tag>
+            <el-tag v-for="t in (row.tags||[])" :key="t" size="small" type="info" effect="plain" style="margin:2px">{{t}}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="注册时间" width="160" />
         <el-table-column label="状态" width="70">
           <template #default="{row}">
-            <el-tag :type="row.status===1?'success':'danger'" size="small">{{row.status===1?'正常':'禁用'}}</el-tag>
+            <el-tag :type="row.status===1?'':'danger'" size="small">{{row.status===1?'正常':'禁用'}}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{row}">
-            <el-button size="small" text type="primary" @click.stop="editUser(row)">编辑</el-button>
+            <el-button size="small" text @click.stop="editUser(row)">编辑</el-button>
             <el-popconfirm :title="row.status===1?'确定禁用？':'确定启用？'" @confirm="toggleStatus(row)">
               <template #reference>
-                <el-button size="small" text :type="row.status===1?'warning':'success'" @click.stop>{{row.status===1?'禁用':'启用'}}</el-button>
+                <el-button size="small" text @click.stop>{{row.status===1?'禁用':'启用'}}</el-button>
               </template>
             </el-popconfirm>
             <el-popconfirm title="确定删除该用户及其所有数据？" @confirm="delUser(row.id)">
@@ -51,18 +51,18 @@ const UsersPage = {
       <el-dialog v-model="showDetail" title="用户详情" width="560px">
         <template v-if="userDetail">
           <div style="text-align:center;margin-bottom:16px">
-            <el-avatar :size="64" :src="userDetail.avatar" style="background:#4A90D9">{{(userDetail.nickname||'用')[0]}}</el-avatar>
+            <el-avatar :size="64" :src="userDetail.avatar" style="background:#4091f7;font-size:22px">{{(userDetail.nickname||'用')[0]}}</el-avatar>
           </div>
           <el-descriptions :column="2" border>
             <el-descriptions-item label="ID">{{userDetail.id}}</el-descriptions-item>
             <el-descriptions-item label="昵称">{{userDetail.nickname}}</el-descriptions-item>
             <el-descriptions-item label="手机">{{userDetail.mobile || '-'}}</el-descriptions-item>
             <el-descriptions-item label="状态">
-              <el-tag :type="userDetail.status===1?'success':'danger'" size="small">{{userDetail.status===1?'正常':'禁用'}}</el-tag>
+              <el-tag :type="userDetail.status===1?'':'danger'" size="small">{{userDetail.status===1?'正常':'禁用'}}</el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="简介" :span="2">{{userDetail.bio || '-'}}</el-descriptions-item>
             <el-descriptions-item label="标签" :span="2">
-              <el-tag v-for="t in (userDetail.tags||[])" :key="t" size="small" style="margin:2px">{{t}}</el-tag>
+              <el-tag v-for="t in (userDetail.tags||[])" :key="t" size="small" type="info" effect="plain" style="margin:2px">{{t}}</el-tag>
               <span v-if="!(userDetail.tags||[]).length">-</span>
             </el-descriptions-item>
             <el-descriptions-item label="登录次数">{{userDetail.login_cnt || 0}}</el-descriptions-item>
@@ -80,7 +80,7 @@ const UsersPage = {
         </el-form>
         <template #footer>
           <el-button @click="showEdit=false">取消</el-button>
-          <el-button type="primary" :loading="editSaving" @click="saveEdit">保存</el-button>
+          <el-button :loading="editSaving" @click="saveEdit">保存</el-button>
         </template>
       </el-dialog>
     </PageContainer>

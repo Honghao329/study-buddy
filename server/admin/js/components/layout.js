@@ -8,11 +8,11 @@ const PageContainer = {
     <div class="page-container">
       <div class="page-header">
         <h3>{{title}}</h3>
-        <el-button v-if="showAdd" type="primary" @click="$emit('add')">
+        <el-button v-if="showAdd" @click="$emit('add')">
           <el-icon><Plus /></el-icon> {{addText}}
         </el-button>
       </div>
-      <el-card shadow="never" style="border-radius:12px">
+      <el-card shadow="never">
         <slot></slot>
       </el-card>
     </div>

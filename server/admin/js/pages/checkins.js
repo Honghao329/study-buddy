@@ -12,13 +12,13 @@ const CheckinsPage = {
         <el-table-column prop="view_cnt" label="浏览" width="70" />
         <el-table-column label="状态" width="80">
           <template #default="{row}">
-            <el-tag :type="row.status===1?'success':'info'" size="small">{{row.status===1?'启用':'停用'}}</el-tag>
+            <el-tag :type="row.status===1?'':'info'" size="small">{{row.status===1?'启用':'停用'}}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right">
           <template #default="{row}">
-            <el-button size="small" text type="primary" @click="editRow(row)">编辑</el-button>
+            <el-button size="small" text @click="editRow(row)">编辑</el-button>
             <el-popconfirm title="确定删除？" @confirm="del(row.id)">
               <template #reference><el-button size="small" text type="danger">删除</el-button></template>
             </el-popconfirm>
@@ -41,7 +41,7 @@ const CheckinsPage = {
         </el-form>
         <template #footer>
           <el-button @click="showDialog=false">取消</el-button>
-          <el-button type="primary" :loading="submitting" @click="save">{{isEdit?'保存':'创建'}}</el-button>
+          <el-button :loading="submitting" @click="save">{{isEdit?'保存':'创建'}}</el-button>
         </template>
       </el-dialog>
     </PageContainer>
@@ -56,21 +56,13 @@ const CheckinsPage = {
       this.loading = false;
     },
     openAdd() {
-      this.isEdit = false;
-      this.editId = null;
+      this.isEdit = false; this.editId = null;
       this.form = { title: '', description: '', start_date: '', end_date: '', status: 1 };
       this.showDialog = true;
     },
     editRow(row) {
-      this.isEdit = true;
-      this.editId = row.id;
-      this.form = {
-        title: row.title || '',
-        description: row.description || '',
-        start_date: row.start_date || '',
-        end_date: row.end_date || '',
-        status: row.status ?? 1
-      };
+      this.isEdit = true; this.editId = row.id;
+      this.form = { title: row.title || '', description: row.description || '', start_date: row.start_date || '', end_date: row.end_date || '', status: row.status ?? 1 };
       this.showDialog = true;
     },
     async save() {
@@ -78,25 +70,17 @@ const CheckinsPage = {
       this.submitting = true;
       if (this.isEdit) {
         const res = await adminApi.put('/api/admin/checkin_edit/' + this.editId, this.form);
-        if (res.code === 200) {
-          ElementPlus.ElMessage.success('保存成功');
-          this.showDialog = false;
-          this.load();
-        } else {
-          ElementPlus.ElMessage.error(res.msg || '保存失败');
-        }
+        if (res.code === 200) { ElementPlus.ElMessage.success('保存成功'); this.showDialog = false; this.load(); }
+        else { ElementPlus.ElMessage.error(res.msg || '保存失败'); }
       } else {
         await adminApi.post('/api/admin/checkin_create', this.form);
-        ElementPlus.ElMessage.success('创建成功');
-        this.showDialog = false;
-        this.load();
+        ElementPlus.ElMessage.success('创建成功'); this.showDialog = false; this.load();
       }
       this.submitting = false;
     },
     async del(id) {
       await adminApi.del('/api/admin/checkin_del/' + id);
-      ElementPlus.ElMessage.success('已删除');
-      this.load();
+      ElementPlus.ElMessage.success('已删除'); this.load();
     }
   }
 };

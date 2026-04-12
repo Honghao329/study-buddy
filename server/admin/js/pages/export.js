@@ -2,52 +2,32 @@ const ExportPage = {
   components: { PageContainer },
   template: `
     <PageContainer title="数据导出">
-      <el-alert title="导出的数据为CSV格式，可用Excel打开。点击按钮即可下载对应数据。" type="info" show-icon :closable="false" style="margin-bottom:20px" />
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-card shadow="hover" style="border-radius:12px;text-align:center;padding:20px 0">
-            <el-icon :size="48" color="#4A90D9"><UserFilled /></el-icon>
-            <h3>用户数据</h3>
-            <p style="color:#999;font-size:13px;margin-bottom:16px">所有用户基本信息</p>
-            <el-button type="primary" :loading="exporting.users" @click="doExport('users', '用户数据')">
-              <el-icon><Download /></el-icon> 导出CSV
-            </el-button>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card shadow="hover" style="border-radius:12px;text-align:center;padding:20px 0">
-            <el-icon :size="48" color="#67c23a"><Document /></el-icon>
-            <h3>笔记数据</h3>
-            <p style="color:#999;font-size:13px;margin-bottom:16px">所有笔记概要信息</p>
-            <el-button type="success" :loading="exporting.notes" @click="doExport('notes', '笔记数据')">
-              <el-icon><Download /></el-icon> 导出CSV
-            </el-button>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card shadow="hover" style="border-radius:12px;text-align:center;padding:20px 0">
-            <el-icon :size="48" color="#e6a23c"><TrendCharts /></el-icon>
-            <h3>签到数据</h3>
-            <p style="color:#999;font-size:13px;margin-bottom:16px">所有签到记录</p>
-            <el-button type="warning" :loading="exporting.signs" @click="doExport('signs', '签到数据')">
-              <el-icon><Download /></el-icon> 导出CSV
-            </el-button>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card shadow="hover" style="border-radius:12px;text-align:center;padding:20px 0">
-            <el-icon :size="48" color="#909399"><Connection /></el-icon>
-            <h3>伙伴数据</h3>
-            <p style="color:#999;font-size:13px;margin-bottom:16px">所有伙伴关系</p>
-            <el-button :loading="exporting.partners" @click="doExport('partners', '伙伴数据')">
-              <el-icon><Download /></el-icon> 导出CSV
-            </el-button>
-          </el-card>
-        </el-col>
-      </el-row>
+      <el-alert title="导出的数据为CSV格式，可用Excel直接打开编辑。" type="info" show-icon :closable="false" style="margin-bottom:24px" />
+      <div class="export-grid">
+        <div class="export-card" v-for="item in items" :key="item.type">
+          <div class="icon-wrap">
+            <el-icon><component :is="item.icon" /></el-icon>
+          </div>
+          <h3>{{item.label}}</h3>
+          <p>{{item.desc}}</p>
+          <el-button :loading="exporting[item.type]" @click="doExport(item.type, item.label)">
+            <el-icon><Download /></el-icon> 导出CSV
+          </el-button>
+        </div>
+      </div>
     </PageContainer>
   `,
-  data() { return { exporting: { users: false, notes: false, signs: false, partners: false } }; },
+  data() {
+    return {
+      exporting: { users: false, notes: false, signs: false, partners: false },
+      items: [
+        { type: 'users', label: '用户数据', desc: '所有用户基本信息', icon: 'UserFilled' },
+        { type: 'notes', label: '笔记数据', desc: '所有笔记概要信息', icon: 'Document' },
+        { type: 'signs', label: '签到数据', desc: '所有签到记录', icon: 'TrendCharts' },
+        { type: 'partners', label: '伙伴数据', desc: '所有伙伴关系', icon: 'Connection' },
+      ]
+    };
+  },
   methods: {
     async doExport(type, label) {
       this.exporting[type] = true;

@@ -3,7 +3,8 @@ const crypto = require('crypto');
 const db = require('../config/db');
 const { adminAuth, generateToken } = require('../middleware/auth');
 const { deleteCheckinCascade, deleteNoteCascade, deleteCommentCascade } = require('../lib/cleanup');
-const { normalizeNote, normalizeUser, parseJsonField } = require('../lib/format');
+const { normalizeNote, normalizeUser, parseJsonField, fillAvatarsList } = require('../lib/format');
+const { sanitizePage } = require('../lib/validate');
 
 function hashPwd(pwd) {
 	return crypto.createHash('sha256').update(pwd + '_study_buddy').digest('hex');
@@ -28,14 +29,14 @@ router.post('/login', (req, res) => {
 
 // ===== 用户管理 =====
 router.get('/user_list', adminAuth, (req, res) => {
-	const { page = 1, size = 20, search, status } = req.query;
-	const offset = (page - 1) * size;
+	const { size, offset } = sanitizePage(req.query);
+	const { search, status } = req.query;
 	let where = 'WHERE 1=1';
 	const params = [];
 	if (search) { where += ' AND nickname LIKE ?'; params.push(`%${search}%`); }
 	if (status !== undefined && status !== '') { where += ' AND status = ?'; params.push(Number(status)); }
 	const total = db.prepare(`SELECT COUNT(*) as cnt FROM users ${where}`).get(...params).cnt;
-	const list = db.prepare(`SELECT * FROM users ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...params, Number(size), offset);
+	const list = db.prepare(`SELECT * FROM users ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...params, size, offset);
 	res.json({ code: 200, data: { list: list.map(normalizeUser), total } });
 });
 
@@ -74,6 +75,11 @@ router.delete('/user_del/:id', adminAuth, (req, res) => {
 	const user = db.prepare('SELECT id FROM users WHERE id = ?').get(req.params.id);
 	if (!user) return res.json({ code: 404, msg: '用户不存在' });
 	const deleteUser = db.transaction((userId) => {
+		db.prepare('DELETE FROM messages WHERE user_id = ? OR from_id = ?').run(userId, userId);
+		db.prepare('DELETE FROM plan_records WHERE user_id = ?').run(userId);
+		db.prepare('DELETE FROM plans WHERE creator_id = ? OR executor_id = ?').run(userId, userId);
+		db.prepare('UPDATE checkins SET supervisor_id = 0, supervisor_name = "" WHERE supervisor_id = ?').run(userId);
+		db.prepare('UPDATE checkins SET creator_id = 0 WHERE creator_id = ?').run(userId);
 		db.prepare('DELETE FROM comments WHERE user_id = ?').run(userId);
 		db.prepare('DELETE FROM likes WHERE user_id = ?').run(userId);
 		db.prepare('DELETE FROM favorites WHERE user_id = ?').run(userId);
@@ -90,8 +96,8 @@ router.delete('/user_del/:id', adminAuth, (req, res) => {
 
 // ===== 笔记管理 =====
 router.get('/note_list', adminAuth, (req, res) => {
-	const { page = 1, size = 20, search, visibility } = req.query;
-	const offset = (page - 1) * size;
+	const { size, offset } = sanitizePage(req.query);
+	const { search, visibility } = req.query;
 	let where = 'WHERE 1=1';
 	const params = [];
 	if (search) { where += ' AND n.title LIKE ?'; params.push(`%${search}%`); }
@@ -99,7 +105,7 @@ router.get('/note_list', adminAuth, (req, res) => {
 	const total = db.prepare(`SELECT COUNT(*) as cnt FROM notes n ${where}`).get(...params).cnt;
 	const list = db.prepare(
 		`SELECT n.*, u.nickname as user_name FROM notes n LEFT JOIN users u ON n.user_id = u.id ${where} ORDER BY n.created_at DESC LIMIT ? OFFSET ?`
-	).all(...params, Number(size), offset);
+	).all(...params, size, offset);
 	res.json({ code: 200, data: { list: list.map(normalizeNote), total } });
 });
 
@@ -117,8 +123,8 @@ router.delete('/note_del/:id', adminAuth, (req, res) => {
 
 // ===== 评论管理 =====
 router.get('/comment_list', adminAuth, (req, res) => {
-	const { page = 1, size = 20, noteId, search } = req.query;
-	const offset = (page - 1) * size;
+	const { size, offset } = sanitizePage(req.query);
+	const { noteId, search } = req.query;
 	let where = 'WHERE 1=1';
 	const params = [];
 	if (noteId) { where += ' AND c.note_id = ?'; params.push(Number(noteId)); }
@@ -128,7 +134,7 @@ router.get('/comment_list', adminAuth, (req, res) => {
 		`SELECT c.*, u.nickname as user_name, n.title as note_title
 		 FROM comments c LEFT JOIN users u ON c.user_id = u.id LEFT JOIN notes n ON c.note_id = n.id
 		 ${where} ORDER BY c.created_at DESC LIMIT ? OFFSET ?`
-	).all(...params, Number(size), offset);
+	).all(...params, size, offset);
 	res.json({ code: 200, data: { list, total } });
 });
 
@@ -221,8 +227,8 @@ router.delete('/partner_del/:id', adminAuth, (req, res) => {
 
 // ===== 签到管理 =====
 router.get('/sign_list', adminAuth, (req, res) => {
-	const { page = 1, size = 20, search } = req.query;
-	const offset = (page - 1) * size;
+	const { size, offset } = sanitizePage(req.query);
+	const { search } = req.query;
 	let where = 'WHERE 1=1';
 	const params = [];
 	if (search) { where += ' AND u.nickname LIKE ?'; params.push(`%${search}%`); }
@@ -231,7 +237,7 @@ router.get('/sign_list', adminAuth, (req, res) => {
 		`SELECT s.*, u.nickname as user_name, u.avatar as user_pic
 		 FROM signs s LEFT JOIN users u ON s.user_id = u.id
 		 ${where} ORDER BY s.created_at DESC LIMIT ? OFFSET ?`
-	).all(...params, Number(size), offset);
+	).all(...params, size, offset);
 	res.json({ code: 200, data: { list, total } });
 });
 
@@ -310,6 +316,60 @@ router.post('/change_password', adminAuth, (req, res) => {
 	if (admin.password !== oldHashed && admin.password !== oldPassword) return res.json({ code: 403, msg: '原密码错误' });
 	db.prepare('UPDATE admins SET password = ? WHERE id = ?').run(hashPwd(newPassword), req.adminId);
 	res.json({ code: 200, msg: '密码修改成功' });
+});
+
+// ===== 图表数据 =====
+router.get('/chart/sign_trend', adminAuth, (req, res) => {
+	const days = parseInt(req.query.days) || 14;
+	const rows = db.prepare(
+		`SELECT date(created_at) as day, COUNT(*) as cnt
+		 FROM signs WHERE created_at >= date('now', '-' || ? || ' days')
+		 GROUP BY date(created_at) ORDER BY day`
+	).all(days);
+	res.json({ code: 200, data: rows });
+});
+
+router.get('/chart/user_trend', adminAuth, (req, res) => {
+	const days = parseInt(req.query.days) || 14;
+	const rows = db.prepare(
+		`SELECT date(created_at) as day, COUNT(*) as cnt
+		 FROM users WHERE created_at >= date('now', '-' || ? || ' days')
+		 GROUP BY date(created_at) ORDER BY day`
+	).all(days);
+	res.json({ code: 200, data: rows });
+});
+
+router.get('/chart/note_trend', adminAuth, (req, res) => {
+	const days = parseInt(req.query.days) || 14;
+	const rows = db.prepare(
+		`SELECT date(created_at) as day, COUNT(*) as cnt
+		 FROM notes WHERE created_at >= date('now', '-' || ? || ' days')
+		 GROUP BY date(created_at) ORDER BY day`
+	).all(days);
+	res.json({ code: 200, data: rows });
+});
+
+router.get('/chart/note_visibility', adminAuth, (req, res) => {
+	const rows = db.prepare(
+		`SELECT visibility, COUNT(*) as cnt FROM notes WHERE status = 1 GROUP BY visibility`
+	).all();
+	res.json({ code: 200, data: rows });
+});
+
+router.get('/chart/hourly_activity', adminAuth, (req, res) => {
+	const rows = db.prepare(
+		`SELECT CAST(strftime('%H', created_at) AS INTEGER) as hour, COUNT(*) as cnt
+		 FROM signs GROUP BY hour ORDER BY hour`
+	).all();
+	res.json({ code: 200, data: rows });
+});
+
+router.get('/chart/top_notes', adminAuth, (req, res) => {
+	const rows = db.prepare(
+		`SELECT n.title, n.like_cnt, n.comment_cnt, n.view_cnt, n.fav_cnt
+		 FROM notes n WHERE n.status = 1 ORDER BY n.view_cnt DESC LIMIT 8`
+	).all();
+	res.json({ code: 200, data: rows });
 });
 
 // ===== 数据导出 =====
