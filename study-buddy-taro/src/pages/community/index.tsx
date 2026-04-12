@@ -1,6 +1,8 @@
-import { Image, Text, View } from "@tarojs/components";
+import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow, usePullDownRefresh, useReachBottom } from "@tarojs/taro";
 import { useCallback, useRef, useState } from "react";
+import { Avatar, Empty, FloatingBubble, Loading, Tabs } from "@taroify/core";
+import { Plus, LikeOutlined, EyeOutlined, CommentOutlined } from "@taroify/icons";
 import { api } from "~/api/request";
 import { resolveImageUrl } from "~/utils/imageUrl";
 
@@ -83,100 +85,112 @@ export default function CommunityPage() {
     Taro.navigateTo({ url: "/pages/note-add/index" });
   };
 
+  const tabIndex = sort === "hot" ? 0 : 1;
+
   return (
-    <View className="min-h-screen bg-gray-1 pb-40">
+    <View className="min-h-screen bg-[#F7F8FA] pb-40">
       {/* Sort tabs */}
-      <View className="sticky top-0 z-10 bg-white flex items-center px-16 py-12 shadow-sm">
-        <View
-          className={`px-20 py-8 rounded-full mr-12 text-sm font-medium ${
-            sort === "hot"
-              ? "bg-primary-6 text-white"
-              : "bg-gray-1 text-gray-6"
-          }`}
-          onClick={() => switchSort("hot")}
+      <View className="sticky top-0 z-10 bg-white">
+        <Tabs
+          value={tabIndex}
+          onChange={(val) => switchSort(val === 0 ? "hot" : "new")}
+          style={{
+            "--tabs-active-color": "#58CC02",
+            "--tabs-line-height": "3px",
+          } as React.CSSProperties}
         >
-          <Text>热门</Text>
-        </View>
-        <View
-          className={`px-20 py-8 rounded-full text-sm font-medium ${
-            sort === "new"
-              ? "bg-primary-6 text-white"
-              : "bg-gray-1 text-gray-6"
-          }`}
-          onClick={() => switchSort("new")}
-        >
-          <Text>最新</Text>
-        </View>
+          <Tabs.TabPane title="热门" />
+          <Tabs.TabPane title="最新" />
+        </Tabs>
       </View>
 
       {/* Card list */}
-      <View className="px-12 pt-12">
+      <View className="px-3 pt-3">
         {list.map((note) => (
           <View
             key={note.id}
-            className="bg-white rounded-xl shadow-sm mb-12 p-16 active:opacity-80"
+            className="bg-white rounded-xl mb-3 p-4 active:opacity-80"
+            style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
             onClick={() => goDetail(note.id)}
           >
             {/* Author row */}
-            <View className="flex items-center mb-10">
-              <Image
-                className="w-48 h-48 rounded-full mr-10 bg-gray-2 shrink-0"
-                src={resolveImageUrl(note.user_pic) || "https://via.placeholder.com/160"}
-                mode="aspectFill"
+            <View className="flex items-center mb-2.5">
+              <Avatar
+                src={resolveImageUrl(note.user_pic) || ""}
+                size="small"
+                style={{ marginRight: "8px", flexShrink: 0 }}
               />
-              <Text className="text-sm text-gray-6 truncate">
+              <Text className="text-sm text-[#666] truncate">
                 {note.user_name || "匿名用户"}
               </Text>
             </View>
 
             {/* Title */}
-            <Text className="block text-base font-bold text-gray-8 leading-snug mb-6 line-clamp-2">
+            <Text className="block text-base font-bold text-[#333] leading-snug mb-1.5 line-clamp-2">
               {note.title}
             </Text>
 
             {/* Content preview */}
             {note.content && (
-              <Text className="block text-sm text-gray-5 leading-relaxed mb-10 line-clamp-3">
+              <Text className="block text-sm text-[#999] leading-relaxed mb-3 line-clamp-3">
                 {note.content}
               </Text>
             )}
 
             {/* Stats row */}
-            <View className="flex items-center text-xs text-gray-4 gap-16">
-              <Text>👍 {note.like_cnt || 0}</Text>
-              <Text>👁 {note.view_cnt || 0}</Text>
-              <Text>💬 {note.comment_cnt || 0}</Text>
+            <View className="flex items-center gap-4 text-xs text-[#BCBCBC]">
+              <View className="flex items-center gap-1">
+                <LikeOutlined size="14" color="#BCBCBC" />
+                <Text className="text-xs text-[#BCBCBC]">{note.like_cnt || 0}</Text>
+              </View>
+              <View className="flex items-center gap-1">
+                <EyeOutlined size="14" color="#BCBCBC" />
+                <Text className="text-xs text-[#BCBCBC]">{note.view_cnt || 0}</Text>
+              </View>
+              <View className="flex items-center gap-1">
+                <CommentOutlined size="14" color="#BCBCBC" />
+                <Text className="text-xs text-[#BCBCBC]">{note.comment_cnt || 0}</Text>
+              </View>
             </View>
           </View>
         ))}
 
-        {/* Loading / empty states */}
+        {/* Loading state */}
         {loading && (
-          <View className="py-20 text-center">
-            <Text className="text-sm text-gray-4">加载中...</Text>
+          <View className="flex justify-center items-center py-5 gap-2">
+            <Loading size="18px" />
+            <Text className="text-sm text-[#999]">加载中...</Text>
           </View>
         )}
 
+        {/* Empty state */}
         {!loading && list.length === 0 && (
-          <View className="py-60 text-center">
-            <Text className="text-sm text-gray-4">暂无笔记，快去发布第一篇吧</Text>
+          <View className="pt-20">
+            <Empty>
+              <Empty.Image />
+              <Empty.Description>暂无笔记，快去发布第一篇吧</Empty.Description>
+            </Empty>
           </View>
         )}
 
+        {/* No more data */}
         {!loading && list.length > 0 && !hasMore && (
-          <View className="py-20 text-center">
-            <Text className="text-sm text-gray-4">— 已经到底了 —</Text>
+          <View className="flex justify-center py-5">
+            <Text className="text-xs text-[#BCBCBC]">— 已经到底了 —</Text>
           </View>
         )}
       </View>
 
       {/* Floating add button */}
-      <View
-        className="fixed right-20 bottom-120 w-56 h-56 rounded-full bg-primary-6 shadow-lg flex items-center justify-center z-20 active:opacity-80"
+      <FloatingBubble
+        icon={<Plus />}
+        style={{
+          "--initial-position-bottom": "100px",
+          "--initial-position-right": "16px",
+          "--background": "#58CC02",
+        } as React.CSSProperties}
         onClick={goAdd}
-      >
-        <Text className="text-white text-2xl font-light leading-none">+</Text>
-      </View>
+      />
     </View>
   );
 }

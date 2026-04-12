@@ -1,6 +1,8 @@
 import { Image, Text, View } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { Avatar, Badge, Button, Cell, Empty, NoticeBar, Tag } from "@taroify/core";
+import { FireOutlined, Bell, Arrow } from "@taroify/icons";
 import { api, isLoggedIn } from "~/api/request";
 import { resolveImageUrl } from "~/utils/imageUrl";
 
@@ -37,6 +39,15 @@ interface Note {
   comment_cnt: number;
 }
 
+function getGreeting(): { text: string; emoji: string } {
+  const h = new Date().getHours();
+  if (h < 6) return { text: "夜深了", emoji: "🌙" };
+  if (h < 12) return { text: "早上好", emoji: "🌅" };
+  if (h < 14) return { text: "中午好", emoji: "☀️" };
+  if (h < 18) return { text: "下午好", emoji: "🌤" };
+  return { text: "晚上好", emoji: "🌙" };
+}
+
 export default function IndexPage() {
   const [logged, setLogged] = useState(false);
   const [signStats, setSignStats] = useState<SignStats>({
@@ -50,6 +61,8 @@ export default function IndexPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [unread, setUnread] = useState(0);
+
+  const greeting = useMemo(() => getGreeting(), []);
 
   const loadAll = useCallback(async () => {
     try {
@@ -107,17 +120,74 @@ export default function IndexPage() {
   /* ---------- Not logged in ---------- */
   if (!logged) {
     return (
-      <View className="min-h-100vh bg-gray-1 px-4 pt-10 pb-6">
+      <View
+        className="min-h-100vh flex flex-col items-center justify-center px-6 pb-20"
+        style={{ background: "linear-gradient(160deg, #58CC02 0%, #1CB0F6 100%)" }}
+      >
+        {/* Floating decorative circles */}
         <View
-          className="flex items-center gap-4 bg-white rounded-2xl p-6 shadow-sm active:bg-gray-1"
-          onClick={goLogin}
+          className="absolute top-10 left-6 w-20 h-20 rounded-full opacity-15"
+          style={{ background: "#fff" }}
+        />
+        <View
+          className="absolute top-40 right-8 w-12 h-12 rounded-full opacity-10"
+          style={{ background: "#fff" }}
+        />
+        <View
+          className="absolute bottom-40 left-10 w-16 h-16 rounded-full opacity-10"
+          style={{ background: "#fff" }}
+        />
+
+        {/* Logo area */}
+        <View className="flex flex-col items-center mb-10">
+          <Text className="text-6xl mb-4">📖</Text>
+          <Text
+            className="text-3xl font-extrabold mb-2"
+            style={{ color: "#fff" }}
+          >
+            Study Buddy
+          </Text>
+          <Text
+            className="text-base opacity-90"
+            style={{ color: "rgba(255,255,255,0.85)" }}
+          >
+            签到打卡 · 结交伙伴 · 共同成长
+          </Text>
+        </View>
+
+        {/* Login card */}
+        <View
+          className="w-full rounded-3xl px-6 py-8 flex flex-col items-center"
+          style={{
+            background: "#fff",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+          }}
         >
-          <Text className="text-4xl">📖</Text>
-          <View className="flex-1">
-            <Text className="block text-base font-semibold text-gray-9">登录开启学习之旅</Text>
-            <Text className="block text-xs text-gray-5 mt-0.5">签到打卡、结交伙伴、共同成长</Text>
+          <View className="flex items-center gap-2 mb-2">
+            <Text className="text-xl">🌱</Text>
+            <Text className="text-lg font-bold" style={{ color: "#1a1a1a" }}>
+              开启你的学习之旅
+            </Text>
           </View>
-          <Text className="text-xl text-gray-4">›</Text>
+          <Text className="text-sm mb-6" style={{ color: "#999" }}>
+            每天进步一点点，遇见更好的自己
+          </Text>
+          <Button
+            className="w-full"
+            style={{
+              background: "linear-gradient(135deg, #58CC02 0%, #46a302 100%)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "999px",
+              height: "48px",
+              fontSize: "16px",
+              fontWeight: "600",
+              boxShadow: "0 4px 16px rgba(88,204,2,0.35)",
+            }}
+            onClick={goLogin}
+          >
+            立即登录
+          </Button>
         </View>
       </View>
     );
@@ -125,210 +195,521 @@ export default function IndexPage() {
 
   /* ---------- Logged in ---------- */
   return (
-    <View className="min-h-100vh bg-gray-1 px-4 pt-3 pb-6">
-
-      {/* ====== Sign-in status card ====== */}
+    <View
+      className="min-h-100vh pb-6"
+      style={{ background: "#F7F8FA" }}
+    >
+      {/* ====== Top header area with gradient ====== */}
       <View
-        className={`flex items-center justify-between rounded-2xl px-4 py-3.5 mb-3 shadow-sm ${
-          signStats.todaySigned
-            ? "bg-gradient-to-r from-green-1 to-green-2 border-l-4 border-green-5"
-            : "bg-gradient-to-r from-orange-1 to-amber-1 border-l-4 border-orange-5"
-        }`}
-        onClick={onSignTap}
+        className="px-5 pt-4 pb-8"
+        style={{
+          background: "linear-gradient(135deg, #58CC02 0%, #43b700 50%, #1CB0F6 100%)",
+          borderRadius: "0 0 24px 24px",
+        }}
       >
-        <View className="flex items-center gap-1 flex-wrap min-w-0">
-          <Text className="text-sm">🔥</Text>
-          <Text
-            className={`text-base font-bold ${
-              signStats.todaySigned ? "text-green-6" : "text-orange-6"
-            }`}
-          >
-            {signStats.streak || 0}天连续
-          </Text>
-          <Text className="text-gray-3 text-xs mx-0.5">·</Text>
-          <Text className="text-xs text-gray-5">累计{signStats.totalDays || 0}天</Text>
-          {signStats.totalDuration > 0 && (
-            <>
-              <Text className="text-gray-3 text-xs mx-0.5">·</Text>
-              <Text className="text-xs text-gray-5">{signStats.totalDuration}分钟</Text>
-            </>
-          )}
-        </View>
-
-        {!signStats.todaySigned ? (
-          <View className="shrink-0 bg-primary-6 text-white text-sm font-semibold px-5 py-1.5 rounded-full shadow-sm">
-            签到
-          </View>
-        ) : (
-          <Text className="shrink-0 text-sm text-green-6 font-medium">✓ 已签</Text>
-        )}
-      </View>
-
-      {/* ====== Unread messages bar ====== */}
-      {unread > 0 && (
-        <View
-          className="flex items-center gap-2 bg-amber-1 rounded-xl px-3.5 py-2.5 mb-3"
-          onClick={goMessages}
-        >
-          <Text className="text-sm">🔔</Text>
-          <Text className="flex-1 text-sm text-amber-8">你有 {unread} 条未读消息</Text>
-          <Text className="text-base text-gray-4">›</Text>
-        </View>
-      )}
-
-      {/* ====== Today's checkin tasks ====== */}
-      {tasks.length > 0 && (
-        <View className="mb-4">
-          <View className="flex justify-between items-center mb-2.5">
-            <Text className="text-base font-semibold text-gray-9">今日打卡</Text>
-            <Text className="text-sm text-primary-6 font-medium">
-              {todayDone}/{tasks.length}
-            </Text>
-          </View>
-
-          <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
-            {tasks.map((t, idx) => (
-              <View
-                key={t.id}
-                className={`flex items-center gap-3 px-4 py-3.5 active:bg-gray-1 ${
-                  idx < tasks.length - 1 ? "border-b border-gray-1" : ""
-                } ${t._joined ? "opacity-55" : ""}`}
-                onClick={() => goCheckin(t.id)}
+        {/* Greeting row */}
+        <View className="flex items-center justify-between mb-5">
+          <View className="flex items-center gap-2">
+            <Text className="text-2xl">{greeting.emoji}</Text>
+            <View>
+              <Text
+                className="block text-xl font-bold"
+                style={{ color: "#fff" }}
               >
-                {/* Checkbox circle */}
-                <View
-                  className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center ${
-                    t._joined
-                      ? "bg-green-5 border-2 border-green-5"
-                      : "border-2 border-gray-4"
-                  }`}
-                >
-                  {t._joined && (
-                    <Text className="text-white text-xs font-bold leading-none">✓</Text>
+                {greeting.text}
+              </Text>
+              <Text
+                className="block text-xs mt-0.5"
+                style={{ color: "rgba(255,255,255,0.75)" }}
+              >
+                今天也要加油哦
+              </Text>
+            </View>
+          </View>
+          {/* Message bell */}
+          <View className="relative" onClick={goMessages}>
+            <View
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(255,255,255,0.2)" }}
+            >
+              <Bell size="20" color="#fff" />
+            </View>
+            {unread > 0 && (
+              <View
+                className="absolute flex items-center justify-center"
+                style={{
+                  top: "-4px",
+                  right: "-4px",
+                  minWidth: "18px",
+                  height: "18px",
+                  borderRadius: "9px",
+                  background: "#FF4D4F",
+                  border: "2px solid #58CC02",
+                  padding: "0 4px",
+                }}
+              >
+                <Text className="text-white font-bold" style={{ fontSize: "10px" }}>
+                  {unread > 99 ? "99+" : unread}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* ====== Sign-in card (inside header) ====== */}
+        <View
+          className="rounded-2xl px-5 py-4"
+          style={{
+            background: signStats.todaySigned
+              ? "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,255,230,0.95) 100%)"
+              : "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,245,230,0.95) 100%)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+            backdropFilter: "blur(10px)",
+          }}
+          onClick={onSignTap}
+        >
+          <View className="flex items-center justify-between">
+            {/* Left: streak info */}
+            <View className="flex items-center gap-3 min-w-0 flex-1">
+              {/* Fire icon container */}
+              <View
+                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                style={{
+                  background: signStats.todaySigned
+                    ? "linear-gradient(135deg, #58CC02, #46a302)"
+                    : "linear-gradient(135deg, #FF9500, #FF6B00)",
+                  boxShadow: signStats.todaySigned
+                    ? "0 3px 12px rgba(88,204,2,0.3)"
+                    : "0 3px 12px rgba(255,149,0,0.3)",
+                }}
+              >
+                <FireOutlined size="22" color="#fff" />
+              </View>
+              <View className="min-w-0">
+                <View className="flex items-center gap-1.5">
+                  <Text
+                    className="text-xl font-extrabold"
+                    style={{ color: signStats.todaySigned ? "#58CC02" : "#FF9500" }}
+                  >
+                    {signStats.streak || 0}
+                  </Text>
+                  <Text className="text-sm font-semibold" style={{ color: "#333" }}>
+                    天连续
+                  </Text>
+                </View>
+                <View className="flex items-center gap-2 mt-0.5">
+                  <Tag
+                    size="small"
+                    style={{
+                      background: "rgba(88,204,2,0.1)",
+                      color: "#58CC02",
+                      border: "none",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    累计{signStats.totalDays || 0}天
+                  </Tag>
+                  {signStats.totalDuration > 0 && (
+                    <Tag
+                      size="small"
+                      style={{
+                        background: "rgba(28,176,246,0.1)",
+                        color: "#1CB0F6",
+                        border: "none",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      {signStats.totalDuration}分钟
+                    </Tag>
                   )}
                 </View>
-
-                {/* Task info */}
-                <View className="flex-1 min-w-0">
-                  <Text
-                    className={`block text-base font-medium truncate ${
-                      t._joined ? "text-gray-4 line-through" : "text-gray-9"
-                    }`}
-                  >
-                    {t.title}
-                  </Text>
-                  <Text className="block text-xs text-gray-5 mt-0.5">
-                    {t.join_cnt || 0}人参与
-                  </Text>
-                </View>
-
-                <Text className="text-lg text-gray-3 shrink-0">›</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* ====== Empty state for tasks ====== */}
-      {tasks.length === 0 && (
-        <View
-          className="bg-white rounded-2xl py-8 px-6 mb-4 shadow-sm text-center active:bg-gray-1"
-          onClick={goCheckinList}
-        >
-          <Text className="block text-3xl mb-2">📋</Text>
-          <Text className="block text-sm text-gray-6 mb-3">还没有加入打卡任务</Text>
-          <Text className="inline-block text-sm text-primary-6 font-medium bg-primary-1 px-4 py-1.5 rounded-full">
-            去看看有哪些任务 →
-          </Text>
-        </View>
-      )}
-
-      {/* ====== Recent activity feed ====== */}
-      {activities.length > 0 && (
-        <View className="mb-4">
-          <View className="flex justify-between items-center mb-2.5">
-            <Text className="text-base font-semibold text-gray-9">最新动态</Text>
-          </View>
-
-          <View className="bg-white rounded-2xl px-4 shadow-sm">
-            {activities.map((a, i) => (
-              <View
-                key={i}
-                className={`flex items-center gap-2.5 py-3 ${
-                  i < activities.length - 1 ? "border-b border-gray-1" : ""
-                }`}
-              >
-                {a.avatar ? (
-                  <Image
-                    className="w-7 h-7 rounded-full shrink-0"
-                    src={resolveImageUrl(a.avatar) || "https://via.placeholder.com/160"}
-                    mode="aspectFill"
-                  />
-                ) : (
-                  <View
-                    className="w-7 h-7 rounded-full shrink-0"
-                    style={{ background: a.color || "#165dff" }}
-                  />
-                )}
-                <Text className="flex-1 text-sm text-gray-7 truncate">{a.text}</Text>
-                <Text className="text-xs text-gray-4 shrink-0">{a.time}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* ====== Hot notes ====== */}
-      {notes.length > 0 && (
-        <View className="mb-4">
-          <View className="flex justify-between items-center mb-2.5">
-            <Text className="text-base font-semibold text-gray-9">热门笔记</Text>
-            <Text
-              className="text-sm text-gray-5"
-              onClick={() => Taro.switchTab({ url: "/pages/community/index" })}
-            >
-              更多
-            </Text>
-          </View>
-
-          {notes.map((n) => (
-            <View
-              key={n.id}
-              className="bg-white rounded-2xl px-4 pt-3.5 pb-3 mb-2.5 shadow-sm active:bg-gray-1"
-              onClick={() => goNote(n.id)}
-            >
-              {/* Author row */}
-              <View className="flex items-center gap-2 mb-2">
-                <Image
-                  className="w-6 h-6 rounded-full shrink-0"
-                  src={resolveImageUrl(n.user_pic) || "https://via.placeholder.com/160"}
-                  mode="aspectFill"
-                />
-                <Text className="text-sm text-gray-5">{n.user_name || "匿名"}</Text>
-              </View>
-
-              {/* Title - 2 line clamp */}
-              <Text className="block text-base font-semibold text-gray-9 leading-relaxed line-clamp-2">
-                {n.title}
-              </Text>
-
-              {/* Content preview - 3 line clamp */}
-              {n.content && (
-                <Text className="block text-sm text-gray-5 mt-1.5 leading-relaxed line-clamp-3">
-                  {n.content}
-                </Text>
-              )}
-
-              {/* Stats row */}
-              <View className="flex gap-4 mt-2.5">
-                <Text className="text-xs text-gray-4">👍 {n.like_cnt || 0}</Text>
-                <Text className="text-xs text-gray-4">👁 {n.view_cnt || 0}</Text>
-                <Text className="text-xs text-gray-4">💬 {n.comment_cnt || 0}</Text>
               </View>
             </View>
-          ))}
+
+            {/* Right: sign button or badge */}
+            {!signStats.todaySigned ? (
+              <View
+                className="shrink-0 flex items-center justify-center"
+                style={{
+                  background: "linear-gradient(135deg, #FF9500, #FF6B00)",
+                  color: "#fff",
+                  fontSize: "15px",
+                  fontWeight: "700",
+                  padding: "8px 24px",
+                  borderRadius: "999px",
+                  boxShadow: "0 3px 12px rgba(255,149,0,0.35)",
+                }}
+              >
+                签到
+              </View>
+            ) : (
+              <Tag
+                size="medium"
+                style={{
+                  background: "linear-gradient(135deg, #58CC02, #46a302)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "999px",
+                  padding: "6px 16px",
+                  fontWeight: "600",
+                }}
+              >
+                已签到 ✓
+              </Tag>
+            )}
+          </View>
         </View>
-      )}
+      </View>
+
+      {/* ====== Content area ====== */}
+      <View className="px-4" style={{ marginTop: "-12px" }}>
+
+        {/* ====== Unread messages notice bar ====== */}
+        {unread > 0 && (
+          <View className="mb-3">
+            <NoticeBar
+              style={{
+                borderRadius: "14px",
+                background: "linear-gradient(135deg, #FFF8E6, #FFF3D6)",
+                color: "#FF9500",
+                fontWeight: "500",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+              }}
+              onClick={goMessages}
+            >
+              <NoticeBar.Icon>
+                <Bell />
+              </NoticeBar.Icon>
+              你有 {unread} 条未读消息，点击查看
+            </NoticeBar>
+          </View>
+        )}
+
+        {/* ====== Today's checkin tasks ====== */}
+        {tasks.length > 0 && (
+          <View className="mb-4">
+            <View className="flex justify-between items-center mb-3 px-1">
+              <View className="flex items-center gap-2">
+                <Text className="text-lg font-bold" style={{ color: "#1a1a1a" }}>
+                  今日打卡
+                </Text>
+                <Tag
+                  size="small"
+                  style={{
+                    background:
+                      todayDone === tasks.length
+                        ? "linear-gradient(135deg, #58CC02, #46a302)"
+                        : "rgba(28,176,246,0.1)",
+                    color: todayDone === tasks.length ? "#fff" : "#1CB0F6",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontWeight: "600",
+                  }}
+                >
+                  {todayDone}/{tasks.length}
+                </Tag>
+              </View>
+              {/* Progress dots */}
+              <View className="flex items-center gap-1">
+                {tasks.map((t) => (
+                  <View
+                    key={t.id}
+                    className="w-2 h-2 rounded-full"
+                    style={{
+                      background: t._joined ? "#58CC02" : "#E0E0E0",
+                      transition: "background 0.3s",
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+
+            <Cell.Group
+              style={{
+                borderRadius: "16px",
+                overflow: "hidden",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+              }}
+            >
+              {tasks.map((t) => (
+                <Cell
+                  key={t.id}
+                  clickable
+                  style={{
+                    opacity: t._joined ? 0.6 : 1,
+                    padding: "14px 16px",
+                  }}
+                  icon={
+                    <View
+                      className="flex items-center justify-center shrink-0"
+                      style={{
+                        width: "22px",
+                        height: "22px",
+                        borderRadius: "50%",
+                        background: t._joined ? "#58CC02" : "transparent",
+                        border: t._joined ? "2px solid #58CC02" : "2px solid #D0D0D0",
+                        marginRight: "12px",
+                      }}
+                    >
+                      {t._joined && (
+                        <Text className="text-white font-bold" style={{ fontSize: "12px", lineHeight: "1" }}>
+                          ✓
+                        </Text>
+                      )}
+                    </View>
+                  }
+                  title={
+                    <Text
+                      className="font-medium"
+                      style={{
+                        color: t._joined ? "#999" : "#1a1a1a",
+                        textDecoration: t._joined ? "line-through" : "none",
+                        fontSize: "15px",
+                      }}
+                    >
+                      {t.title}
+                    </Text>
+                  }
+                  brief={
+                    <View className="flex items-center gap-1 mt-0.5">
+                      <Text style={{ color: "#bbb", fontSize: "12px" }}>
+                        {t.join_cnt || 0}人参与
+                      </Text>
+                    </View>
+                  }
+                  isLink
+                  onClick={() => goCheckin(t.id)}
+                />
+              ))}
+            </Cell.Group>
+          </View>
+        )}
+
+        {/* ====== Empty state for tasks ====== */}
+        {tasks.length === 0 && (
+          <View
+            className="mb-4 rounded-2xl overflow-hidden"
+            style={{
+              background: "#fff",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+            }}
+            onClick={goCheckinList}
+          >
+            <Empty>
+              <Empty.Image
+                style={{ width: "120px", height: "120px" }}
+              />
+              <Empty.Description>
+                <Text style={{ color: "#999", fontSize: "14px" }}>
+                  还没有加入打卡任务
+                </Text>
+              </Empty.Description>
+            </Empty>
+            <View className="flex justify-center pb-5">
+              <Button
+                size="small"
+                style={{
+                  background: "linear-gradient(135deg, #58CC02, #46a302)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "999px",
+                  padding: "6px 24px",
+                  fontWeight: "600",
+                  boxShadow: "0 3px 12px rgba(88,204,2,0.25)",
+                }}
+              >
+                去看看有哪些任务
+                <Arrow style={{ marginLeft: "4px" }} />
+              </Button>
+            </View>
+          </View>
+        )}
+
+        {/* ====== Recent activity feed ====== */}
+        {activities.length > 0 && (
+          <View className="mb-4">
+            <View className="flex justify-between items-center mb-3 px-1">
+              <Text className="text-lg font-bold" style={{ color: "#1a1a1a" }}>
+                最新动态
+              </Text>
+              <View className="flex items-center gap-0.5">
+                <View
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: "#58CC02" }}
+                />
+                <Text style={{ color: "#999", fontSize: "12px", marginLeft: "4px" }}>
+                  实时更新
+                </Text>
+              </View>
+            </View>
+
+            <Cell.Group
+              style={{
+                borderRadius: "16px",
+                overflow: "hidden",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+              }}
+            >
+              {activities.map((a, i) => (
+                <Cell
+                  key={i}
+                  style={{ padding: "12px 16px" }}
+                  icon={
+                    a.avatar ? (
+                      <Avatar
+                        src={resolveImageUrl(a.avatar) || ""}
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          marginRight: "10px",
+                        }}
+                      />
+                    ) : (
+                      <View
+                        className="shrink-0 rounded-full"
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          background: `linear-gradient(135deg, ${a.color || "#1CB0F6"}, ${a.color || "#0d8ecf"})`,
+                          marginRight: "10px",
+                        }}
+                      />
+                    )
+                  }
+                  title={
+                    <Text
+                      className="truncate"
+                      style={{ color: "#555", fontSize: "14px" }}
+                    >
+                      {a.text}
+                    </Text>
+                  }
+                >
+                  <Text style={{ color: "#ccc", fontSize: "12px", whiteSpace: "nowrap" }}>
+                    {a.time}
+                  </Text>
+                </Cell>
+              ))}
+            </Cell.Group>
+          </View>
+        )}
+
+        {/* ====== Hot notes ====== */}
+        {notes.length > 0 && (
+          <View className="mb-4">
+            <View className="flex justify-between items-center mb-3 px-1">
+              <View className="flex items-center gap-2">
+                <Text className="text-lg font-bold" style={{ color: "#1a1a1a" }}>
+                  热门笔记
+                </Text>
+                <Text className="text-lg">🔥</Text>
+              </View>
+              <Text
+                style={{ color: "#1CB0F6", fontSize: "14px", fontWeight: "500" }}
+                onClick={() => Taro.switchTab({ url: "/pages/community/index" })}
+              >
+                更多
+                <Arrow style={{ marginLeft: "2px" }} />
+              </Text>
+            </View>
+
+            {notes.map((n) => (
+              <View
+                key={n.id}
+                className="mb-3 rounded-2xl overflow-hidden"
+                style={{
+                  background: "#fff",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+                }}
+                onClick={() => goNote(n.id)}
+              >
+                <View className="px-4 pt-4 pb-3">
+                  {/* Author row */}
+                  <View className="flex items-center gap-2.5 mb-3">
+                    <Avatar
+                      src={resolveImageUrl(n.user_pic) || ""}
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                      }}
+                    />
+                    <Text style={{ color: "#888", fontSize: "13px" }}>
+                      {n.user_name || "匿名"}
+                    </Text>
+                  </View>
+
+                  {/* Title */}
+                  <Text
+                    className="block line-clamp-2"
+                    style={{
+                      color: "#1a1a1a",
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      lineHeight: "1.5",
+                    }}
+                  >
+                    {n.title}
+                  </Text>
+
+                  {/* Content preview */}
+                  {n.content && (
+                    <Text
+                      className="block line-clamp-2 mt-1.5"
+                      style={{
+                        color: "#999",
+                        fontSize: "14px",
+                        lineHeight: "1.6",
+                      }}
+                    >
+                      {n.content}
+                    </Text>
+                  )}
+
+                  {/* Stats row */}
+                  <View className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: "1px solid #f5f5f5" }}>
+                    <Tag
+                      size="small"
+                      style={{
+                        background: "rgba(255,68,68,0.06)",
+                        color: "#FF4444",
+                        border: "none",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      👍 {n.like_cnt || 0}
+                    </Tag>
+                    <Tag
+                      size="small"
+                      style={{
+                        background: "rgba(28,176,246,0.06)",
+                        color: "#1CB0F6",
+                        border: "none",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      👁 {n.view_cnt || 0}
+                    </Tag>
+                    <Tag
+                      size="small"
+                      style={{
+                        background: "rgba(88,204,2,0.06)",
+                        color: "#58CC02",
+                        border: "none",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      💬 {n.comment_cnt || 0}
+                    </Tag>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Bottom breathing room */}
+        <View className="h-4" />
+      </View>
     </View>
   );
 }

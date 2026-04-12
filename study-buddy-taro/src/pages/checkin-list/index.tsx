@@ -1,6 +1,8 @@
 import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow, usePullDownRefresh, useReachBottom } from "@tarojs/taro";
 import { useCallback, useRef, useState } from "react";
+import { Cell, Empty, FloatingBubble, Loading, Tag } from "@taroify/core";
+import { Plus } from "@taroify/icons";
 import { api, isLoggedIn } from "~/api/request";
 
 interface CheckinTask {
@@ -78,83 +80,91 @@ export default function CheckinListPage() {
   };
 
   return (
-    <View className="min-h-screen bg-gray-1">
+    <View className="min-h-screen bg-[#F7F8FA]">
       {list.length === 0 && !loading ? (
-        /* Empty state */
-        <View className="flex flex-col items-center justify-center pt-40">
-          <Text className="text-3xl mb-4">📋</Text>
-          <Text className="text-base text-gray-4">暂无打卡任务</Text>
-          <Text className="text-sm text-gray-4 mt-1">下拉刷新试试</Text>
+        <View className="pt-32">
+          <Empty>
+            <Empty.Image />
+            <Empty.Description>暂无打卡任务</Empty.Description>
+            <Empty.Description>下拉刷新试试</Empty.Description>
+          </Empty>
         </View>
       ) : (
         <View className="px-3 pt-3 pb-24">
-          <View className="flex flex-col gap-3">
+          <Cell.Group inset>
             {list.map((item) => (
-                <View
-                  key={item.id}
-                  className="bg-white rounded-xl shadow-sm px-4 py-3 active:opacity-80"
-                  onClick={() => goDetail(item.id)}
-                >
+              <Cell
+                key={item.id}
+                className="active:bg-gray-50"
+                clickable
+                onClick={() => goDetail(item.id)}
+              >
+                <View className="w-full py-1">
                   {/* Title row */}
-                  <View className="flex items-center justify-between mb-1">
-                    <Text className="text-base font-bold text-gray-8 flex-1 mr-2 truncate">
+                  <View className="flex items-center justify-between mb-1.5">
+                    <Text className="text-base font-bold text-[#333] flex-1 mr-2 truncate">
                       {item.title}
                     </Text>
                     {joinedIds.has(item.id) && (
-                      <Text className="text-xs text-primary-6 bg-primary-1 rounded-full px-2 py-0.5 flex-shrink-0">
+                      <Tag color="primary" round className="flex-shrink-0">
                         已加入
-                      </Text>
+                      </Tag>
                     )}
                   </View>
 
                   {/* Description */}
                   {item.desc && (
-                    <Text className="text-sm text-gray-6 line-clamp-2 mb-2">
+                    <Text className="block text-sm text-[#999] line-clamp-2 mb-2 leading-relaxed">
                       {item.desc}
                     </Text>
                   )}
 
                   {/* Footer meta */}
-                  <View className="flex items-center justify-between">
+                  <View className="flex items-center justify-between text-xs text-[#BCBCBC]">
                     <View className="flex items-center gap-3">
-                      <Text className="text-xs text-gray-4">
+                      <Text className="text-xs text-[#BCBCBC]">
                         {item.join_cnt || 0}人参与
                       </Text>
-                      <Text className="text-xs text-gray-4">
+                      <Text className="text-xs text-[#BCBCBC]">
                         {item.creator_name || "匿名"}
                       </Text>
                     </View>
-                    <Text className="text-xs text-gray-4">
+                    <Text className="text-xs text-[#BCBCBC]">
                       {item.created_at?.slice(0, 10)}
                     </Text>
                   </View>
                 </View>
-              ))}
+              </Cell>
+            ))}
+          </Cell.Group>
+
+          {/* Loading indicator */}
+          {loading && (
+            <View className="flex justify-center items-center py-4 gap-2">
+              <Loading size="18px" />
+              <Text className="text-sm text-[#999]">加载中...</Text>
             </View>
+          )}
 
-            {/* Loading indicator */}
-            {loading && (
-              <View className="flex justify-center py-4">
-                <Text className="text-sm text-gray-4">加载中...</Text>
-              </View>
-            )}
-
-            {/* No more data */}
-            {!loading && list.length > 0 && list.length >= total && (
-              <View className="flex justify-center py-4">
-                <Text className="text-xs text-gray-4">— 没有更多了 —</Text>
-              </View>
-            )}
+          {/* No more data */}
+          {!loading && list.length > 0 && list.length >= total && (
+            <View className="flex justify-center py-4">
+              <Text className="text-xs text-[#BCBCBC]">— 没有更多了 —</Text>
+            </View>
+          )}
         </View>
       )}
 
       {/* Floating create button */}
-      <View
-        className="fixed right-4 bottom-24 w-12 h-12 rounded-full bg-primary-6 shadow-lg flex items-center justify-center active:opacity-80 z-50"
+      <FloatingBubble
+        icon={<Plus />}
+        style={{
+          "--initial-position-bottom": "100px",
+          "--initial-position-right": "16px",
+          "--background": "#58CC02",
+        } as React.CSSProperties}
         onClick={onCreateTap}
-      >
-        <Text className="text-white text-2xl leading-none font-light">+</Text>
-      </View>
+      />
     </View>
   );
 }

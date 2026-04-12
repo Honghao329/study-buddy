@@ -1,6 +1,8 @@
-import { Image, Input, Text, View } from "@tarojs/components";
+import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useCallback, useRef, useState } from "react";
+import { Avatar, Button, Cell, Divider, Empty, Field, Tag } from "@taroify/core";
+import { Like, LikeOutlined, Star, StarOutlined, CommentOutlined } from "@taroify/icons";
 import { api, isLoggedIn } from "~/api/request";
 import { formatRelativeTimestamp } from "~/utils/timeFormatter";
 import { resolveImageUrl } from "~/utils/imageUrl";
@@ -198,173 +200,262 @@ export default function NoteDetailPage() {
 
   if (loading) {
     return (
-      <View className="min-h-screen bg-gray-1 flex items-center justify-center">
-        <Text className="text-sm text-gray-4">加载中...</Text>
+      <View className="min-h-screen flex items-center justify-center" style={{ background: "#F7F8FA" }}>
+        <Text className="text-sm" style={{ color: "#999" }}>加载中...</Text>
       </View>
     );
   }
 
   if (loadError || !note) {
     return (
-      <View className="min-h-screen bg-gray-1 flex flex-col items-center justify-center px-8">
-        <Text className="text-sm text-gray-4 mb-4">{loadError || "笔记不存在"}</Text>
-        <View
-          className="rounded-full bg-primary-6 px-5 py-2 active:opacity-80"
+      <View className="min-h-screen flex flex-col items-center justify-center px-8" style={{ background: "#F7F8FA" }}>
+        <Empty>
+          <Empty.Image />
+          <Empty.Description>{loadError || "笔记不存在"}</Empty.Description>
+        </Empty>
+        <Button
+          color="primary"
+          shape="round"
+          size="small"
+          style={{ marginTop: "16px", background: "#58CC02", borderColor: "#58CC02" }}
           onClick={loadPage}
         >
-          <Text className="text-sm font-medium text-white">重试</Text>
-        </View>
+          重试
+        </Button>
       </View>
     );
   }
 
   return (
-    <View className="min-h-screen bg-gray-1 pb-120">
+    <View className="min-h-screen pb-32" style={{ background: "#F7F8FA" }}>
       {/* Note content card */}
-      <View className="bg-white rounded-xl shadow-sm mx-12 mt-12 p-16">
-        {/* Author info */}
-        <View className="flex items-center mb-16">
-          <Image
-            className="w-48 h-48 rounded-full mr-10 bg-gray-2 shrink-0"
-            src={resolveImageUrl(note.user_pic) || "https://via.placeholder.com/160"}
-            mode="aspectFill"
+      <View
+        className="mx-3 mt-3 bg-white rounded-2xl overflow-hidden"
+        style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}
+      >
+        {/* Author header */}
+        <View className="px-4 pt-4 pb-3 flex items-center">
+          <Avatar
+            src={resolveImageUrl(note.user_pic)}
+            size="medium"
+            shape="circle"
+            style={{ marginRight: "12px", flexShrink: 0 }}
           />
           <View className="flex-1 min-w-0">
-            <Text className="block text-sm font-medium text-gray-8 truncate">
+            <Text className="block text-sm font-semibold truncate" style={{ color: "#333" }}>
               {note.user_name || "匿名用户"}
             </Text>
-            <Text className="block text-xs text-gray-4 mt-2">
+            <Text className="block text-xs mt-1" style={{ color: "#bbb" }}>
               {formatRelativeTimestamp(note.created_at)}
             </Text>
           </View>
+          <Tag
+            shape="round"
+            size="medium"
+            style={{
+              background: note.is_public ? "rgba(88,204,2,0.1)" : "rgba(153,153,153,0.1)",
+              color: note.is_public ? "#58CC02" : "#999",
+              borderColor: "transparent",
+            }}
+          >
+            {note.is_public ? "公开" : "私密"}
+          </Tag>
         </View>
 
         {/* Title */}
-        <Text className="block text-xl font-bold text-gray-8 leading-snug mb-12">
-          {note.title}
-        </Text>
+        <View className="px-4">
+          <Text className="block text-xl font-bold leading-snug mb-3" style={{ color: "#1a1a1a" }}>
+            {note.title}
+          </Text>
+        </View>
 
-        {/* Content */}
-        <Text className="block text-base text-gray-6 leading-relaxed whitespace-pre-wrap">
-          {note.content}
-        </Text>
+        {/* Content body */}
+        <View className="px-4 pb-4">
+          <Text className="block text-base leading-relaxed whitespace-pre-wrap" style={{ color: "#555", lineHeight: "1.8" }}>
+            {note.content}
+          </Text>
+        </View>
 
-        {/* Stats */}
-        <View className="flex items-center text-xs text-gray-4 gap-16 mt-16 pt-12 border-t border-gray-1">
-          <Text>浏览 {note.view_cnt || 0}</Text>
-          <Text>评论 {note.comment_cnt || 0}</Text>
+        {/* Stats bar */}
+        <View
+          className="px-4 py-3 flex items-center gap-4"
+          style={{ borderTop: "1px solid #f5f5f5" }}
+        >
+          <Tag size="small" style={{ background: "#f5f5f5", color: "#999", borderColor: "transparent" }}>
+            浏览 {note.view_cnt || 0}
+          </Tag>
+          <Tag size="small" style={{ background: "#f5f5f5", color: "#999", borderColor: "transparent" }}>
+            评论 {note.comment_cnt || 0}
+          </Tag>
         </View>
       </View>
 
       {/* Action bar */}
-      <View className="bg-white rounded-xl shadow-sm mx-12 mt-12 p-12 flex items-center justify-around">
-        <View
-          className="flex flex-col items-center active:opacity-60"
+      <View
+        className="mx-3 mt-3 bg-white rounded-2xl flex items-center justify-around py-2"
+        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+      >
+        <Button
+          variant="text"
+          icon={liked ? <Like size="22" color="#FF4D4F" /> : <LikeOutlined size="22" />}
+          style={{ color: liked ? "#FF4D4F" : "#999" }}
           onClick={toggleLike}
         >
-          <Text className={`text-xl ${liked ? "text-red-5" : "text-gray-4"}`}>
-            {liked ? "❤️" : "🤍"}
-          </Text>
-          <Text className={`text-xs mt-2 ${liked ? "text-red-5" : "text-gray-4"}`}>
-            {likeCnt || "点赞"}
-          </Text>
-        </View>
-        <View
-          className="flex flex-col items-center active:opacity-60"
+          {likeCnt || "点赞"}
+        </Button>
+        <View className="w-px h-5" style={{ background: "#eee" }} />
+        <Button
+          variant="text"
+          icon={favored ? <Star size="22" color="#FF9500" /> : <StarOutlined size="22" />}
+          style={{ color: favored ? "#FF9500" : "#999" }}
           onClick={toggleFav}
         >
-          <Text className={`text-xl ${favored ? "text-yellow-5" : "text-gray-4"}`}>
-            {favored ? "⭐" : "☆"}
-          </Text>
-          <Text className={`text-xs mt-2 ${favored ? "text-yellow-5" : "text-gray-4"}`}>
-            {favored ? "已收藏" : "收藏"}
-          </Text>
-        </View>
-        <View className="flex flex-col items-center">
-          <Text className="text-xl text-gray-4">💬</Text>
-          <Text className="text-xs mt-2 text-gray-4">
-            {commentTotal || "评论"}
-          </Text>
-        </View>
+          {favored ? "已收藏" : "收藏"}
+        </Button>
+        <View className="w-px h-5" style={{ background: "#eee" }} />
+        <Button
+          variant="text"
+          icon={<CommentOutlined size="22" />}
+          style={{ color: "#999" }}
+        >
+          {commentTotal || "评论"}
+        </Button>
       </View>
 
       {/* Comment section */}
-      <View className="bg-white rounded-xl shadow-sm mx-12 mt-12 p-16">
-        <Text className="block text-base font-bold text-gray-8 mb-12">
-          评论 ({commentTotal})
-        </Text>
+      <View
+        className="mx-3 mt-3 bg-white rounded-2xl overflow-hidden"
+        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+      >
+        {/* Section header */}
+        <View className="px-4 pt-4 pb-2 flex items-center">
+          <View className="w-1 h-4 rounded-full mr-2" style={{ background: "#1CB0F6" }} />
+          <Text className="text-base font-bold" style={{ color: "#333" }}>
+            评论
+          </Text>
+          {commentTotal > 0 && (
+            <Tag
+              shape="round"
+              size="small"
+              style={{
+                marginLeft: "8px",
+                background: "rgba(28,176,246,0.1)",
+                color: "#1CB0F6",
+                borderColor: "transparent",
+              }}
+            >
+              {commentTotal}
+            </Tag>
+          )}
+        </View>
 
+        <Divider style={{ margin: "0 16px", borderColor: "#f5f5f5" }} />
+
+        {/* Comments list */}
         {comments.length === 0 && !commentLoading && (
-          <View className="py-20 text-center">
-            <Text className="text-sm text-gray-4">暂无评论，快来抢沙发吧</Text>
+          <View className="py-6">
+            <Empty>
+              <Empty.Image />
+              <Empty.Description>暂无评论，快来抢沙发吧</Empty.Description>
+            </Empty>
           </View>
         )}
 
-        {comments.map((c) => (
-          <View key={c.id} className="flex mb-16 last:mb-0">
-            <Image
-              className="w-40 h-40 rounded-full mr-10 bg-gray-2 shrink-0"
-              src={resolveImageUrl(c.user_pic) || "https://via.placeholder.com/160"}
-              mode="aspectFill"
+        {comments.map((c, idx) => (
+          <View key={c.id}>
+            <Cell
+              style={{ padding: "12px 16px" }}
+              title={
+                <View className="flex items-start">
+                  <Avatar
+                    src={resolveImageUrl(c.user_pic)}
+                    size="small"
+                    shape="circle"
+                    style={{ marginRight: "10px", flexShrink: 0, marginTop: "2px" }}
+                  />
+                  <View className="flex-1 min-w-0">
+                    <View className="flex items-center justify-between mb-1">
+                      <Text className="text-sm font-medium truncate" style={{ color: "#333" }}>
+                        {c.user_name || "匿名"}
+                      </Text>
+                      <Text className="text-xs shrink-0 ml-2" style={{ color: "#ccc" }}>
+                        {formatRelativeTimestamp(c.created_at)}
+                      </Text>
+                    </View>
+                    <Text className="block text-sm leading-relaxed" style={{ color: "#666" }}>
+                      {c.content}
+                    </Text>
+                  </View>
+                </View>
+              }
             />
-            <View className="flex-1 min-w-0">
-              <View className="flex items-center justify-between mb-4">
-                <Text className="text-sm font-medium text-gray-8 truncate">
-                  {c.user_name || "匿名"}
-                </Text>
-                <Text className="text-xs text-gray-4 shrink-0 ml-8">
-                  {formatRelativeTimestamp(c.created_at)}
-                </Text>
-              </View>
-              <Text className="block text-sm text-gray-6 leading-relaxed">
-                {c.content}
-              </Text>
-            </View>
+            {idx < comments.length - 1 && (
+              <Divider style={{ margin: "0 16px 0 56px", borderColor: "#f5f5f5" }} />
+            )}
           </View>
         ))}
 
         {commentLoading && (
-          <View className="py-12 text-center">
-            <Text className="text-sm text-gray-4">加载中...</Text>
+          <View className="py-4 text-center">
+            <Text className="text-sm" style={{ color: "#999" }}>加载中...</Text>
           </View>
         )}
 
         {!commentLoading && comments.length > 0 && comments.length < commentTotal && (
-          <View
-            className="py-12 text-center active:opacity-60"
-            onClick={loadMoreComments}
-          >
-            <Text className="text-sm text-primary-6">加载更多评论</Text>
+          <View className="py-3 text-center" onClick={loadMoreComments}>
+            <Button variant="text" size="small" style={{ color: "#1CB0F6" }}>
+              加载更多评论
+            </Button>
           </View>
         )}
 
         {!commentLoading && comments.length > 0 && comments.length >= commentTotal && (
-          <View className="py-12 text-center">
-            <Text className="text-xs text-gray-4">— 已显示全部评论 —</Text>
-          </View>
+          <Divider style={{ color: "#ccc", fontSize: "12px", margin: "4px 16px 12px" }}>
+            已显示全部评论
+          </Divider>
         )}
       </View>
 
       {/* Fixed bottom comment input bar */}
-      <View className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-2 px-12 py-10 flex items-center z-30 safe-area-bottom">
-        <Input
-          className="flex-1 h-40 bg-gray-1 rounded-full px-16 text-sm text-gray-8"
-          placeholder="写一条评论..."
-          value={commentInput}
-          onInput={(e) => setCommentInput(e.detail.value)}
-          confirmType="send"
-          onConfirm={sendComment}
-        />
-        <View
-          className={`ml-10 px-16 py-8 rounded-full text-sm font-medium shrink-0 ${
-            commentInput.trim()
-              ? "bg-primary-6 text-white active:opacity-80"
-              : "bg-gray-2 text-gray-4"
-          }`}
+      <View
+        className="fixed bottom-0 left-0 right-0 bg-white flex items-end px-3 py-2 z-30"
+        style={{
+          borderTop: "1px solid #f0f0f0",
+          paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
+          boxShadow: "0 -2px 12px rgba(0,0,0,0.04)",
+        }}
+      >
+        <View className="flex-1 mr-2">
+          <Field
+            type="textarea"
+            placeholder="写一条评论..."
+            value={commentInput}
+            onChange={(e) => setCommentInput(e)}
+            autoHeight
+            style={{
+              background: "#F7F8FA",
+              borderRadius: "16px",
+              padding: "8px 14px",
+              fontSize: "14px",
+              maxHeight: "100px",
+            }}
+          />
+        </View>
+        <Button
+          color="primary"
+          shape="round"
+          size="small"
+          disabled={!commentInput.trim() || submitting}
+          style={{
+            background: commentInput.trim() ? "#58CC02" : "#e0e0e0",
+            borderColor: commentInput.trim() ? "#58CC02" : "#e0e0e0",
+            flexShrink: 0,
+            marginBottom: "4px",
+          }}
           onClick={sendComment}
         >
-          <Text>发送</Text>
-        </View>
+          发送
+        </Button>
       </View>
     </View>
   );

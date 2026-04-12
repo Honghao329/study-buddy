@@ -1,6 +1,7 @@
-import { Text, View } from "@tarojs/components";
+import { View } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useCallback, useRef, useState } from "react";
+import { Cell, Empty, Loading, Tag } from "@taroify/core";
 import { api } from "~/api/request";
 import { formatRelativeTimestamp } from "~/utils/timeFormatter";
 
@@ -16,6 +17,12 @@ const TYPE_LABELS: Record<string, string> = {
   note: "笔记",
   checkin: "打卡",
   post: "帖子",
+};
+
+const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
+  note: { bg: "#E8F7FE", text: "#1CB0F6" },
+  checkin: { bg: "#E8F9E0", text: "#58CC02" },
+  post: { bg: "#FFF3E0", text: "#FF9500" },
 };
 
 function navigateToTarget(item: FavItem) {
@@ -60,51 +67,65 @@ export default function FavoritePage() {
   });
 
   return (
-    <View className="min-h-screen bg-gray-1 pb-40">
+    <View className="min-h-screen pb-40" style={{ backgroundColor: "#F7F8FA" }}>
       <View className="px-12 pt-12">
-        {list.map((item) => (
+        {list.length > 0 && (
           <View
-            key={item.id}
-            className="bg-white rounded-xl shadow-sm mb-10 p-16 active:opacity-80"
-            onClick={() => navigateToTarget(item)}
+            className="rounded-2xl overflow-hidden"
+            style={{
+              backgroundColor: "#fff",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+            }}
           >
-            <View className="flex items-center justify-between mb-6">
-              <Text className="text-base font-medium text-gray-8 flex-1 truncate mr-10">
-                {item.title || "无标题"}
-              </Text>
-              <View
-                className={`shrink-0 px-8 py-2 rounded-md text-xs ${
-                  item.target_type === "note"
-                    ? "bg-primary-1 text-primary-6"
-                    : item.target_type === "checkin"
-                    ? "bg-green-1 text-green-6"
-                    : "bg-gray-1 text-gray-5"
-                }`}
-              >
-                <Text>{TYPE_LABELS[item.target_type] || item.target_type}</Text>
-              </View>
-            </View>
-            <Text className="text-xs text-gray-4">
-              {formatRelativeTimestamp(item.created_at)}
-            </Text>
+            {list.map((item) => {
+              const typeStyle = TYPE_COLORS[item.target_type] || {
+                bg: "#F7F8FA",
+                text: "#999",
+              };
+              return (
+                <Cell
+                  key={item.id}
+                  clickable
+                  isLink
+                  onClick={() => navigateToTarget(item)}
+                  title={item.title || "无标题"}
+                  brief={formatRelativeTimestamp(item.created_at)}
+                  style={{ paddingLeft: "16px", paddingRight: "16px" }}
+                >
+                  <Tag
+                    style={{
+                      backgroundColor: typeStyle.bg,
+                      color: typeStyle.text,
+                      borderColor: "transparent",
+                      fontWeight: "500",
+                    }}
+                  >
+                    {TYPE_LABELS[item.target_type] || item.target_type}
+                  </Tag>
+                </Cell>
+              );
+            })}
           </View>
-        ))}
+        )}
 
         {/* Loading */}
         {loading && (
-          <View className="py-20 text-center">
-            <Text className="text-sm text-gray-4">加载中...</Text>
+          <View className="py-24 flex justify-center">
+            <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+              加载中...
+            </Loading>
           </View>
         )}
 
         {/* Empty */}
         {!loading && list.length === 0 && (
-          <View className="py-80 text-center">
-            <Text className="block text-4xl mb-12">⭐</Text>
-            <Text className="text-sm text-gray-4">暂无收藏内容</Text>
+          <View className="pt-60">
+            <Empty>
+              <Empty.Image src="https://img.yzcdn.cn/vant/empty-image-default.png" />
+              <Empty.Description>暂无收藏内容</Empty.Description>
+            </Empty>
           </View>
         )}
-
       </View>
     </View>
   );

@@ -1,6 +1,7 @@
-import { Image, Text, View } from "@tarojs/components";
+import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow, useRouter } from "@tarojs/taro";
 import { useCallback, useState } from "react";
+import { Avatar, Button, Cell, Empty, Loading, Tag } from "@taroify/core";
 import { api, isLoggedIn } from "~/api/request";
 import { resolveImageUrl } from "~/utils/imageUrl";
 
@@ -88,88 +89,169 @@ export default function UserProfilePage() {
     }
   };
 
+  const statusTagColor = (): string => {
+    switch (partnerStatus) {
+      case "accepted":
+        return "#58CC02";
+      case "pending":
+        return "#FF9500";
+      default:
+        return "#ccc";
+    }
+  };
+
   if (loading && !profile) {
     return (
-      <View className="min-h-screen bg-gray-1 flex items-center justify-center">
-        <Text className="text-sm text-gray-4">加载中...</Text>
+      <View
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#F7F8FA" }}
+      >
+        <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+          加载中...
+        </Loading>
       </View>
     );
   }
 
   if (!profile) {
     return (
-      <View className="min-h-screen bg-gray-1 flex items-center justify-center">
-        <Text className="text-sm text-gray-4">用户不存在</Text>
+      <View
+        className="min-h-screen"
+        style={{ backgroundColor: "#F7F8FA", paddingTop: "80px" }}
+      >
+        <Empty>
+          <Empty.Image />
+          <Empty.Description>用户不存在</Empty.Description>
+        </Empty>
       </View>
     );
   }
 
   return (
-    <View className="min-h-screen bg-gray-1 pb-40">
+    <View className="min-h-screen pb-40" style={{ backgroundColor: "#F7F8FA" }}>
       {/* Profile header */}
-      <View className="bg-white px-16 pt-24 pb-20 shadow-sm">
-        <View className="flex items-center mb-16">
-          <Image
-            className="w-72 h-72 rounded-full mr-16 bg-gray-2 shrink-0"
-            src={resolveImageUrl(profile.avatar) || "https://via.placeholder.com/160"}
-            mode="aspectFill"
-          />
-          <View className="flex-1 min-w-0">
-            <Text className="block text-lg font-bold text-gray-8 truncate">
-              {profile.nickname}
-            </Text>
-            {profile.bio && (
-              <Text className="block text-sm text-gray-5 mt-6 line-clamp-2">
-                {profile.bio}
-              </Text>
-            )}
-            <Text className="block text-xs text-gray-4 mt-6">
-              加入于 {profile.created_at}
-            </Text>
-          </View>
+      <View
+        className="flex flex-col items-center pt-36 pb-28 px-20"
+        style={{
+          backgroundColor: "#fff",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+          borderBottomLeftRadius: "24px",
+          borderBottomRightRadius: "24px",
+        }}
+      >
+        <Avatar
+          src={resolveImageUrl(profile.avatar)}
+          style={{
+            width: "80px",
+            height: "80px",
+            border: "3px solid #fff",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+          }}
+        />
+
+        <View className="flex items-center mt-16 mb-4">
+          <Text style={{ fontSize: "20px", fontWeight: "bold", color: "#333" }}>
+            {profile.nickname}
+          </Text>
+          {partnerStatus !== "none" && (
+            <Tag
+              style={{
+                marginLeft: "8px",
+                backgroundColor: statusTagColor(),
+                color: "#fff",
+                borderColor: "transparent",
+                fontSize: "10px",
+              }}
+            >
+              {partnerStatus === "accepted" ? "伙伴" : "邀请中"}
+            </Tag>
+          )}
         </View>
 
-        {/* Action button */}
-        <View
-          className={`w-full py-10 rounded-full text-center ${
-            canInvite ? "bg-primary-6 active:opacity-80" : "bg-gray-2"
-          }`}
-          onClick={canInvite ? handleInvite : undefined}
-        >
+        {profile.bio && (
           <Text
-            className={`text-sm font-medium ${canInvite ? "text-white" : "text-gray-6"}`}
+            style={{
+              fontSize: "14px",
+              color: "#888",
+              textAlign: "center",
+              lineHeight: "1.5",
+              marginBottom: "4px",
+              maxWidth: "280px",
+            }}
+          >
+            {profile.bio}
+          </Text>
+        )}
+
+        <Text style={{ fontSize: "12px", color: "#bbb", marginTop: "8px" }}>
+          加入于 {profile.created_at}
+        </Text>
+
+        {/* Action button */}
+        <View className="w-full px-20 mt-20">
+          <Button
+            block
+            round
+            size="large"
+            loading={inviting}
+            disabled={!canInvite}
+            onClick={canInvite ? handleInvite : undefined}
+            style={{
+              backgroundColor: canInvite
+                ? "#1CB0F6"
+                : partnerStatus === "accepted"
+                ? "#58CC02"
+                : "#e0e0e0",
+              borderColor: "transparent",
+              color: canInvite ? "#fff" : partnerStatus === "accepted" ? "#fff" : "#999",
+              fontWeight: "bold",
+              fontSize: "15px",
+              boxShadow: canInvite ? "0 4px 16px rgba(28,176,246,0.3)" : "none",
+            }}
           >
             {statusLabel()}
-          </Text>
+          </Button>
         </View>
       </View>
 
       {/* Notes section */}
-      <View className="px-12 pt-16">
-        <Text className="block text-base font-bold text-gray-8 mb-12 px-4">
+      <View className="px-12 pt-20">
+        <Text
+          className="block mb-12 px-8"
+          style={{ fontSize: "16px", fontWeight: "bold", color: "#333" }}
+        >
           TA 的笔记
         </Text>
 
-        {notes.map((note) => (
-          <View
-            key={note.id}
-            className="bg-white rounded-xl shadow-sm mb-12 p-16 active:opacity-80"
-            onClick={() => goNoteDetail(note.id)}
+        {notes.length > 0 ? (
+          <Cell.Group
+            style={{
+              borderRadius: "16px",
+              overflow: "hidden",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+            }}
           >
-            <Text className="block text-base font-bold text-gray-8 leading-snug mb-8 line-clamp-2">
-              {note.title}
-            </Text>
-            <View className="flex items-center text-xs text-gray-4 gap-16">
-              <Text>👍 {note.like_cnt || 0}</Text>
-              <Text>👁 {note.view_cnt || 0}</Text>
+            {notes.map((note) => (
+              <Cell
+                key={note.id}
+                clickable
+                isLink
+                onClick={() => goNoteDetail(note.id)}
+                title={note.title}
+                brief={`${note.like_cnt || 0} 赞  ${note.view_cnt || 0} 阅读`}
+                style={{ paddingLeft: "16px", paddingRight: "12px" }}
+              />
+            ))}
+          </Cell.Group>
+        ) : (
+          !loading && (
+            <View className="pt-20">
+              <Empty>
+                <Empty.Image />
+                <Empty.Description>暂无公开笔记</Empty.Description>
+              </Empty>
             </View>
-          </View>
-        ))}
-
-        {!loading && notes.length === 0 && (
-          <View className="py-40 text-center">
-            <Text className="text-sm text-gray-4">暂无公开笔记</Text>
-          </View>
+          )
         )}
       </View>
     </View>

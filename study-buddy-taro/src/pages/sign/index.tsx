@@ -1,6 +1,7 @@
-import { Image, Text, View } from "@tarojs/components";
+import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useCallback, useState } from "react";
+import { Avatar, Button, Cell, Divider, Loading } from "@taroify/core";
 import { api } from "~/api/request";
 import { resolveImageUrl } from "~/utils/imageUrl";
 
@@ -41,6 +42,8 @@ function getFirstDayOfWeek(year: number, month: number) {
 function pad(n: number) {
   return n < 10 ? `0${n}` : `${n}`;
 }
+
+const MEDAL_COLORS = ["#FF9500", "#A0A0A0", "#CD7F32"];
 
 /* ---------- component ---------- */
 
@@ -135,7 +138,6 @@ export default function SignPage() {
   const signedSet = new Set(calendarDays.filter((d) => d.signed).map((d) => d.date));
 
   const cells: { day: number; signed: boolean }[] = [];
-  // leading blanks
   for (let i = 0; i < firstDay; i++) {
     cells.push({ day: 0, signed: false });
   }
@@ -145,59 +147,133 @@ export default function SignPage() {
   }
 
   return (
-    <View className="min-h-screen bg-gray-1 pb-40">
+    <View className="min-h-screen pb-40" style={{ backgroundColor: "#F7F8FA" }}>
       {/* ====== Stats Header ====== */}
-      <View className="mx-12 mt-12 rounded-xl p-24 text-white" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
+      <View
+        className="mx-12 mt-12 rounded-2xl p-28"
+        style={{
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          boxShadow: "0 8px 24px rgba(118, 75, 162, 0.3)",
+        }}
+      >
         <View className="flex items-center justify-around">
           <View className="text-center">
-            <Text className="block text-4xl font-bold">{stats.streak}</Text>
-            <Text className="block text-xs opacity-80 mt-4">连续签到(天)</Text>
+            <Text
+              className="block font-bold"
+              style={{ fontSize: "36px", color: "#fff" }}
+            >
+              {stats.streak}
+            </Text>
+            <Text
+              className="block mt-6"
+              style={{ fontSize: "11px", color: "rgba(255,255,255,0.75)" }}
+            >
+              连续签到(天)
+            </Text>
           </View>
+          <View
+            style={{
+              width: "1px",
+              height: "40px",
+              backgroundColor: "rgba(255,255,255,0.25)",
+            }}
+          />
           <View className="text-center">
-            <Text className="block text-2xl font-bold">{stats.totalDays}</Text>
-            <Text className="block text-xs opacity-80 mt-4">累计签到(天)</Text>
+            <Text
+              className="block font-bold"
+              style={{ fontSize: "24px", color: "#fff" }}
+            >
+              {stats.totalDays}
+            </Text>
+            <Text
+              className="block mt-6"
+              style={{ fontSize: "11px", color: "rgba(255,255,255,0.75)" }}
+            >
+              累计签到(天)
+            </Text>
           </View>
+          <View
+            style={{
+              width: "1px",
+              height: "40px",
+              backgroundColor: "rgba(255,255,255,0.25)",
+            }}
+          />
           <View className="text-center">
-            <Text className="block text-2xl font-bold">{stats.totalDuration}</Text>
-            <Text className="block text-xs opacity-80 mt-4">累计时长(分)</Text>
+            <Text
+              className="block font-bold"
+              style={{ fontSize: "24px", color: "#fff" }}
+            >
+              {stats.totalDuration}
+            </Text>
+            <Text
+              className="block mt-6"
+              style={{ fontSize: "11px", color: "rgba(255,255,255,0.75)" }}
+            >
+              累计时长(分)
+            </Text>
           </View>
         </View>
       </View>
 
       {/* ====== Sign Button ====== */}
-      <View className="flex justify-center mt-20 mb-20">
-        <View
-          className={`w-140 h-140 rounded-full flex items-center justify-center shadow-lg active:opacity-80 ${
-            stats.todaySigned ? "bg-green-6" : "bg-primary-6"
-          }`}
+      <View className="flex justify-center mt-24 mb-24">
+        <Button
+          round
+          type={stats.todaySigned ? "success" : "primary"}
+          size="large"
+          loading={signing}
+          disabled={stats.todaySigned}
           onClick={doSign}
+          style={{
+            width: "200px",
+            height: "56px",
+            fontSize: "17px",
+            fontWeight: "bold",
+            background: stats.todaySigned ? "#58CC02" : "#1CB0F6",
+            borderColor: stats.todaySigned ? "#58CC02" : "#1CB0F6",
+            boxShadow: stats.todaySigned
+              ? "0 4px 16px rgba(88,204,2,0.35)"
+              : "0 4px 16px rgba(28,176,246,0.35)",
+          }}
         >
-          <Text className="text-white text-xl font-bold">
-            {stats.todaySigned ? "已签到 ✓" : "签到"}
-          </Text>
-        </View>
+          {stats.todaySigned ? "已签到" : "立即签到"}
+        </Button>
       </View>
 
       {/* ====== Calendar ====== */}
-      <View className="mx-12 bg-white rounded-xl shadow-sm p-16 mb-12">
+      <View
+        className="mx-12 rounded-2xl p-20 mb-12"
+        style={{ backgroundColor: "#fff", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+      >
         {/* Month header */}
-        <View className="flex items-center justify-between mb-12">
-          <View className="px-12 py-4 active:opacity-60" onClick={() => changeMonth(-1)}>
-            <Text className="text-lg text-gray-6">&lt;</Text>
+        <View className="flex items-center justify-between mb-16">
+          <View
+            className="px-16 py-6 rounded-lg active:opacity-60"
+            style={{ backgroundColor: "#F7F8FA" }}
+            onClick={() => changeMonth(-1)}
+          >
+            <Text style={{ fontSize: "16px", color: "#999" }}>&lt;</Text>
           </View>
-          <Text className="text-base font-bold text-gray-8">
+          <Text style={{ fontSize: "16px", fontWeight: "bold", color: "#333" }}>
             {year}年{month}月
           </Text>
-          <View className="px-12 py-4 active:opacity-60" onClick={() => changeMonth(1)}>
-            <Text className="text-lg text-gray-6">&gt;</Text>
+          <View
+            className="px-16 py-6 rounded-lg active:opacity-60"
+            style={{ backgroundColor: "#F7F8FA" }}
+            onClick={() => changeMonth(1)}
+          >
+            <Text style={{ fontSize: "16px", color: "#999" }}>&gt;</Text>
           </View>
         </View>
 
         {/* Weekday headers */}
-        <View className="flex">
+        <View className="flex mb-8">
           {WEEK_LABELS.map((w) => (
             <View key={w} className="flex-1 text-center py-4">
-              <Text className="text-xs text-gray-4">周{w}</Text>
+              <Text style={{ fontSize: "12px", color: "#aaa", fontWeight: "500" }}>
+                {w}
+              </Text>
             </View>
           ))}
         </View>
@@ -212,67 +288,90 @@ export default function SignPage() {
             >
               {cell.day > 0 ? (
                 <View
-                  className={`w-36 h-36 rounded-full flex items-center justify-center ${
-                    cell.signed ? "bg-green-6" : ""
-                  }`}
+                  className="flex items-center justify-center"
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "50%",
+                    backgroundColor: cell.signed ? "#58CC02" : "transparent",
+                    transition: "all 0.2s",
+                  }}
                 >
                   <Text
-                    className={`text-sm ${
-                      cell.signed ? "text-white font-bold" : "text-gray-6"
-                    }`}
+                    style={{
+                      fontSize: "14px",
+                      color: cell.signed ? "#fff" : "#666",
+                      fontWeight: cell.signed ? "bold" : "normal",
+                    }}
                   >
                     {cell.day}
                   </Text>
                 </View>
               ) : (
-                <View className="w-36 h-36" />
+                <View style={{ width: "36px", height: "36px" }} />
               )}
             </View>
           ))}
         </View>
       </View>
 
-      {/* ====== Leaderboard ====== */}
-      <View className="mx-12 bg-white rounded-xl shadow-sm p-16">
-        <Text className="block text-base font-bold text-gray-8 mb-12">
-          签到排行榜
-        </Text>
+      <Divider style={{ margin: "8px 24px", borderColor: "#eee" }}>
+        签到排行榜
+      </Divider>
 
+      {/* ====== Leaderboard ====== */}
+      <View
+        className="mx-12 rounded-2xl overflow-hidden"
+        style={{ backgroundColor: "#fff", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+      >
         {rank.length === 0 && (
-          <View className="py-20 text-center">
-            <Text className="text-sm text-gray-4">暂无排行数据</Text>
+          <View className="py-40 text-center">
+            <Loading type="spinner" style={{ color: "#1CB0F6" }} />
+            <Text className="block mt-8" style={{ fontSize: "13px", color: "#999" }}>
+              暂无排行数据
+            </Text>
           </View>
         )}
 
         {rank.map((user, idx) => (
-          <View
+          <Cell
             key={user.user_id}
-            className="flex items-center py-10 border-b border-gray-1 last:border-none"
+            icon={
+              <View className="flex items-center">
+                <View
+                  className="flex items-center justify-center mr-10"
+                  style={{
+                    width: "24px",
+                    height: "24px",
+                    borderRadius: "50%",
+                    backgroundColor: idx < 3 ? MEDAL_COLORS[idx] : "#F7F8FA",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                      color: idx < 3 ? "#fff" : "#999",
+                    }}
+                  >
+                    {idx + 1}
+                  </Text>
+                </View>
+                <Avatar
+                  src={resolveImageUrl(user.user_pic)}
+                  size="medium"
+                  style={{ marginRight: "8px" }}
+                />
+              </View>
+            }
+            title={user.user_name || "匿名用户"}
+            brief={`累计${user.days}天`}
+            style={{ paddingLeft: "12px", paddingRight: "12px" }}
           >
-            <Text
-              className={`w-28 text-center font-bold mr-10 ${
-                idx < 3 ? "text-orange-5" : "text-gray-4"
-              }`}
-            >
-              {idx + 1}
-            </Text>
-            <Image
-              className="w-40 h-40 rounded-full mr-10 bg-gray-2 shrink-0"
-              src={resolveImageUrl(user.user_pic) || "https://via.placeholder.com/160"}
-              mode="aspectFill"
-            />
-            <View className="flex-1 min-w-0">
-              <Text className="text-sm text-gray-8 truncate block">
-                {user.user_name || "匿名用户"}
-              </Text>
-              <Text className="text-xs text-gray-4">
-                累计{user.days}天
-              </Text>
-            </View>
-            <Text className="text-sm font-bold text-primary-6">
+            <Text style={{ fontSize: "14px", fontWeight: "bold", color: "#1CB0F6" }}>
               {user.total_duration}分
             </Text>
-          </View>
+          </Cell>
         ))}
       </View>
     </View>

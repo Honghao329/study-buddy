@@ -1,6 +1,7 @@
-import { Image, Input, Text, Textarea, View } from "@tarojs/components";
+import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useState } from "react";
+import { Avatar, Button, Cell, Field, Loading } from "@taroify/core";
 import { api } from "~/api/request";
 import { joinApiUrl } from "~/utils/apiBase";
 import { resolveImageUrl } from "~/utils/imageUrl";
@@ -97,70 +98,110 @@ export default function MyEditPage() {
 
   if (loading) {
     return (
-      <View className="min-h-screen bg-gray-1 flex items-center justify-center">
-        <Text className="text-sm text-gray-4">加载中...</Text>
+      <View
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#F7F8FA" }}
+      >
+        <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+          加载中...
+        </Loading>
       </View>
     );
   }
 
   return (
-    <View className="min-h-screen bg-gray-1 pb-40">
+    <View className="min-h-screen pb-40" style={{ backgroundColor: "#F7F8FA" }}>
       {/* Avatar section */}
-      <View className="bg-white mt-12 mx-12 rounded-xl shadow-sm p-24 flex flex-col items-center">
-        <View className="relative" onClick={handleChooseAvatar}>
-          <Image
-            className="w-80 h-80 rounded-full bg-gray-2"
-            src={resolveImageUrl(avatar) || "https://via.placeholder.com/160"}
-            mode="aspectFill"
+      <View
+        className="mt-12 mx-12 rounded-2xl flex flex-col items-center py-28"
+        style={{
+          backgroundColor: "#fff",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+        }}
+      >
+        <View
+          className="relative"
+          onClick={handleChooseAvatar}
+          style={{ cursor: "pointer" }}
+        >
+          <Avatar
+            src={resolveImageUrl(avatar)}
+            style={{
+              width: "80px",
+              height: "80px",
+              border: "3px solid #fff",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+            }}
           />
-          <View className="absolute inset-0 rounded-full bg-black bg-opacity-30 flex items-center justify-center">
-            <Text className="text-xs text-white">更换头像</Text>
+          <View
+            className="absolute inset-0 flex items-center justify-center"
+            style={{
+              borderRadius: "50%",
+              backgroundColor: "rgba(0,0,0,0.3)",
+            }}
+          >
+            <Text style={{ fontSize: "11px", color: "#fff", fontWeight: "500" }}>
+              更换头像
+            </Text>
           </View>
         </View>
+        <Text
+          className="mt-10"
+          style={{ fontSize: "12px", color: "#bbb" }}
+        >
+          点击更换头像
+        </Text>
       </View>
 
       {/* Form fields */}
-      <View className="bg-white mt-12 mx-12 rounded-xl shadow-sm">
-        {/* Nickname */}
-        <View className="px-16 py-16 flex items-center border-b border-gray-1">
-          <Text className="text-sm text-gray-6 w-64 shrink-0">昵称</Text>
-          <Input
-            className="flex-1 text-sm text-gray-8"
+      <View
+        className="mt-12 mx-12 rounded-2xl overflow-hidden"
+        style={{
+          backgroundColor: "#fff",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+        }}
+      >
+        <Cell.Group>
+          <Field
+            label="昵称"
             value={nickname}
-            onInput={(e) => setNickname(e.detail.value)}
             placeholder="请输入昵称"
-            placeholderClass="text-gray-4"
             maxlength={20}
+            onChange={(e) => setNickname(e)}
           />
-        </View>
-
-        {/* Bio */}
-        <View className="px-16 py-16">
-          <Text className="block text-sm text-gray-6 mb-8">个性签名</Text>
-          <Textarea
-            className="w-full text-sm text-gray-8 min-h-80"
+          <Field
+            label="个性签名"
+            type="textarea"
             value={bio}
-            onInput={(e) => setBio(e.detail.value)}
             placeholder="介绍一下自己吧"
-            placeholderClass="text-gray-4"
             maxlength={200}
             autoHeight
+            onChange={(e) => setBio(e)}
+            style={{ minHeight: "100px" }}
           />
-        </View>
+        </Cell.Group>
       </View>
 
       {/* Save button */}
-      <View className="px-12 mt-24">
-        <View
-          className={`w-full py-12 rounded-full text-center active:opacity-80 ${
-            saving ? "bg-gray-3" : "bg-primary-6"
-          }`}
+      <View className="px-24 mt-28">
+        <Button
+          type="primary"
+          block
+          round
+          size="large"
+          loading={saving}
+          disabled={saving}
           onClick={handleSave}
+          style={{
+            backgroundColor: "#1CB0F6",
+            borderColor: "#1CB0F6",
+            fontWeight: "bold",
+            fontSize: "16px",
+            boxShadow: "0 4px 16px rgba(28,176,246,0.35)",
+          }}
         >
-          <Text className="text-base font-medium text-white">
-            {saving ? "保存中..." : "保存"}
-          </Text>
-        </View>
+          {saving ? "保存中..." : "保存"}
+        </Button>
       </View>
     </View>
   );

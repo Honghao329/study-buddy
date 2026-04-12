@@ -1,6 +1,8 @@
-import { Image, Text, View } from "@tarojs/components";
+import { View } from "@tarojs/components";
 import { useDidShow, useReachBottom } from "@tarojs/taro";
 import { useCallback, useRef, useState } from "react";
+import { Avatar, Badge, Button, Cell, Empty, Loading, Popup } from "@taroify/core";
+import { Cross } from "@taroify/icons";
 import { api } from "~/api/request";
 import { resolveImageUrl } from "~/utils/imageUrl";
 import { formatRelativeTimestamp } from "~/utils/timeFormatter";
@@ -82,113 +84,149 @@ export default function MessagesPage() {
   };
 
   return (
-    <View className="min-h-screen bg-gray-1 pb-40">
+    <View className="min-h-screen pb-40" style={{ backgroundColor: "#F7F8FA" }}>
       {/* Message list */}
       <View className="px-12 pt-12">
-        {list.map((msg) => (
-          <View
-            key={msg.id}
-            className="bg-white rounded-xl shadow-sm mb-10 p-14 flex items-start active:opacity-80"
-            onClick={() => openMessage(msg)}
-          >
-            {/* Avatar */}
-            <View className="relative shrink-0 mr-12">
-              <Image
-                className="w-44 h-44 rounded-full bg-gray-2"
-                src={resolveImageUrl(msg.from_avatar) || "https://via.placeholder.com/160"}
-                mode="aspectFill"
-              />
-              {!msg.is_read && (
-                <View className="absolute top-0 right-0 w-10 h-10 rounded-full bg-red-5" />
-              )}
-            </View>
-
-            {/* Content */}
-            <View className="flex-1 min-w-0">
-              <View className="flex items-center justify-between mb-4">
-                <Text className="text-sm font-medium text-gray-8 truncate">
-                  {msg.from_name || "系统通知"}
-                </Text>
-                <Text className="text-xs text-gray-4 shrink-0 ml-8">
-                  {formatRelativeTimestamp(msg.created_at)}
-                </Text>
-              </View>
-              <Text className="text-sm text-gray-5 truncate block">
-                {msg.content}
-              </Text>
-            </View>
-          </View>
-        ))}
+        <View
+          className="rounded-2xl overflow-hidden"
+          style={{ backgroundColor: "#fff", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+        >
+          {list.map((msg) => (
+            <Cell
+              key={msg.id}
+              clickable
+              onClick={() => openMessage(msg)}
+              icon={
+                <Badge dot={!msg.is_read} style={{ "--badge-dot-background-color": "#FF4D4F" } as any}>
+                  <Avatar
+                    src={resolveImageUrl(msg.from_avatar)}
+                    style={{ width: "44px", height: "44px" }}
+                  />
+                </Badge>
+              }
+              title={
+                <View className="flex items-center justify-between">
+                  <View
+                    style={{
+                      fontSize: "15px",
+                      fontWeight: msg.is_read ? "normal" : "bold",
+                      color: "#333",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flex: 1,
+                    }}
+                  >
+                    {msg.from_name || "系统通知"}
+                  </View>
+                  <View
+                    className="shrink-0 ml-8"
+                    style={{ fontSize: "11px", color: "#bbb" }}
+                  >
+                    {formatRelativeTimestamp(msg.created_at)}
+                  </View>
+                </View>
+              }
+              brief={msg.content}
+              style={{ paddingLeft: "16px", paddingRight: "16px" }}
+            />
+          ))}
+        </View>
 
         {/* Loading */}
         {loading && (
-          <View className="py-20 text-center">
-            <Text className="text-sm text-gray-4">加载中...</Text>
+          <View className="py-24 flex justify-center">
+            <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+              加载中...
+            </Loading>
           </View>
         )}
 
         {/* Empty */}
         {!loading && list.length === 0 && (
-          <View className="py-80 text-center">
-            <Text className="block text-4xl mb-12">📭</Text>
-            <Text className="text-sm text-gray-4">暂无消息</Text>
+          <View className="pt-60">
+            <Empty>
+              <Empty.Image />
+              <Empty.Description>暂无消息</Empty.Description>
+            </Empty>
           </View>
         )}
 
         {/* No more */}
         {!loading && list.length > 0 && !hasMore && (
-          <View className="py-20 text-center">
-            <Text className="text-sm text-gray-4">-- 已经到底了 --</Text>
+          <View
+            className="py-20 text-center"
+            style={{ fontSize: "13px", color: "#ccc" }}
+          >
+            -- 已经到底了 --
           </View>
         )}
       </View>
 
-      {/* ====== Detail Modal ====== */}
-      {detail && (
-        <View
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          onClick={closeDetail}
-        >
-          {/* Overlay */}
-          <View className="absolute inset-0 bg-black opacity-50" />
+      {/* ====== Detail Popup ====== */}
+      <Popup
+        open={!!detail}
+        rounded
+        placement="bottom"
+        style={{ maxHeight: "70vh" }}
+        onClose={closeDetail}
+      >
+        {detail && (
+          <View style={{ padding: "24px 20px 40px" }}>
+            {/* Close icon */}
+            <View
+              className="flex justify-end mb-12"
+              onClick={closeDetail}
+            >
+              <Cross size="20px" color="#999" />
+            </View>
 
-          {/* Modal content */}
-          <View
-            className="relative bg-white rounded-xl mx-24 p-20 w-full max-w-600 z-10"
-            onClick={(e) => e.stopPropagation()}
-          >
             {/* Header */}
-            <View className="flex items-center mb-16">
-              <Image
-                className="w-40 h-40 rounded-full bg-gray-2 mr-10"
-                src={resolveImageUrl(detail.from_avatar) || "https://via.placeholder.com/160"}
-                mode="aspectFill"
+            <View className="flex items-center mb-20">
+              <Avatar
+                src={resolveImageUrl(detail.from_avatar)}
+                style={{ width: "48px", height: "48px", marginRight: "12px" }}
               />
               <View className="flex-1 min-w-0">
-                <Text className="text-base font-bold text-gray-8 block">
+                <View
+                  style={{ fontSize: "17px", fontWeight: "bold", color: "#333" }}
+                >
                   {detail.from_name || "系统通知"}
-                </Text>
-                <Text className="text-xs text-gray-4">
+                </View>
+                <View style={{ fontSize: "12px", color: "#bbb", marginTop: "4px" }}>
                   {formatRelativeTimestamp(detail.created_at)}
-                </Text>
+                </View>
               </View>
             </View>
 
             {/* Body */}
-            <Text className="text-sm text-gray-6 leading-relaxed block mb-20">
-              {detail.content}
-            </Text>
-
-            {/* Close */}
             <View
-              className="bg-gray-1 rounded-lg py-10 text-center active:opacity-80"
+              style={{
+                fontSize: "15px",
+                color: "#555",
+                lineHeight: "1.7",
+                marginBottom: "28px",
+              }}
+            >
+              {detail.content}
+            </View>
+
+            {/* Close button */}
+            <Button
+              block
+              round
+              style={{
+                backgroundColor: "#F7F8FA",
+                borderColor: "#F7F8FA",
+                color: "#666",
+              }}
               onClick={closeDetail}
             >
-              <Text className="text-sm text-gray-6">关闭</Text>
-            </View>
+              关闭
+            </Button>
           </View>
-        </View>
-      )}
+        )}
+      </Popup>
     </View>
   );
 }

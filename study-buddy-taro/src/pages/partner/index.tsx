@@ -1,8 +1,10 @@
-import { Image, Text, View } from "@tarojs/components";
+import { View } from "@tarojs/components";
 import Taro, { useDidShow, usePullDownRefresh } from "@tarojs/taro";
 import { useCallback, useState } from "react";
+import { Avatar, Badge, Button, Cell, Empty, Loading, Tabs } from "@taroify/core";
 import { api } from "~/api/request";
 import { resolveImageUrl } from "~/utils/imageUrl";
+import { formatRelativeTimestamp } from "~/utils/timeFormatter";
 
 interface Partner {
   id: number;
@@ -21,10 +23,8 @@ interface PendingItem {
   created_at: string;
 }
 
-type Tab = "my" | "pending";
-
 export default function PartnerPage() {
-  const [tab, setTab] = useState<Tab>("my");
+  const [tabIndex, setTabIndex] = useState(0);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -87,116 +87,163 @@ export default function PartnerPage() {
   };
 
   return (
-    <View className="min-h-screen bg-gray-1 pb-40">
-      {/* Tab switcher */}
-      <View className="sticky top-0 z-10 bg-white flex items-center px-16 py-12 shadow-sm">
-        <View
-          className={`px-20 py-8 rounded-full mr-12 text-sm font-medium ${
-            tab === "my" ? "bg-primary-6 text-white" : "bg-gray-2 text-gray-6"
-          }`}
-          onClick={() => setTab("my")}
+    <View className="min-h-screen pb-40" style={{ backgroundColor: "#F7F8FA" }}>
+      {/* Tabs */}
+      <View
+        className="sticky top-0 z-10"
+        style={{ backgroundColor: "#fff", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
+      >
+        <Tabs
+          value={tabIndex}
+          onChange={setTabIndex}
+          style={
+            {
+              "--tabs-active-color": "#1CB0F6",
+              "--tabs-line-height": "3px",
+            } as any
+          }
         >
-          <Text>我的伙伴</Text>
-        </View>
-        <View
-          className={`px-20 py-8 rounded-full text-sm font-medium ${
-            tab === "pending" ? "bg-primary-6 text-white" : "bg-gray-2 text-gray-6"
-          }`}
-          onClick={() => setTab("pending")}
-        >
-          <Text>待处理</Text>
-          {pending.length > 0 && (
-            <Text className="ml-4 text-xs">({pending.length})</Text>
-          )}
-        </View>
+          <Tabs.TabPane title="我的伙伴" />
+          <Tabs.TabPane
+            title={
+              pending.length > 0 ? (
+                <Badge content={pending.length} style={{ "--badge-background-color": "#FF9500" } as any}>
+                  待处理
+                </Badge>
+              ) : (
+                "待处理"
+              )
+            }
+          />
+        </Tabs>
       </View>
 
-      {/* My partners */}
-      {tab === "my" && (
-        <View className="px-12 pt-12">
-          {partners.map((p) => (
-            <View
-              key={p.id}
-              className="bg-white rounded-xl shadow-sm mb-12 p-16 flex items-center active:opacity-80"
-              onClick={() => goProfile(p.partner_id)}
-            >
-              <Image
-                className="w-48 h-48 rounded-full mr-12 bg-gray-2 shrink-0"
-                src={resolveImageUrl(p.partner_avatar) || "https://via.placeholder.com/160"}
-                mode="aspectFill"
-              />
-              <View className="flex-1 min-w-0">
-                <Text className="block text-base font-bold text-gray-8 truncate">
-                  {p.partner_name}
-                </Text>
-                <Text className="block text-xs text-gray-4 mt-4">
-                  {p.status === "accepted" ? "已结伴" : p.status}
-                </Text>
-              </View>
-              <Text className="text-xs text-gray-4 shrink-0">查看</Text>
-            </View>
-          ))}
+      {/* Loading */}
+      {loading && (
+        <View className="py-24 flex justify-center">
+          <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+            加载中...
+          </Loading>
+        </View>
+      )}
 
-          {!loading && partners.length === 0 && (
-            <View className="py-60 text-center">
-              <Text className="block text-sm text-gray-4 mb-8">还没有学伴</Text>
-              <Text className="text-sm text-gray-4">去社区认识更多伙伴吧</Text>
+      {/* My partners */}
+      {!loading && tabIndex === 0 && (
+        <View className="px-12 pt-12">
+          {partners.length > 0 ? (
+            <View
+              className="rounded-2xl overflow-hidden"
+              style={{
+                backgroundColor: "#fff",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+              }}
+            >
+              {partners.map((p) => (
+                <Cell
+                  key={p.id}
+                  clickable
+                  isLink
+                  onClick={() => goProfile(p.partner_id)}
+                  icon={
+                    <Avatar
+                      src={resolveImageUrl(p.partner_avatar)}
+                      style={{ width: "48px", height: "48px", marginRight: "12px" }}
+                    />
+                  }
+                  title={p.partner_name}
+                  brief={p.status === "accepted" ? "已结伴" : p.status}
+                  style={{ paddingLeft: "16px", paddingRight: "12px" }}
+                />
+              ))}
+            </View>
+          ) : (
+            <View className="pt-60">
+              <Empty>
+                <Empty.Image />
+                <Empty.Description>还没有学伴，去社区认识更多伙伴吧</Empty.Description>
+              </Empty>
             </View>
           )}
         </View>
       )}
 
       {/* Pending invites */}
-      {tab === "pending" && (
+      {!loading && tabIndex === 1 && (
         <View className="px-12 pt-12">
-          {pending.map((p) => (
+          {pending.length > 0 ? (
             <View
-              key={p.id}
-              className="bg-white rounded-xl shadow-sm mb-12 p-16 flex items-center"
+              className="rounded-2xl overflow-hidden"
+              style={{
+                backgroundColor: "#fff",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+              }}
             >
-              <Image
-                className="w-48 h-48 rounded-full mr-12 bg-gray-2 shrink-0"
-                src={resolveImageUrl(p.from_avatar) || "https://via.placeholder.com/160"}
-                mode="aspectFill"
-                onClick={() => goProfile(p.from_id)}
-              />
-              <View className="flex-1 min-w-0">
-                <Text className="block text-base font-bold text-gray-8 truncate">
-                  {p.from_name}
-                </Text>
-                <Text className="block text-xs text-gray-4 mt-4">
-                  {p.created_at}
-                </Text>
-              </View>
-              <View className="flex items-center gap-8 shrink-0">
-                <View
-                  className="px-16 py-6 rounded-full bg-primary-6 active:opacity-80"
-                  onClick={() => handleAccept(p.id)}
+              {pending.map((p) => (
+                <Cell
+                  key={p.id}
+                  icon={
+                    <Avatar
+                      src={resolveImageUrl(p.from_avatar)}
+                      style={{
+                        width: "48px",
+                        height: "48px",
+                        marginRight: "12px",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => goProfile(p.from_id)}
+                    />
+                  }
+                  title={p.from_name}
+                  brief={formatRelativeTimestamp(p.created_at)}
+                  style={{ paddingLeft: "16px", paddingRight: "12px" }}
                 >
-                  <Text className="text-xs text-white">接受</Text>
-                </View>
-                <View
-                  className="px-16 py-6 rounded-full bg-gray-2 active:opacity-80"
-                  onClick={() => handleReject(p.id)}
-                >
-                  <Text className="text-xs text-gray-6">拒绝</Text>
-                </View>
-              </View>
+                  <View className="flex items-center gap-8 shrink-0">
+                    <Button
+                      size="small"
+                      round
+                      style={{
+                        backgroundColor: "#1CB0F6",
+                        borderColor: "#1CB0F6",
+                        color: "#fff",
+                        fontSize: "12px",
+                        padding: "0 16px",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAccept(p.id);
+                      }}
+                    >
+                      接受
+                    </Button>
+                    <Button
+                      size="small"
+                      round
+                      style={{
+                        backgroundColor: "#F7F8FA",
+                        borderColor: "#eee",
+                        color: "#999",
+                        fontSize: "12px",
+                        padding: "0 16px",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleReject(p.id);
+                      }}
+                    >
+                      拒绝
+                    </Button>
+                  </View>
+                </Cell>
+              ))}
             </View>
-          ))}
-
-          {!loading && pending.length === 0 && (
-            <View className="py-60 text-center">
-              <Text className="text-sm text-gray-4">暂无待处理的邀请</Text>
+          ) : (
+            <View className="pt-60">
+              <Empty>
+                <Empty.Image />
+                <Empty.Description>暂无待处理的邀请</Empty.Description>
+              </Empty>
             </View>
           )}
-        </View>
-      )}
-
-      {/* Loading */}
-      {loading && (
-        <View className="py-20 text-center">
-          <Text className="text-sm text-gray-4">加载中...</Text>
         </View>
       )}
     </View>

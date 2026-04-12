@@ -1,7 +1,10 @@
 import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow, usePullDownRefresh, useReachBottom } from "@tarojs/taro";
 import { useCallback, useRef, useState } from "react";
+import { Button, Divider, Empty, Tag } from "@taroify/core";
+import { Plus, LikeOutlined, EyeOutlined, CommentOutlined } from "@taroify/icons";
 import { api } from "~/api/request";
+import { formatRelativeTimestamp } from "~/utils/timeFormatter";
 
 interface NoteItem {
   id: number;
@@ -75,83 +78,167 @@ export default function NoteListPage() {
   };
 
   return (
-    <View className="min-h-screen bg-gray-1 pb-40">
+    <View className="min-h-screen pb-10" style={{ background: "#F7F8FA" }}>
+      {/* Header */}
+      <View
+        className="px-4 pt-4 pb-5"
+        style={{
+          background: "linear-gradient(135deg, #58CC02 0%, #46a302 100%)",
+          borderRadius: "0 0 24px 24px",
+        }}
+      >
+        <Text className="block text-xl font-bold text-white">我的笔记</Text>
+        {total > 0 && (
+          <Text className="block text-xs text-white mt-1" style={{ opacity: 0.75 }}>
+            共 {total} 篇笔记
+          </Text>
+        )}
+      </View>
+
       {/* Note cards */}
-      <View className="px-12 pt-12">
+      <View className="px-3 -mt-3">
         {list.map((note) => (
           <View
             key={note.id}
-            className="bg-white rounded-xl shadow-sm mb-12 p-16 active:opacity-80"
+            className="bg-white rounded-2xl mb-3 overflow-hidden active:opacity-90"
+            style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)", transition: "opacity 0.15s" }}
             onClick={() => goDetail(note.id)}
           >
-            {/* Title + badge */}
-            <View className="flex items-center mb-8">
-              <Text className="flex-1 text-base font-bold text-gray-8 leading-snug truncate mr-8">
-                {note.title}
-              </Text>
-              <View
-                className={`px-8 py-2 rounded-full shrink-0 ${
-                  note.is_public ? "bg-primary-1 text-primary-6" : "bg-gray-2 text-gray-5"
-                }`}
-              >
-                <Text className="text-xs">{note.is_public ? "公开" : "私密"}</Text>
+            {/* Card body */}
+            <View className="p-4">
+              {/* Title row with badge */}
+              <View className="flex items-start mb-2">
+                <Text
+                  className="flex-1 text-base font-bold leading-snug mr-2"
+                  style={{
+                    color: "#1a1a1a",
+                    display: "-webkit-box",
+                    overflow: "hidden",
+                    // @ts-ignore
+                    "-webkit-line-clamp": "2",
+                    "-webkit-box-orient": "vertical",
+                  }}
+                >
+                  {note.title}
+                </Text>
+                <Tag
+                  shape="round"
+                  size="small"
+                  style={{
+                    flexShrink: 0,
+                    marginTop: "2px",
+                    background: note.is_public ? "rgba(88,204,2,0.1)" : "rgba(153,153,153,0.1)",
+                    color: note.is_public ? "#58CC02" : "#999",
+                    borderColor: "transparent",
+                  }}
+                >
+                  {note.is_public ? "公开" : "私密"}
+                </Tag>
               </View>
-            </View>
 
-            {/* Content preview */}
-            {note.content && (
-              <Text className="block text-sm text-gray-5 leading-relaxed mb-10 line-clamp-2">
-                {note.content}
-              </Text>
-            )}
+              {/* Content preview */}
+              {note.content && (
+                <Text
+                  className="block text-sm leading-relaxed mb-3"
+                  style={{
+                    color: "#888",
+                    display: "-webkit-box",
+                    overflow: "hidden",
+                    // @ts-ignore
+                    "-webkit-line-clamp": "2",
+                    "-webkit-box-orient": "vertical",
+                  }}
+                >
+                  {note.content}
+                </Text>
+              )}
 
-            {/* Stats + date */}
-            <View className="flex items-center justify-between">
-              <View className="flex items-center text-xs text-gray-4 gap-12">
-                <Text>👍 {note.like_cnt || 0}</Text>
-                <Text>👁 {note.view_cnt || 0}</Text>
-                <Text>💬 {note.comment_cnt || 0}</Text>
+              {/* Stats row */}
+              <View className="flex items-center justify-between">
+                <View className="flex items-center gap-3">
+                  <View className="flex items-center">
+                    <LikeOutlined size="14" color="#bbb" style={{ marginRight: "3px" }} />
+                    <Text className="text-xs" style={{ color: "#bbb" }}>{note.like_cnt || 0}</Text>
+                  </View>
+                  <View className="flex items-center">
+                    <EyeOutlined size="14" color="#bbb" style={{ marginRight: "3px" }} />
+                    <Text className="text-xs" style={{ color: "#bbb" }}>{note.view_cnt || 0}</Text>
+                  </View>
+                  <View className="flex items-center">
+                    <CommentOutlined size="14" color="#bbb" style={{ marginRight: "3px" }} />
+                    <Text className="text-xs" style={{ color: "#bbb" }}>{note.comment_cnt || 0}</Text>
+                  </View>
+                </View>
+                <Text className="text-xs" style={{ color: "#ccc" }}>
+                  {formatRelativeTimestamp(note.created_at)}
+                </Text>
               </View>
-              <Text className="text-xs text-gray-4">{note.created_at}</Text>
             </View>
           </View>
         ))}
 
         {/* Loading state */}
         {loading && (
-          <View className="py-20 text-center">
-            <Text className="text-sm text-gray-4">加载中...</Text>
+          <View className="py-5 text-center">
+            <Text className="text-sm" style={{ color: "#999" }}>加载中...</Text>
           </View>
         )}
 
         {/* Empty state */}
         {!loading && list.length === 0 && (
-          <View className="py-60 text-center">
-            <Text className="block text-sm text-gray-4 mb-16">还没有笔记</Text>
-            <View
-              className="inline-block px-24 py-10 rounded-full bg-primary-6 active:opacity-80"
-              onClick={goAdd}
-            >
-              <Text className="text-sm text-white">写第一篇笔记</Text>
+          <View
+            className="bg-white rounded-2xl mt-6 py-10"
+            style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+          >
+            <Empty>
+              <Empty.Image />
+              <Empty.Description>还没有笔记</Empty.Description>
+            </Empty>
+            <View className="flex justify-center mt-4">
+              <Button
+                color="primary"
+                shape="round"
+                size="medium"
+                icon={<Plus size="16" />}
+                style={{
+                  background: "#58CC02",
+                  borderColor: "#58CC02",
+                  fontWeight: 600,
+                  boxShadow: "0 4px 12px rgba(88,204,2,0.3)",
+                }}
+                onClick={goAdd}
+              >
+                写第一篇笔记
+              </Button>
             </View>
           </View>
         )}
 
         {/* End of list */}
         {!loading && list.length > 0 && !hasMore && (
-          <View className="py-20 text-center">
-            <Text className="text-sm text-gray-4">— 已经到底了 —</Text>
-          </View>
+          <Divider style={{ color: "#ccc", fontSize: "12px", margin: "8px 0 16px" }}>
+            已经到底了
+          </Divider>
         )}
       </View>
 
-      {/* Floating add button */}
+      {/* Floating add button (FAB) */}
       {list.length > 0 && (
         <View
-          className="fixed right-20 bottom-120 w-56 h-56 rounded-full bg-primary-6 shadow-lg flex items-center justify-center z-20 active:opacity-80"
+          className="fixed flex items-center justify-center z-20"
+          style={{
+            right: "20px",
+            bottom: "100px",
+            width: "56px",
+            height: "56px",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #58CC02 0%, #46a302 100%)",
+            boxShadow: "0 6px 20px rgba(88,204,2,0.4)",
+            transition: "transform 0.15s",
+          }}
           onClick={goAdd}
         >
-          <Text className="text-white text-2xl font-light leading-none">+</Text>
+          <Plus size="28" color="#fff" />
         </View>
       )}
     </View>
