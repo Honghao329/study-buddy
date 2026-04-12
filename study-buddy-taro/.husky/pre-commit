@@ -1,3 +1,0 @@
-echo "husky lint-staged start"
-pnpm lint-staged
-echo "husky lint-staged end"

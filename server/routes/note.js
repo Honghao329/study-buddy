@@ -93,8 +93,10 @@ router.get('/detail/:id', optionalAuth, (req, res) => {
 		return res.json({ code: 403, msg: '无权查看' });
 	}
 
-	db.prepare('UPDATE notes SET view_cnt = view_cnt + 1 WHERE id = ?').run(req.params.id);
-	note.view_cnt++;
+	if (!req.userId || note.user_id !== req.userId) {
+		db.prepare('UPDATE notes SET view_cnt = view_cnt + 1 WHERE id = ?').run(req.params.id);
+		note.view_cnt++;
+	}
 	if (req.userId) {
 		const isLiked = !!db.prepare(
 			'SELECT 1 FROM likes WHERE user_id = ? AND target_id = ? AND target_type = ?'

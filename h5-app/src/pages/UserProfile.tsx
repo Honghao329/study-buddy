@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, BookOpen, Eye, Heart, Calendar } from 'lucide-react';
-import { api, isLoggedIn } from '../api/request';
+import { api, isLoggedIn, getUserInfo } from '../api/request';
 
 export default function UserProfile() {
   const navigate = useNavigate();
@@ -11,6 +11,8 @@ export default function UserProfile() {
   const [partnerStatus, setPartnerStatus] = useState<string>('none');
   const [loading, setLoading] = useState(true);
   const [inviting, setInviting] = useState(false);
+  const currentUser = useMemo(() => getUserInfo(), []);
+  const isSelf = currentUser?.id && Number(id) === currentUser.id;
 
   useEffect(() => {
     if (!isLoggedIn()) { navigate('/login'); return; }
@@ -24,7 +26,7 @@ export default function UserProfile() {
       const [profileRes, notesRes, statusRes] = await Promise.allSettled([
         api.get(`/user/profile/${id}`),
         api.get(`/user/user_notes/${id}`),
-        api.post('/partner/batch_status', { user_ids: [Number(id)] }),
+        api.post('/partner/batch_status', { userIds: [Number(id)] }),
       ]);
 
       if (profileRes.status === 'fulfilled') {
@@ -52,7 +54,7 @@ export default function UserProfile() {
   const handleInvite = async () => {
     setInviting(true);
     try {
-      await api.post('/partner/invite', { target_id: Number(id) });
+      await api.post('/partner/invite', { targetId: Number(id) });
       setPartnerStatus('pending');
     } catch {}
     setInviting(false);
@@ -127,8 +129,8 @@ export default function UserProfile() {
               </div>
             )}
 
-            {/* Action Button */}
-            <div className="mt-4">
+            {/* Action Button — hide for own profile */}
+            {!isSelf && <div className="mt-4">
               {partnerStatus === 'accepted' ? (
                 <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-50 text-green-600 text-sm font-medium rounded-full">
                   已是学伴 ✓
@@ -150,7 +152,7 @@ export default function UserProfile() {
                   添加学伴
                 </button>
               )}
-            </div>
+            </div>}
           </div>
         </div>
 

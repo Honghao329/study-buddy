@@ -13,6 +13,7 @@ import Messages from './pages/Messages';
 import Partner from './pages/Partner';
 import Favorite from './pages/Favorite';
 import UserProfile from './pages/UserProfile';
+import MyNotes from './pages/MyNotes';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/partner" element={<Partner />} />
           <Route path="/favorite" element={<Favorite />} />
           <Route path="/user/:id" element={<UserProfile />} />
+          <Route path="/my/notes" element={<MyNotes />} />
         </Routes>
       </div>
     </HashRouter>

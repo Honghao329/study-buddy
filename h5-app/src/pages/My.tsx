@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FileText, Bookmark, Bell, CalendarCheck, Users, UserCog, KeyRound,
+  FileText, Bookmark, Bell, CalendarCheck, Users,
   LogOut, ChevronRight, Loader2,
 } from 'lucide-react';
 import { api, isLoggedIn, getUserInfo, clearToken } from '../api/request';

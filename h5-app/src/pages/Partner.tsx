@@ -23,6 +23,7 @@ export default function Partner() {
   useEffect(() => {
     if (!isLoggedIn()) { navigate('/login'); return; }
     loadData();
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
   }, []);
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export default function Partner() {
       if (users.length > 0) {
         const ids = users.map((u: any) => u.id);
         try {
-          const statusRes: any = await api.post('/partner/batch_status', { user_ids: ids });
+          const statusRes: any = await api.post('/partner/batch_status', { userIds: ids });
           const map: Record<number, string> = {};
           if (Array.isArray(statusRes)) {
             statusRes.forEach((s: any) => { map[s.user_id] = s.status; });
@@ -86,7 +87,7 @@ export default function Partner() {
   const handleInvite = async (userId: number) => {
     setInvitingId(userId);
     try {
-      await api.post('/partner/invite', { target_id: userId });
+      await api.post('/partner/invite', { targetId: userId });
       setStatusMap(prev => ({ ...prev, [userId]: 'pending' }));
     } catch {}
     setInvitingId(null);

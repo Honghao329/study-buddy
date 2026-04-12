@@ -36,7 +36,14 @@ router.post('/toggle', authMiddleware, (req, res) => {
 });
 
 router.get('/my_list', authMiddleware, (req, res) => {
-	const list = db.prepare('SELECT * FROM favorites WHERE user_id = ? ORDER BY created_at DESC').all(req.userId);
+	const list = db.prepare(
+		`SELECT f.*, n.title as note_title, n.content as note_content, n.like_cnt, n.comment_cnt, n.view_cnt,
+		 u.nickname as author_name, u.avatar as author_avatar
+		 FROM favorites f
+		 LEFT JOIN notes n ON f.target_type = 'note' AND f.target_id = n.id
+		 LEFT JOIN users u ON n.user_id = u.id
+		 WHERE f.user_id = ? ORDER BY f.created_at DESC`
+	).all(req.userId);
 	res.json({ code: 200, data: list });
 });
 

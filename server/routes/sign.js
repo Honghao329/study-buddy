@@ -68,10 +68,21 @@ router.get('/calendar', authMiddleware, (req, res) => {
 // 排行榜
 router.get('/rank', (req, res) => {
 	const list = db.prepare(
-		`SELECT s.user_id, u.nickname as user_name, u.avatar as user_pic, COUNT(*) as days, COALESCE(SUM(s.duration), 0) as total_duration
+		`SELECT s.user_id as id, u.nickname, u.avatar, COUNT(*) as total_days, COALESCE(SUM(s.duration), 0) as total_duration
 		 FROM signs s LEFT JOIN users u ON s.user_id = u.id
-		 GROUP BY s.user_id ORDER BY days DESC LIMIT 20`
+		 GROUP BY s.user_id ORDER BY total_days DESC LIMIT 20`
 	).all();
+	res.json({ code: 200, data: fillAvatarsList(list) });
+});
+
+// 排行榜（别名，首页用）
+router.get('/leaderboard', (req, res) => {
+	const limit = Math.min(Number(req.query.limit) || 5, 20);
+	const list = db.prepare(
+		`SELECT s.user_id as id, u.nickname, u.avatar, COUNT(*) as total_days, COALESCE(SUM(s.duration), 0) as total_duration
+		 FROM signs s LEFT JOIN users u ON s.user_id = u.id
+		 GROUP BY s.user_id ORDER BY total_days DESC LIMIT ?`
+	).all(limit);
 	res.json({ code: 200, data: fillAvatarsList(list) });
 });
 

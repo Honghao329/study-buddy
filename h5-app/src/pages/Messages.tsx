@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Inbox } from 'lucide-react';
+import { ArrowLeft, Loader2, Inbox, Heart, MessageCircle, Users, Shield, Bell, CheckSquare } from 'lucide-react';
 import { api, isLoggedIn } from '../api/request';
+
+const typeConfig: Record<string, { icon: any; color: string }> = {
+  like:           { icon: Heart,         color: 'bg-red-50 text-red-500' },
+  comment:        { icon: MessageCircle, color: 'bg-blue-50 text-blue-500' },
+  partner:        { icon: Users,         color: 'bg-purple-50 text-purple-500' },
+  remind:         { icon: Shield,        color: 'bg-amber-50 text-amber-600' },
+  checkin_invite:  { icon: CheckSquare,   color: 'bg-emerald-50 text-emerald-600' },
+  default:        { icon: Bell,          color: 'bg-gray-100 text-gray-500' },
+};
 
 export default function Messages() {
   const navigate = useNavigate();
@@ -18,16 +27,21 @@ export default function Messages() {
     try {
       const res: any = await api.get('/message/list', { page: 1, size: 50 });
       setMessages(res?.list || (Array.isArray(res) ? res : []));
+      // Mark all as read
+      api.post('/message/read', {}).catch(() => {});
     } catch {}
     setLoading(false);
   };
 
-  const markRead = async (msg: any) => {
-    if (msg.is_read) return;
-    try {
-      await api.post('/message/read', { id: msg.id });
-      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, is_read: 1 } : m));
-    } catch {}
+  const handleClick = (msg: any) => {
+    // Navigate to related content
+    if ((msg.type === 'like' || msg.type === 'comment') && msg.related_id) {
+      navigate(`/note/${msg.related_id}`);
+    } else if (msg.type === 'partner') {
+      navigate('/partner');
+    } else if ((msg.type === 'checkin_invite' || msg.type === 'remind') && msg.related_id) {
+      navigate(`/checkin/${msg.related_id}`);
+    }
   };
 
   const formatTime = (t: string) => {
@@ -44,7 +58,6 @@ export default function Messages() {
 
   return (
     <div className="flex-1 flex flex-col bg-gray-50 min-h-screen">
-      {/* Nav Bar */}
       <div className="bg-white sticky top-0 z-20 flex items-center px-4 py-3 border-b border-gray-100">
         <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors" onClick={() => navigate(-1)}>
           <ArrowLeft size={18} className="text-gray-600" />
@@ -52,7 +65,6 @@ export default function Messages() {
         <span className="ml-3 text-sm font-medium text-slate-700">消息通知</span>
       </div>
 
-      {/* Message List */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -66,36 +78,33 @@ export default function Messages() {
           </div>
         ) : (
           <div className="px-4 pt-3 space-y-2 pb-6">
-            {messages.map((msg: any) => (
-              <div
-                key={msg.id}
-                className={`bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-3 hover:shadow-md transition-shadow active:scale-[0.98] ${
-                  !msg.is_read ? 'border-l-4 border-l-indigo-400' : ''
-                }`}
-                onClick={() => markRead(msg)}
-              >
-                {/* Avatar */}
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center overflow-hidden shrink-0">
-                  {msg.from_avatar ? (
-                    <img src={msg.from_avatar} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-sm font-bold text-indigo-500">{(msg.from_name || '系')[0]}</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-semibold text-slate-700 truncate">{msg.from_name || '系统通知'}</span>
-                    <div className="flex items-center space-x-1.5 shrink-0">
-                      {!msg.is_read && (
-                        <span className="w-2 h-2 bg-red-500 rounded-full" />
-                      )}
-                      <span className="text-[10px] text-gray-400">{formatTime(msg.created_at)}</span>
-                    </div>
+            {messages.map((msg: any) => {
+              const tc = typeConfig[msg.type] || typeConfig.default;
+              const Icon = tc.icon;
+              return (
+                <div
+                  key={msg.id}
+                  className={`bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-3 hover:shadow-md transition-shadow active:scale-[0.98] ${
+                    !msg.is_read ? 'border-l-4 border-l-indigo-400' : ''
+                  }`}
+                  onClick={() => handleClick(msg)}
+                >
+                  <div className={`w-10 h-10 rounded-full ${tc.color} flex items-center justify-center shrink-0`}>
+                    <Icon size={18} />
                   </div>
-                  <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">{msg.content}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-semibold text-slate-700 truncate">{msg.title || '系统通知'}</span>
+                      <div className="flex items-center space-x-1.5 shrink-0">
+                        {!msg.is_read && <span className="w-2 h-2 bg-red-500 rounded-full" />}
+                        <span className="text-[10px] text-gray-400">{formatTime(msg.created_at)}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">{msg.content}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

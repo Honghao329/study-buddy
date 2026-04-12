@@ -34,8 +34,11 @@ router.get('/list', (req, res) => {
 // 打卡任务详情
 router.get('/detail/:id', optionalAuth, (req, res) => {
 	const item = db.prepare(
-		`SELECT c.*, u.nickname as supervisor_display_name, u.avatar as supervisor_avatar
-		 FROM checkins c LEFT JOIN users u ON c.supervisor_id = u.id
+		`SELECT c.*, u.nickname as supervisor_display_name, u.avatar as supervisor_avatar,
+		 cu.nickname as creator_name, cu.avatar as creator_avatar
+		 FROM checkins c
+		 LEFT JOIN users u ON c.supervisor_id = u.id
+		 LEFT JOIN users cu ON c.creator_id = cu.id
 		 WHERE c.id = ? AND c.status = 1`
 	).get(req.params.id);
 	if (!item) return res.json({ code: 404, msg: '不存在' });
@@ -156,6 +159,24 @@ router.get('/records/:id', authMiddleware, (req, res) => {
 	).all(req.params.id, size, offset);
 	const total = db.prepare('SELECT COUNT(*) as cnt FROM checkin_records WHERE checkin_id = ?').get(req.params.id).cnt;
 	res.json({ code: 200, data: { list: fillAvatarsList(list), total } });
+});
+
+// 邀请学伴加入打卡任务（发送消息通知）
+router.post('/invite_join', authMiddleware, (req, res) => {
+	const { checkinId, targetUserId } = req.body;
+	const item = db.prepare('SELECT id, title FROM checkins WHERE id = ? AND status = 1').get(checkinId);
+	if (!item) return res.json({ code: 404, msg: '打卡任务不存在' });
+
+	const isPartner = db.prepare(
+		'SELECT 1 FROM partners WHERE status = 1 AND ((user_id = ? AND target_id = ?) OR (user_id = ? AND target_id = ?))'
+	).get(req.userId, targetUserId, targetUserId, req.userId);
+	if (!isPartner) return res.json({ code: 403, msg: '只能邀请学伴' });
+
+	const sender = db.prepare('SELECT nickname FROM users WHERE id = ?').get(req.userId);
+	const { sendMessage } = require('../lib/notify');
+	sendMessage(targetUserId, req.userId, 'checkin_invite', '打卡邀请',
+		(sender ? sender.nickname : '有人') + ' 邀请你加入打卡任务「' + item.title + '」', checkinId);
+	res.json({ code: 200, msg: '邀请已发送' });
 });
 
 module.exports = router;

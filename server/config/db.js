@@ -226,6 +226,16 @@ try {
 	db.exec("ALTER TABLE users ADD COLUMN password TEXT DEFAULT ''");
 }
 
+// 迁移：给 users 表加 username（账号）字段
+try {
+	db.prepare("SELECT username FROM users LIMIT 0").run();
+} catch (e) {
+	db.exec("ALTER TABLE users ADD COLUMN username TEXT DEFAULT ''");
+	// 给已有用户补充 username = openid 作为默认值
+	db.prepare("UPDATE users SET username = openid WHERE username = '' OR username IS NULL").run();
+	try { db.exec("CREATE UNIQUE INDEX idx_users_username ON users(username) WHERE username != ''"); } catch {}
+}
+
 // 首次启动：如果没有任何管理员，自动创建初始管理员
 const adminCount = db.prepare('SELECT COUNT(*) as cnt FROM admins').get().cnt;
 if (adminCount === 0) {

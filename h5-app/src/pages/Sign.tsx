@@ -64,7 +64,7 @@ export default function Sign() {
     if (m < 1) { m = 12; y--; }
     if (m > 12) { m = 1; y++; }
     setYear(y);
-    setMonth(m); // React 18 batches these, but setting year first avoids stale combo
+    setMonth(m);
   };
 
   // Calendar grid computation

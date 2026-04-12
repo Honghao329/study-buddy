@@ -5,17 +5,17 @@ import { api, setToken } from '../api/request';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [nickname, setNickname] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
-    if (!nickname.trim() || !password) { setError('请输入昵称和密码'); return; }
+    if (!username.trim() || !password) { setError('请输入账号和密码'); return; }
     setLoading(true); setError('');
     try {
-      const res: any = await api.post('/user/login', { nickname: nickname.trim(), password });
+      const res: any = await api.post('/user/login', { username: username.trim(), password });
       setToken(res.token);
       localStorage.setItem('userInfo', JSON.stringify(res.user));
       navigate('/');
@@ -46,7 +46,7 @@ export default function Login() {
       {/* Login card */}
       <div className="w-full max-w-sm bg-white rounded-3xl px-7 py-8 shadow-2xl relative z-10">
         <h2 className="text-xl font-bold text-slate-800 mb-1">欢迎回来</h2>
-        <p className="text-sm text-gray-400 mb-6">登录你的账号继续学习之旅</p>
+        <p className="text-sm text-gray-400 mb-6">登录账号继续学习之旅，新账号自动注册</p>
 
         {error && (
           <div className="bg-red-50 border border-red-100 text-red-500 text-sm text-center py-2.5 px-4 rounded-xl mb-4">
@@ -55,14 +55,14 @@ export default function Login() {
         )}
 
         <div className="mb-4">
-          <label className="text-sm text-gray-500 mb-1.5 block font-medium">昵称</label>
+          <label className="text-sm text-gray-500 mb-1.5 block font-medium">账号</label>
           <div className="relative">
             <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               className="w-full pl-11 pr-4 py-3.5 bg-gray-50 rounded-xl text-base outline-none border-2 border-transparent focus:border-indigo-200 focus:bg-white transition-all"
-              placeholder="请输入昵称"
-              value={nickname}
-              onChange={e => setNickname(e.target.value)}
+              placeholder="请输入账号"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
             />
           </div>
         </div>
@@ -74,7 +74,7 @@ export default function Login() {
             <input
               className="w-full pl-11 pr-12 py-3.5 bg-gray-50 rounded-xl text-base outline-none border-2 border-transparent focus:border-indigo-200 focus:bg-white transition-all"
               type={showPwd ? 'text' : 'password'}
-              placeholder="请输入密码"
+              placeholder="请输入密码（至少4位）"
               value={password}
               onChange={e => setPassword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleLogin()}
@@ -100,15 +100,15 @@ export default function Login() {
               <span>登录中...</span>
             </>
           ) : (
-            <span>登 录</span>
+            <span>登录 / 注册</span>
           )}
         </button>
       </div>
 
       {/* Test accounts hint */}
       <div className="mt-8 text-center relative z-10">
-        <p className="text-blue-200/70 text-xs">测试账号：user1 / 123456</p>
-        <p className="text-blue-200/70 text-xs mt-1">测试账号：user2 / 123456</p>
+        <p className="text-blue-200/70 text-xs">测试账号：zhangsan / 123456</p>
+        <p className="text-blue-200/70 text-xs mt-1">新账号输入即注册，密码至少4位</p>
       </div>
     </div>
   );

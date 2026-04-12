@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Eye, MessageCircle, Plus, Flame, Clock, Loader2, FileText } from 'lucide-react';
 import { api, isLoggedIn } from '../api/request';
@@ -16,7 +16,7 @@ export default function Community() {
     if (!isLoggedIn()) { navigate('/login'); return; }
   }, []);
 
-  const loadingRef = React.useRef(false);
+  const loadingRef = useRef(false);
   const loadNotes = async (p: number, s: string, reset = false) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
@@ -108,8 +108,8 @@ export default function Community() {
                 {/* Author row */}
                 <div className="flex items-center space-x-2.5 mb-2.5">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center overflow-hidden shrink-0">
-                    {n.user_avatar ? (
-                      <img src={n.user_avatar} alt="" className="w-full h-full object-cover" />
+                    {(n.user_pic || n.user_avatar) ? (
+                      <img src={n.user_pic || n.user_avatar} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-xs font-bold text-indigo-500">{(n.user_name || '?')[0]}</span>
                     )}

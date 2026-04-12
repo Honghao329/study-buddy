@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Bookmark, FileText, Heart } from 'lucide-react';
+import { ArrowLeft, Loader2, Bookmark, Heart, Eye, MessageCircle } from 'lucide-react';
 import { api, isLoggedIn } from '../api/request';
 
 export default function Favorite() {
@@ -16,28 +16,21 @@ export default function Favorite() {
   const loadFavorites = async () => {
     setLoading(true);
     try {
-      const res: any = await api.get('/fav/my_list', { page: 1, size: 50 });
-      setItems(res?.list || (Array.isArray(res) ? res : []));
+      const res: any = await api.get('/fav/my_list');
+      setItems(Array.isArray(res) ? res : res?.list || []);
     } catch {}
     setLoading(false);
   };
 
-  const typeBadge: Record<string, { label: string; color: string; icon: any }> = {
-    note: { label: '笔记', color: 'bg-blue-50 text-blue-600', icon: FileText },
-    default: { label: '收藏', color: 'bg-gray-100 text-gray-500', icon: Bookmark },
-  };
-
   return (
     <div className="flex-1 flex flex-col bg-gray-50 min-h-screen">
-      {/* Nav Bar */}
       <div className="bg-white sticky top-0 z-20 flex items-center px-4 py-3 border-b border-gray-100">
         <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors" onClick={() => navigate(-1)}>
           <ArrowLeft size={18} className="text-gray-600" />
         </button>
-        <span className="ml-3 text-sm font-medium text-slate-700">我的收藏</span>
+        <span className="ml-3 text-sm font-medium text-slate-700">我的收藏 ({items.length})</span>
       </div>
 
-      {/* List */}
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6">
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -52,35 +45,30 @@ export default function Favorite() {
         ) : (
           <div className="space-y-3">
             {items.map((item: any) => {
-              const badge = typeBadge[item.target_type || item.type] || typeBadge.default;
-              const BadgeIcon = badge.icon;
+              const title = item.note_title || item.title || '未命名笔记';
+              const content = item.note_content || '';
+              const author = item.author_name || '';
               return (
                 <div
                   key={item.id}
                   className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.98] transition-all"
-                  onClick={() => {
-                    if (item.target_type === 'note' || item.type === 'note') {
-                      navigate(`/note/${item.target_id || item.note_id}`);
-                    }
-                  }}
+                  onClick={() => navigate(`/note/${item.target_id}`)}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
-                      <Heart size={20} className="text-amber-500" />
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-slate-800 truncate flex-1 mr-2">{title}</h3>
+                    <Bookmark size={14} className="text-yellow-500 shrink-0" fill="currentColor" />
+                  </div>
+                  {content && (
+                    <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-3">{content}</p>
+                  )}
+                  <div className="flex items-center justify-between text-[11px] text-gray-400">
+                    <div className="flex items-center gap-3">
+                      {author && <span className="text-indigo-500 font-medium">{author}</span>}
+                      <span className="flex items-center gap-0.5"><Heart size={11} /> {item.like_cnt || 0}</span>
+                      <span className="flex items-center gap-0.5"><MessageCircle size={11} /> {item.comment_cnt || 0}</span>
+                      <span className="flex items-center gap-0.5"><Eye size={11} /> {item.view_cnt || 0}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="text-sm font-semibold text-slate-800 truncate flex-1">{item.title || item.target_title || '未命名'}</h3>
-                        <span className={`flex items-center space-x-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${badge.color}`}>
-                          <BadgeIcon size={10} />
-                          <span>{badge.label}</span>
-                        </span>
-                      </div>
-                      {(item.content || item.target_content) && (
-                        <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{item.content || item.target_content}</p>
-                      )}
-                      <span className="text-[10px] text-gray-400 mt-1.5 block">{item.created_at?.slice(0, 10)}</span>
-                    </div>
+                    <span>{item.created_at?.slice(0, 10)}</span>
                   </div>
                 </div>
               );

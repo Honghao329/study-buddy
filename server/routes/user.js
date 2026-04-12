@@ -14,18 +14,21 @@ function hashPwd(pwd) {
 }
 
 router.post('/login', (req, res) => {
-	const nickname = (pickFirstDefined(req.body.nickname, req.body.nickName, '') || '').trim();
+	const username = (pickFirstDefined(req.body.username, req.body.nickname, req.body.nickName, '') || '').trim();
 	const password = (req.body.password || '').trim();
-	const avatar = pickFirstDefined(req.body.avatar, req.body.avatarUrl, '');
+	const nickname = (req.body.nickname || '').trim(); // 注册时可选昵称
 
-	if (!nickname) return res.json({ code: 400, msg: '请输入昵称' });
+	if (!username) return res.json({ code: 400, msg: '请输入账号' });
 	if (!password || password.length < 4) return res.json({ code: 400, msg: '密码至少4位' });
 
 	const hashed = hashPwd(password);
 
-	let user = db.prepare('SELECT * FROM users WHERE nickname = ?').get(nickname);
+	// 先按 username 查找，再按 nickname 兜底（兼容旧数据）
+	let user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+	if (!user) user = db.prepare('SELECT * FROM users WHERE nickname = ?').get(username);
+
 	if (user) {
-		// 兼容旧明文密码：如果哈希不匹配，尝试明文比对后迁移
+		// 验证密码
 		if (user.password && user.password !== hashed) {
 			if (user.password === password) {
 				db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashed, user.id);
@@ -36,15 +39,21 @@ router.post('/login', (req, res) => {
 		if (!user.password) {
 			db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashed, user.id);
 		}
-		db.prepare('UPDATE users SET login_cnt = login_cnt + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
-		if (avatar) {
-			db.prepare('UPDATE users SET avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(avatar, user.id);
+		// 如果旧用户没有 username，补上
+		if (!user.username) {
+			db.prepare('UPDATE users SET username = ? WHERE id = ?').run(username, user.id);
 		}
+		db.prepare('UPDATE users SET login_cnt = login_cnt + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
 		user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
 	} else {
+		// 注册新用户
+		const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+		if (existing) return res.json({ code: 400, msg: '该账号已被注册' });
+
 		const openid = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-		const result = db.prepare('INSERT INTO users (openid, nickname, avatar, password, login_cnt) VALUES (?, ?, ?, ?, 1)')
-			.run(openid, nickname, avatar || '', hashed);
+		const displayName = nickname || username; // 昵称默认等于账号
+		const result = db.prepare('INSERT INTO users (openid, username, nickname, password, login_cnt) VALUES (?, ?, ?, ?, 1)')
+			.run(openid, username, displayName, hashed);
 		user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
 	}
 

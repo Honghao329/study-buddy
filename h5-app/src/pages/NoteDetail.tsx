@@ -32,9 +32,9 @@ export default function NoteDetail() {
     try {
       const res: any = await api.get(`/note/detail/${id}`);
       setNote(res);
-      setLiked(!!res?.liked);
+      setLiked(!!res?.is_liked);
       setLikeCount(res?.like_cnt || 0);
-      setFavorited(!!res?.favorited);
+      setFavorited(!!res?.is_faved);
       setCommentCount(res?.comment_cnt || 0);
     } catch {}
     setLoading(false);
@@ -47,21 +47,23 @@ export default function NoteDetail() {
       setComments(prev => reset ? list : [...prev, ...list]);
       setHasMoreComments(list.length >= 20);
       setCommentPage(page);
+      if (reset && res?.total !== undefined) setCommentCount(res.total);
     } catch {}
   };
 
   const toggleLike = async () => {
     try {
-      await api.post('/like/toggle', { targetId: Number(id), targetType: 'note' });
-      setLiked(!liked);
-      setLikeCount(prev => liked ? prev - 1 : prev + 1);
+      const res: any = await api.post('/like/toggle', { targetId: Number(id), targetType: 'note' });
+      const nowLiked = res?.isLiked === 1;
+      setLiked(nowLiked);
+      setLikeCount(prev => nowLiked ? prev + 1 : Math.max(0, prev - 1));
     } catch {}
   };
 
   const toggleFav = async () => {
     try {
-      await api.post('/favorite/toggle', { targetId: Number(id), targetType: 'note' });
-      setFavorited(!favorited);
+      const res: any = await api.post('/fav/toggle', { targetId: Number(id), targetType: 'note', title: note?.title || '' });
+      setFavorited(res?.isFav === 1);
     } catch {}
   };
 
@@ -123,8 +125,8 @@ export default function NoteDetail() {
           {/* Author */}
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center overflow-hidden">
-              {note.user_avatar ? (
-                <img src={note.user_avatar} alt="" className="w-full h-full object-cover" />
+              {(note.user_pic || note.user_avatar) ? (
+                <img src={note.user_pic || note.user_avatar} alt="" className="w-full h-full object-cover" />
               ) : (
                 <span className="text-sm font-bold text-indigo-500">{(note.user_name || '?')[0]}</span>
               )}
@@ -185,8 +187,8 @@ export default function NoteDetail() {
               {comments.map((c: any) => (
                 <div key={c.id} className="flex space-x-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center overflow-hidden shrink-0">
-                    {c.user_avatar ? (
-                      <img src={c.user_avatar} alt="" className="w-full h-full object-cover" />
+                    {(c.user_pic || c.user_avatar) ? (
+                      <img src={c.user_pic || c.user_avatar} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-[10px] font-bold text-indigo-500">{(c.user_name || '?')[0]}</span>
                     )}

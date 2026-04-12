@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Bell, CalendarCheck, CheckCircle2, Flame, ChevronRight, Clock,
-  Heart, PenLine, Calendar, Users, BarChart3, Loader2,
+  Bell, CalendarCheck, CheckCircle2, Flame, ChevronRight,
+  Heart, PenLine, Calendar, Users, BarChart3, Loader2, Trophy, Award,
 } from 'lucide-react';
 import { api, isLoggedIn, getUserInfo } from '../api/request';
 
@@ -21,7 +21,8 @@ export default function Home() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [todayDone, setTodayDone] = useState(0);
   const [notes, setNotes] = useState<any[]>([]);
-  const [activities, setActivities] = useState<any[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [myPartners, setMyPartners] = useState<any[]>([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(true);
   const userInfo = getUserInfo();
@@ -33,11 +34,12 @@ export default function Home() {
 
   const loadAll = async () => {
     setLoading(true);
-    const [signR, checkinR, noteR, actR, unreadR] = await Promise.allSettled([
+    const [signR, checkinR, noteR, leaderR, partnerR, unreadR] = await Promise.allSettled([
       api.get('/sign/stats'),
       api.get('/checkin/list', { page: 1, size: 10 }),
       api.get('/note/public_list', { page: 1, size: 6, sort: 'hot' }),
-      api.get('/home/activity'),
+      api.get('/sign/leaderboard', { limit: 5 }),
+      api.get('/partner/my_list'),
       api.get('/message/unread_count'),
     ]);
     if (signR.status === 'fulfilled') {
@@ -53,7 +55,8 @@ export default function Home() {
       setTodayDone(mapped.filter((t: any) => t._joined).length);
     }
     if (noteR.status === 'fulfilled') setNotes((noteR.value as any)?.list || []);
-    if (actR.status === 'fulfilled') setActivities(Array.isArray(actR.value) ? actR.value as any[] : []);
+    if (leaderR.status === 'fulfilled') setLeaderboard(Array.isArray(leaderR.value) ? leaderR.value as any[] : []);
+    if (partnerR.status === 'fulfilled') setMyPartners(Array.isArray(partnerR.value) ? (partnerR.value as any[]).slice(0, 4) : ((partnerR.value as any)?.list || []).slice(0, 4));
     if (unreadR.status === 'fulfilled') setUnread(Number(unreadR.value) || 0);
     setLoading(false);
   };
@@ -257,31 +260,86 @@ export default function Home() {
         </div>
       )}
 
-      {/* ===== Activity Feed ===== */}
-      {activities.length > 0 && (
-        <div className="mt-6 px-5 mb-8">
-          <h2 className="text-base font-bold text-slate-800 mb-3">学习动态</h2>
-          <div className="space-y-2.5">
-            {activities.map((a: any, i: number) => (
-              <div key={i} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-3 hover:shadow-md transition-shadow">
-                {a.avatar ? (
-                  <img src={a.avatar} alt="" className="w-10 h-10 rounded-full shrink-0 bg-blue-100 object-cover" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full shrink-0 bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center">
-                    <span className="text-indigo-500 text-sm font-bold">{(a.user_name || '?')[0]}</span>
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-600 leading-relaxed">{a.text}</p>
-                  <span className="text-[11px] text-gray-400 flex items-center mt-1.5">
-                    <Clock size={11} className="mr-1" />{a.time}
+      {/* ===== Study Leaderboard ===== */}
+      {leaderboard.length > 0 && (
+        <div className="mt-6 px-5">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
+              <Trophy size={18} className="text-amber-500" /> 签到排行
+            </h2>
+            <button className="text-sm text-gray-400 flex items-center hover:text-indigo-500 transition-colors" onClick={() => navigate('/sign')}>
+              更多 <ChevronRight size={16} />
+            </button>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {leaderboard.map((u: any, i: number) => {
+              const medals = ['🥇', '🥈', '🥉'];
+              return (
+                <div
+                  key={u.id || i}
+                  className={`flex items-center px-4 py-3 ${i < leaderboard.length - 1 ? 'border-b border-gray-50' : ''} hover:bg-gray-50 transition-colors`}
+                  onClick={() => u.id && navigate(`/user/${u.id}`)}
+                >
+                  <span className="w-7 text-center shrink-0">
+                    {i < 3 ? <span className="text-lg">{medals[i]}</span> : <span className="text-xs text-gray-400 font-bold">{i + 1}</span>}
                   </span>
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center overflow-hidden shrink-0 ml-2">
+                    {u.avatar ? (
+                      <img src={u.avatar} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs font-bold text-indigo-500">{(u.nickname || '?')[0]}</span>
+                    )}
+                  </div>
+                  <span className="ml-3 flex-1 text-sm font-medium text-slate-700 truncate">{u.nickname || '匿名'}</span>
+                  <div className="flex items-center gap-1 text-xs text-amber-600">
+                    <Flame size={13} />
+                    <span className="font-bold">{u.total_days || u.streak || 0}</span>
+                    <span className="text-gray-400">天</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ===== My Study Partners ===== */}
+      {myPartners.length > 0 && (
+        <div className="mt-6 px-5 mb-8">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
+              <Award size={18} className="text-purple-500" /> 我的学伴
+            </h2>
+            <button className="text-sm text-gray-400 flex items-center hover:text-indigo-500 transition-colors" onClick={() => navigate('/partner')}>
+              全部 <ChevronRight size={16} />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {myPartners.map((p: any) => (
+              <div
+                key={p.id}
+                className="bg-white rounded-2xl p-3.5 shadow-sm border border-gray-100 flex items-center gap-3 hover:shadow-md transition-shadow active:scale-[0.97]"
+                onClick={() => navigate(`/user/${p.user_id || p.id}`)}
+              >
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center overflow-hidden shrink-0">
+                  {p.avatar ? (
+                    <img src={p.avatar} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-bold text-purple-500">{(p.nickname || p.user_name || '?')[0]}</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-700 truncate">{p.nickname || p.user_name || '学伴'}</p>
+                  <p className="text-[10px] text-gray-400 truncate">{p.bio || '一起学习吧'}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
+
+      {/* Spacer for empty states */}
+      {leaderboard.length === 0 && myPartners.length === 0 && <div className="h-8" />}
     </div>
   );
 }
