@@ -12,11 +12,18 @@ router.post('/invite', authMiddleware, (req, res) => {
 	if (Number(targetId) === req.userId) return res.json({ code: 400, msg: '不能邀请自己' });
 
 	const existing = db.prepare(
-		`SELECT id FROM partners
+		`SELECT id, status FROM partners
 		 WHERE ((user_id = ? AND target_id = ?) OR (user_id = ? AND target_id = ?))
 		 AND status IN (0, 1)`
 	).get(req.userId, targetId, targetId, req.userId);
-	if (existing) return res.json({ code: 400, msg: '已存在邀请或伙伴关系' });
+	if (existing) {
+		if (existing.status === 1) return res.json({ code: 200, msg: '已是学伴' });
+		return res.json({ code: 200, msg: '邀请已发送，等待对方确认' });
+	}
+	// 清除旧的拒绝记录，允许重新邀请
+	db.prepare(
+		`DELETE FROM partners WHERE ((user_id = ? AND target_id = ?) OR (user_id = ? AND target_id = ?)) AND status NOT IN (0, 1)`
+	).run(req.userId, targetId, targetId, req.userId);
 
 	const result = db.prepare('INSERT INTO partners (user_id, target_id, status) VALUES (?, ?, 0)').run(req.userId, targetId);
 	notifyPartnerInvite(req.userId, targetId);

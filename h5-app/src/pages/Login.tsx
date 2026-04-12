@@ -25,90 +25,87 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-700 relative overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -left-20 w-60 h-60 bg-white/5 rounded-full" />
-        <div className="absolute top-1/4 -right-16 w-48 h-48 bg-white/5 rounded-full" />
-        <div className="absolute bottom-20 -left-10 w-32 h-32 bg-white/5 rounded-full" />
-        <div className="absolute bottom-40 right-10 w-20 h-20 bg-white/5 rounded-full" />
+    <div className="min-h-screen flex flex-col bg-white relative overflow-hidden">
+      {/* Top decorative wave */}
+      <div className="h-56 bg-gradient-to-br from-blue-500 to-blue-600 rounded-b-[3rem] relative shrink-0">
+        <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-blue-400/30 rounded-full" />
+        <div className="absolute top-10 -right-8 w-32 h-32 bg-blue-400/20 rounded-full" />
+        <div className="flex flex-col items-center justify-center h-full relative z-10 pt-4">
+          <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-3 border border-white/30">
+            <BookOpen size={30} className="text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">学习伴侣</h1>
+          <p className="text-blue-100 text-sm mt-1">记录学习，结伴成长</p>
+        </div>
       </div>
 
-      {/* Logo area */}
-      <div className="text-center mb-10 relative z-10">
-        <div className="w-20 h-20 bg-white/15 backdrop-blur-sm rounded-3xl flex items-center justify-center mx-auto mb-5 border border-white/20 shadow-lg">
-          <BookOpen size={36} className="text-white" />
-        </div>
-        <h1 className="text-3xl font-bold text-white tracking-tight mb-2">学习伴侣</h1>
-        <p className="text-blue-200 text-sm">记录学习，结伴成长</p>
-      </div>
+      {/* Form area */}
+      <div className="flex-1 flex flex-col px-7 -mt-6 relative z-10">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 px-6 py-7">
+          <h2 className="text-lg font-bold text-slate-800 mb-1">登录账号</h2>
+          <p className="text-xs text-gray-400 mb-5">新账号输入即注册，密码至少4位</p>
 
-      {/* Login card */}
-      <div className="w-full max-w-sm bg-white rounded-3xl px-7 py-8 shadow-2xl relative z-10">
-        <h2 className="text-xl font-bold text-slate-800 mb-1">欢迎回来</h2>
-        <p className="text-sm text-gray-400 mb-6">登录账号继续学习之旅，新账号自动注册</p>
-
-        {error && (
-          <div className="bg-red-50 border border-red-100 text-red-500 text-sm text-center py-2.5 px-4 rounded-xl mb-4">
-            {error}
-          </div>
-        )}
-
-        <div className="mb-4">
-          <label className="text-sm text-gray-500 mb-1.5 block font-medium">账号</label>
-          <div className="relative">
-            <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              className="w-full pl-11 pr-4 py-3.5 bg-gray-50 rounded-xl text-base outline-none border-2 border-transparent focus:border-indigo-200 focus:bg-white transition-all"
-              placeholder="请输入账号"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <label className="text-sm text-gray-500 mb-1.5 block font-medium">密码</label>
-          <div className="relative">
-            <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              className="w-full pl-11 pr-12 py-3.5 bg-gray-50 rounded-xl text-base outline-none border-2 border-transparent focus:border-indigo-200 focus:bg-white transition-all"
-              type={showPwd ? 'text' : 'password'}
-              placeholder="请输入密码（至少4位）"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            />
-            <button
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              onClick={() => setShowPwd(!showPwd)}
-              type="button"
-            >
-              {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
-        </div>
-
-        <button
-          className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-base hover:shadow-lg hover:shadow-indigo-500/30 transition-all active:scale-[0.98] disabled:opacity-60 flex items-center justify-center space-x-2"
-          disabled={loading}
-          onClick={handleLogin}
-        >
-          {loading ? (
-            <>
-              <Loader2 size={18} className="animate-spin" />
-              <span>登录中...</span>
-            </>
-          ) : (
-            <span>登录 / 注册</span>
+          {error && (
+            <div className="bg-red-50 border border-red-100 text-red-500 text-sm text-center py-2.5 px-4 rounded-xl mb-4">
+              {error}
+            </div>
           )}
-        </button>
-      </div>
 
-      {/* Test accounts hint */}
-      <div className="mt-8 text-center relative z-10">
-        <p className="text-blue-200/70 text-xs">测试账号：zhangsan / 123456</p>
-        <p className="text-blue-200/70 text-xs mt-1">新账号输入即注册，密码至少4位</p>
+          <div className="mb-4">
+            <label className="text-xs text-gray-500 mb-1.5 block font-medium">账号</label>
+            <div className="relative">
+              <User size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-xl text-sm outline-none border border-gray-200 focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-50 transition-all"
+                placeholder="请输入账号"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="text-xs text-gray-500 mb-1.5 block font-medium">密码</label>
+            <div className="relative">
+              <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                className="w-full pl-10 pr-11 py-3 bg-gray-50 rounded-xl text-sm outline-none border border-gray-200 focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-50 transition-all"
+                type={showPwd ? 'text' : 'password'}
+                placeholder="请输入密码"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              />
+              <button
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={() => setShowPwd(!showPwd)}
+                type="button"
+              >
+                {showPwd ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold text-sm transition-all active:scale-[0.98] disabled:opacity-60 flex items-center justify-center space-x-2 shadow-sm"
+            disabled={loading}
+            onClick={handleLogin}
+          >
+            {loading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>登录中...</span>
+              </>
+            ) : (
+              <span>登录 / 注册</span>
+            )}
+          </button>
+        </div>
+
+        {/* Test accounts */}
+        <div className="mt-6 text-center">
+          <p className="text-gray-400 text-[11px]">测试账号：zhangsan / 123456</p>
+        </div>
       </div>
     </div>
   );

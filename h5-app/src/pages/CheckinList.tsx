@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, CheckCircle2, ChevronRight, ClipboardList, Loader2 } from 'lucide-react';
+import { Users, CheckCircle2, ChevronRight, ClipboardList, Loader2, Plus } from 'lucide-react';
 import { api, isLoggedIn } from '../api/request';
 
 export default function CheckinList() {
@@ -8,6 +8,10 @@ export default function CheckinList() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [joinedIds, setJoinedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDesc, setNewDesc] = useState('');
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn()) { navigate('/login'); return; }
@@ -36,6 +40,20 @@ export default function CheckinList() {
   ];
 
   const joinedCount = tasks.filter(t => joinedIds.includes(t.id)).length;
+
+  const handleCreate = async () => {
+    if (!newTitle.trim() || creating) return;
+    setCreating(true);
+    try {
+      const res: any = await api.post('/checkin/create', { title: newTitle.trim(), description: newDesc.trim() });
+      setShowCreate(false);
+      setNewTitle('');
+      setNewDesc('');
+      if (res?.id) navigate(`/checkin/${res.id}`);
+      else loadData();
+    } catch {}
+    setCreating(false);
+  };
 
   return (
     <div className="flex-1 overflow-y-auto pb-24 bg-gray-50">
@@ -116,6 +134,48 @@ export default function CheckinList() {
           })
         )}
       </div>
+
+      {/* 创建打卡按钮 */}
+      <button
+        className="fixed bottom-24 right-6 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-600 active:scale-95 transition-all z-30"
+        onClick={() => setShowCreate(true)}
+      >
+        <Plus size={26} />
+      </button>
+
+      {/* 创建打卡弹窗 */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowCreate(false)} />
+          <div className="relative w-full max-w-[430px] bg-white rounded-t-2xl px-5 py-5">
+            <h3 className="text-base font-semibold text-slate-800 mb-4">创建打卡任务</h3>
+            <input
+              className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-50 mb-3"
+              placeholder="任务名称"
+              value={newTitle}
+              onChange={e => setNewTitle(e.target.value)}
+            />
+            <textarea
+              className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-50 mb-4 resize-none"
+              placeholder="任务描述（可选）"
+              rows={3}
+              value={newDesc}
+              onChange={e => setNewDesc(e.target.value)}
+            />
+            <div className="flex space-x-3">
+              <button className="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl text-sm font-medium" onClick={() => setShowCreate(false)}>取消</button>
+              <button
+                className="flex-1 py-3 bg-blue-500 text-white rounded-xl text-sm font-medium disabled:opacity-60 flex items-center justify-center space-x-1"
+                disabled={!newTitle.trim() || creating}
+                onClick={handleCreate}
+              >
+                {creating && <Loader2 size={14} className="animate-spin" />}
+                <span>创建</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
