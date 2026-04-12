@@ -795,7 +795,7 @@ export default function IndexPage() {
                   )}
 
                   {/* Stats row */}
-                  <View className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: "1px solid #f5f5f5" }}>
+                  <View className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid #f5f5f5" }}>
                     <Text style={{ color: "#999", fontSize: "12px" }}>👍 {n.like_cnt || 0}</Text>
                     <Text style={{ color: "#999", fontSize: "12px" }}>👁 {n.view_cnt || 0}</Text>
                     <Text style={{ color: "#999", fontSize: "12px" }}>💬 {n.comment_cnt || 0}</Text>

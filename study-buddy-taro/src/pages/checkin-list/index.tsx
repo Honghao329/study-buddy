@@ -1,12 +1,11 @@
 import { Input, Text, View } from "@tarojs/components";
 import Taro, { useDidShow, usePullDownRefresh, useReachBottom } from "@tarojs/taro";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { ArrowRight, CalendarOutlined, EyeOutlined, FireOutlined, Plus, Search, UserOutlined } from "@taroify/icons";
+import { useCallback, useRef, useState } from "react";
+import { ArrowRight, Plus, Search } from "@taroify/icons";
 import { Button, Empty, Loading, Tag } from "@taroify/core";
 import CheckinCreateSheet from "~/components/CheckinCreateSheet";
-import ContentMetrics from "~/components/ContentMetrics";
 import { api, isLoggedIn } from "~/api/request";
-import { formatRelativeTimestamp } from "~/utils/timeFormatter";
+
 
 interface CheckinTask {
   id: number;
@@ -205,143 +204,46 @@ export default function CheckinListPage() {
     }
   };
 
-  const summaryItems = useMemo(() => {
-    const joinedCount = list.filter((item) => joinedIds.has(item.id)).length;
-    const scopedTotal = total || list.length;
-
-    return [
-      {
-        key: "total",
-        icon: <FireOutlined size="16" />,
-        label: searchTerm ? "匹配任务" : "任务总数",
-        value: scopedTotal,
-        tone: "primary" as const,
-      },
-      {
-        key: "joined",
-        icon: <CalendarOutlined size="16" />,
-        label: "当前已加载",
-        value: list.length,
-        tone: "info" as const,
-      },
-      {
-        key: "joined-count",
-        icon: <Plus size="16" />,
-        label: "当前已加入",
-        value: joinedCount,
-        tone: "warning" as const,
-      },
-    ];
-  }, [joinedIds, list, searchTerm, total]);
-
   return (
     <View className="min-h-screen pb-8" style={{ background: "#F8FAFC" }}>
       <View className="px-4 pt-4">
-        <View
-          className="relative overflow-hidden rounded-[28px] px-5 py-5"
-          style={{
-            background: "linear-gradient(135deg, #0F172A 0%, #0F766E 52%, #16A34A 120%)",
-            boxShadow: "0 16px 40px rgba(15, 23, 42, 0.14)",
-          }}
-        >
-          <View className="absolute -right-10 -top-8 h-28 w-28 rounded-full bg-white/10" />
-          <View className="absolute bottom-0 left-6 h-16 w-16 rounded-full bg-emerald-300/10" />
-
-          <View className="flex items-start justify-between">
-            <View className="min-w-0 flex-1">
-              <Text className="block text-xl font-semibold text-white">打卡任务</Text>
-              <Text className="mt-1 block text-sm leading-6 text-white/70">
-                先搜索，再加入。任务页现在支持真正的发现和创建，不只是看个列表。
-              </Text>
-            </View>
-            <View
-              className="ml-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10"
-              style={{ border: "1px solid rgba(255,255,255,0.14)" }}
-            >
-              <FireOutlined size="20" color="#fff" />
-            </View>
+        <View className="flex items-center justify-between">
+          <View className="flex items-center gap-2">
+            <Text className="text-lg font-bold text-slate-900">打卡任务</Text>
           </View>
-
-          <View className="mt-4 flex gap-3">
-            <Button
-              round
-              size="small"
-              style={{
-                background: "#fff",
-                color: "#0F172A",
-                border: "none",
-                fontWeight: 700,
-              }}
-              onClick={openCreateTaskSheet}
-            >
-              创建任务
-            </Button>
-            <Button
-              round
-              size="small"
-              style={{
-                background: "rgba(255,255,255,0.12)",
-                color: "#fff",
-                border: "1px solid rgba(255,255,255,0.16)",
-                fontWeight: 700,
-              }}
-              onClick={() => reload(searchTerm)}
-            >
-              刷新列表
-            </Button>
-          </View>
+          <Button
+            round
+            size="small"
+            style={{
+              background: "linear-gradient(135deg, #0F766E 0%, #16A34A 100%)",
+              color: "#fff",
+              border: "none",
+              fontWeight: 700,
+            }}
+            onClick={openCreateTaskSheet}
+          >
+            <Plus size="14" /> 创建
+          </Button>
         </View>
 
-        <View className="mt-4 rounded-3xl bg-white p-4 shadow-sm" style={{ boxShadow: "0 1px 10px rgba(15, 23, 42, 0.05)" }}>
-          <View className="flex items-center rounded-2xl bg-slate-50 px-3 py-3">
-            <Search size="18" color="#94a3b8" />
-            <Input
-              className="ml-2 flex-1 text-sm text-slate-900"
-              value={searchValue}
-              placeholder="搜索任务名称或描述"
-              placeholderStyle="color: #94a3b8"
-              onInput={(e) => setSearchValue(e.detail.value)}
-              onConfirm={applySearch}
-            />
-            {searchValue ? (
-              <Button
-                round
-                size="small"
-                style={{
-                  background: "#E2E8F0",
-                  color: "#334155",
-                  border: "none",
-                  marginLeft: "8px",
-                }}
-                onClick={resetSearch}
-              >
-                重置
-              </Button>
-            ) : null}
-            <Button
-              round
-              size="small"
-              style={{
-                background: "linear-gradient(135deg, #0F766E 0%, #16A34A 100%)",
-                color: "#fff",
-                border: "none",
-                marginLeft: "8px",
-                fontWeight: 700,
-              }}
-              onClick={applySearch}
-            >
-              搜索
-            </Button>
-          </View>
-        </View>
-
-        <View className="mt-4">
-          <ContentMetrics variant="tiles" items={summaryItems} />
+        <View className="mt-2 flex items-center rounded-xl bg-white px-3 py-2" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+          <Search size="16" color="#94a3b8" />
+          <Input
+            className="ml-2 flex-1 text-sm text-slate-900"
+            value={searchValue}
+            placeholder="搜索任务"
+            placeholderStyle="color: #94a3b8"
+            onInput={(e) => setSearchValue(e.detail.value)}
+            onConfirm={applySearch}
+          />
+          {searchValue ? (
+            <Text className="text-xs text-slate-400" onClick={resetSearch}>清除</Text>
+          ) : null}
         </View>
 
         <View className="mt-2 px-1">
-          <Text className="block text-xs leading-5 text-slate-400">
-            任务总数是全量结果；当前已加载和当前已加入只统计已拉取到的分页内容，避免把局部切片误当成全局统计。
+          <Text className="text-xs text-slate-400">
+            共{total || list.length}个任务 · 已加入{list.filter((item) => joinedIds.has(item.id)).length}个
           </Text>
         </View>
 
@@ -416,77 +318,32 @@ export default function CheckinListPage() {
             return (
               <View
                 key={item.id}
-                className="overflow-hidden rounded-3xl bg-white p-4 shadow-sm active:opacity-80"
-                style={{ boxShadow: "0 1px 10px rgba(15, 23, 42, 0.05)" }}
+                className="overflow-hidden rounded-2xl bg-white px-4 py-3 active:opacity-80"
+                style={{ boxShadow: "0 1px 6px rgba(15, 23, 42, 0.04)" }}
                 onClick={() => goDetail(item.id)}
               >
-                <View className="flex items-start justify-between gap-3">
-                  <View className="min-w-0 flex-1">
-                    <View className="flex items-center gap-2">
-                      <Text className="block text-base font-semibold text-slate-900">{item.title}</Text>
-                      {joined ? (
-                        <Tag
-                          shape="rounded"
-                          size="small"
-                          style={{
-                            background: "rgba(22,163,74,0.12)",
-                            color: "#16A34A",
-                            borderColor: "transparent",
-                          }}
-                        >
-                          已加入
-                        </Tag>
-                      ) : null}
-                    </View>
-                    {item.description ? (
-                      <Text className="mt-2 block text-sm leading-6 text-slate-600 line-clamp-2">
-                        {item.description}
-                      </Text>
-                    ) : (
-                      <Text className="mt-2 block text-sm text-slate-400">暂无描述</Text>
-                    )}
+                <View className="flex items-center justify-between gap-2">
+                  <View className="min-w-0 flex-1 flex items-center gap-2">
+                    <Text className="block truncate text-sm font-semibold text-slate-900">{item.title}</Text>
+                    {joined ? (
+                      <Tag
+                        shape="rounded"
+                        size="small"
+                        style={{
+                          background: "rgba(22,163,74,0.12)",
+                          color: "#16A34A",
+                          borderColor: "transparent",
+                          flexShrink: 0,
+                        }}
+                      >
+                        已加入
+                      </Tag>
+                    ) : null}
                   </View>
-                  <ArrowRight size="18" color="#cbd5e1" />
-                </View>
-
-                <View className="mt-4">
-                  <ContentMetrics
-                    variant="inline"
-                    items={[
-                      {
-                        key: "join_cnt",
-                        icon: <FireOutlined size="14" />,
-                        label: "参与",
-                        value: item.join_cnt || 0,
-                        tone: "success",
-                      },
-                      {
-                        key: "view_cnt",
-                        icon: <EyeOutlined size="14" />,
-                        label: "浏览",
-                        value: item.view_cnt || 0,
-                        tone: "info",
-                      },
-                      {
-                        key: "supervisor_name",
-                        icon: <UserOutlined size="14" />,
-                        label: "监督",
-                        value: item.supervisor_name || "未设置",
-                        tone: "neutral",
-                      },
-                    ]}
-                  />
-                </View>
-
-                <View className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                  <Text className="text-xs text-slate-400">
-                    创建于 {formatRelativeTimestamp(item.created_at)}
-                  </Text>
-                  <Text className="text-xs text-slate-500">
-                    {item.start_date && item.end_date
-                      ? `${item.start_date.slice(5, 10)} - ${item.end_date.slice(5, 10)}`
-                      : "长期任务"}
-                  </Text>
+                  <View className="flex items-center gap-2 shrink-0">
+                    <Text className="text-xs text-slate-400">{item.join_cnt || 0}人参与</Text>
+                    <ArrowRight size="14" color="#cbd5e1" />
+                  </View>
                 </View>
               </View>
             );

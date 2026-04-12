@@ -33,6 +33,26 @@ const defaultStats: MyStats = {
   partnerCount: 0,
 };
 
+/** Small colored circle behind a menu icon, iOS-settings style */
+function IconCircle({ color, children }: { color: string; children: React.ReactNode }) {
+  return (
+    <View
+      style={{
+        width: 28,
+        height: 28,
+        borderRadius: 7,
+        background: color,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
 export default function MyPage() {
   const [logged, setLogged] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -130,20 +150,21 @@ export default function MyPage() {
     });
   };
 
-  const statItems = [
-    { label: "笔记", value: stats.noteCount, onClick: goMyNotes },
-    { label: "打卡", value: stats.checkinCount, onClick: goCheckinList },
-    { label: "签到", value: stats.signDays, onClick: goSign },
-    { label: "学伴", value: stats.partnerCount, onClick: goPartner },
+  const statItems: { label: string; value: number; color: string; onClick: () => void }[] = [
+    { label: "笔记", value: stats.noteCount, color: "#3B82F6", onClick: goMyNotes },
+    { label: "打卡", value: stats.checkinCount, color: "#22C55E", onClick: goCheckinList },
+    { label: "签到", value: stats.signDays, color: "#F59E0B", onClick: goSign },
+    { label: "学伴", value: stats.partnerCount, color: "#A855F7", onClick: goPartner },
   ];
 
   const handleChangePassword = () => {
     nav("/pages/change-password/index");
   };
 
+  /* ─── Not logged in ─── */
   if (!logged) {
     return (
-      <View className="min-h-screen px-4 py-4" style={{ background: "#F8FAFC" }}>
+      <View className="min-h-screen px-4 py-4" style={{ background: "#F7F8FA" }}>
         <View
           className="relative overflow-hidden rounded-[28px] px-5 py-8"
           style={{
@@ -219,9 +240,10 @@ export default function MyPage() {
     );
   }
 
+  /* ─── Loading ─── */
   if (loading && !user) {
     return (
-      <View className="min-h-screen flex items-center justify-center bg-slate-50">
+      <View className="min-h-screen flex items-center justify-center" style={{ background: "#F7F8FA" }}>
         <Loading type="spinner" style={{ color: "#0F766E" }}>
           加载中...
         </Loading>
@@ -229,9 +251,10 @@ export default function MyPage() {
     );
   }
 
+  /* ─── Dashboard error ─── */
   if (dashboardError && !user) {
     return (
-      <View className="min-h-screen px-4 py-4" style={{ background: "#F8FAFC" }}>
+      <View className="min-h-screen px-4 py-4" style={{ background: "#F7F8FA" }}>
         <View
           className="relative overflow-hidden rounded-[28px] px-5 py-5"
           style={{
@@ -280,19 +303,17 @@ export default function MyPage() {
     );
   }
 
+  /* ─── Main logged-in view ─── */
   return (
-    <View className="min-h-screen pb-8" style={{ background: "#F8FAFC" }}>
+    <View className="min-h-screen pb-8" style={{ background: "#F7F8FA" }}>
+      {/* ── User card with gradient ── */}
       <View className="px-4 pt-4">
         <View
-          className="relative overflow-hidden rounded-[28px] px-5 py-5"
+          className="relative overflow-hidden rounded-2xl px-5 py-5"
           style={{
             background: "linear-gradient(135deg, #0F172A 0%, #134E4A 52%, #0F766E 120%)",
-            boxShadow: "0 16px 40px rgba(15, 23, 42, 0.16)",
           }}
         >
-          <View className="absolute -right-10 -top-8 h-28 w-28 rounded-full bg-white/10" />
-          <View className="absolute bottom-0 left-8 h-16 w-16 rounded-full bg-emerald-300/10" />
-
           <View className="flex items-start">
             <Avatar
               size="large"
@@ -360,63 +381,88 @@ export default function MyPage() {
             </Button>
           </View>
         </View>
-
-        <View className="flex mx-4 mt-3 rounded-2xl overflow-hidden" style={{ background: "#fff", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}>
-          {statItems.map((s, i) => (
-            <View key={s.label} className="flex-1 flex flex-col items-center py-4" style={{ borderRight: i < 3 ? "1px solid #f5f5f5" : "none" }} onClick={s.onClick}>
-              <Text className="text-xl font-bold" style={{ color: "#333" }}>{s.value}</Text>
-              <Text className="text-xs mt-1" style={{ color: "#999" }}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {partialWarning ? (
-          <View className="mt-4 rounded-3xl border border-amber-100 bg-amber-50 px-4 py-3">
-            <View className="flex items-start justify-between gap-3">
-              <View className="min-w-0 flex-1">
-                <Text className="block text-sm font-semibold text-amber-900">部分信息暂未同步</Text>
-                <Text className="mt-1 block text-xs leading-5 text-amber-700">
-                  {partialWarning}
-                </Text>
-              </View>
-              <Button
-                round
-                size="small"
-                style={{
-                  background: "#fff",
-                  color: "#92400E",
-                  border: "1px solid rgba(146,64,14,0.10)",
-                  fontWeight: 700,
-                  flexShrink: 0,
-                }}
-                onClick={loadDashboard}
-              >
-                重试
-              </Button>
-            </View>
-          </View>
-        ) : null}
       </View>
 
-      <View className="px-4 mt-4 space-y-4">
-        <Cell.Group title="内容中心" inset style={{ borderRadius: 16, overflow: "hidden" }}>
+      {/* ── Stats row ── */}
+      <View
+        className="mx-4 mt-3 flex rounded-xl overflow-hidden"
+        style={{ background: "#fff" }}
+      >
+        {statItems.map((s, i) => (
+          <View
+            key={s.label}
+            className="flex-1 flex flex-col items-center py-4"
+            style={{ borderRight: i < 3 ? "1px solid #F2F3F5" : "none" }}
+            onClick={s.onClick}
+          >
+            <Text style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</Text>
+            <Text className="mt-1" style={{ fontSize: 12, color: "#999" }}>{s.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* ── Partial warning ── */}
+      {partialWarning ? (
+        <View className="mx-4 mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+          <View className="flex items-start justify-between gap-3">
+            <View className="min-w-0 flex-1">
+              <Text className="block text-sm font-semibold text-amber-900">部分信息暂未同步</Text>
+              <Text className="mt-1 block text-xs leading-5 text-amber-700">
+                {partialWarning}
+              </Text>
+            </View>
+            <Button
+              round
+              size="small"
+              style={{
+                background: "#fff",
+                color: "#92400E",
+                border: "1px solid rgba(146,64,14,0.10)",
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+              onClick={loadDashboard}
+            >
+              重试
+            </Button>
+          </View>
+        </View>
+      ) : null}
+
+      {/* ── Menu sections ── */}
+      <View className="mt-5 px-4">
+        <Cell.Group inset style={{ borderRadius: 12, overflow: "hidden" }}>
           <Cell
-            icon={<Edit size="18" />}
+            icon={
+              <IconCircle color="#3B82F6">
+                <Edit size="16" color="#fff" />
+              </IconCircle>
+            }
             title="我的笔记"
             isLink
             onClick={goMyNotes}
           />
           <Cell
-            icon={<StarOutlined size="18" />}
+            icon={
+              <IconCircle color="#F59E0B">
+                <StarOutlined size="16" color="#fff" />
+              </IconCircle>
+            }
             title="我的收藏"
             isLink
             onClick={goFavorite}
           />
         </Cell.Group>
+      </View>
 
-        <Cell.Group title="通知" inset style={{ borderRadius: 16, overflow: "hidden" }}>
+      <View className="mt-3 px-4">
+        <Cell.Group inset style={{ borderRadius: 12, overflow: "hidden" }}>
           <Cell
-            icon={<Bell size="18" />}
+            icon={
+              <IconCircle color="#EF4444">
+                <Bell size="16" color="#fff" />
+              </IconCircle>
+            }
             title="消息通知"
             isLink
             onClick={goMessages}
@@ -429,22 +475,41 @@ export default function MyPage() {
             }
           />
         </Cell.Group>
+      </View>
 
-        <Cell.Group title="账号" inset style={{ borderRadius: 16, overflow: "hidden" }}>
+      <View className="mt-3 px-4">
+        <Cell.Group inset style={{ borderRadius: 12, overflow: "hidden" }}>
           <Cell
-            icon={<UserCircleOutlined size="18" />}
+            icon={
+              <IconCircle color="#0F766E">
+                <UserCircleOutlined size="16" color="#fff" />
+              </IconCircle>
+            }
             title="编辑资料"
             isLink
             onClick={goEdit}
           />
           <Cell
-            icon={<Lock size="18" />}
+            icon={
+              <IconCircle color="#6366F1">
+                <Lock size="16" color="#fff" />
+              </IconCircle>
+            }
             title="修改密码"
             isLink
             onClick={handleChangePassword}
           />
+        </Cell.Group>
+      </View>
+
+      <View className="mt-3 px-4">
+        <Cell.Group inset style={{ borderRadius: 12, overflow: "hidden" }}>
           <Cell
-            icon={<Lock size="18" />}
+            icon={
+              <IconCircle color="#9CA3AF">
+                <Lock size="16" color="#fff" />
+              </IconCircle>
+            }
             title="退出登录"
             isLink
             onClick={handleLogout}

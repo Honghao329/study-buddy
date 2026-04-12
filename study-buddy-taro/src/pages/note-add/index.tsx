@@ -1,8 +1,7 @@
-import { Text, View } from "@tarojs/components";
+import { Input, Text, Textarea, View } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useRef, useState } from "react";
-import { Button, Cell, Empty, Field, Loading, Switch } from "@taroify/core";
-import { Edit } from "@taroify/icons";
+import { Button, Cell, Empty, Loading, Switch } from "@taroify/core";
 import { api, isLoggedIn } from "~/api/request";
 
 const MAX_CONTENT = 5000;
@@ -189,41 +188,29 @@ export default function NoteAddPage() {
 
   return (
     <View className="min-h-screen" style={{ background: "#F7F8FA" }}>
-      {/* Header illustration */}
-      <View
-        className="px-4 pt-5 pb-6 flex items-center"
-        style={{
-          background: "linear-gradient(135deg, #58CC02 0%, #46a302 100%)",
-          borderRadius: "0 0 24px 24px",
-        }}
-      >
-        <Edit size="28" color="#fff" style={{ marginRight: "12px", opacity: 0.9 }} />
-        <View>
-          <Text className="block text-lg font-bold text-white">
-            {editMode ? "编辑笔记" : "写笔记"}
-          </Text>
-          <Text className="block text-xs text-white mt-1" style={{ opacity: 0.75 }}>
-            {editMode ? "修改你的学习笔记" : "记录学习心得，分享知识"}
-          </Text>
-        </View>
-      </View>
-
       {/* Title field */}
       <View
-        className="mx-3 -mt-3 bg-white rounded-2xl overflow-hidden"
+        className="mx-3 mt-3 bg-white rounded-2xl overflow-hidden"
         style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}
       >
-        <Field
-          value={title}
-          onChange={(val) => setTitle(val)}
-          placeholder="输入笔记标题"
-          maxlength={MAX_TITLE}
-          style={{
-            padding: "16px",
-            fontSize: "18px",
-            fontWeight: 600,
-          }}
-        />
+        <View style={{ padding: "12px 16px" }}>
+          <Input
+            key={editId || "new"}
+            style={{
+              background: "#F7F8FA",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              color: "#333",
+              fontSize: "16px",
+              fontWeight: "600",
+            }}
+            placeholder="输入笔记标题"
+            placeholderStyle="color: #C0C0C0"
+            maxlength={MAX_TITLE}
+            defaultValue={title}
+            onInput={(e) => setTitle(e.detail.value)}
+          />
+        </View>
         <View className="px-4 pb-2 flex justify-end">
           <Text className="text-xs" style={{ color: title.length >= MAX_TITLE ? "#FF4D4F" : "#ccc" }}>
             {title.length}/{MAX_TITLE}
@@ -236,20 +223,26 @@ export default function NoteAddPage() {
         className="mx-3 mt-3 bg-white rounded-2xl overflow-hidden"
         style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
       >
-        <Field
-          type="textarea"
-          value={content}
-          onChange={(val) => setContent(val)}
-          placeholder="写下你的学习笔记..."
-          maxlength={MAX_CONTENT}
-          autoHeight
-          style={{
-            padding: "16px",
-            fontSize: "15px",
-            lineHeight: "1.8",
-            minHeight: "240px",
-          }}
-        />
+        <View style={{ padding: "12px 16px" }}>
+          <Textarea
+            key={editId || "new"}
+            style={{
+              background: "#F7F8FA",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              color: "#333",
+              fontSize: "15px",
+              width: "100%",
+              minHeight: "200px",
+            }}
+            placeholder="写下你的学习笔记..."
+            placeholderStyle="color: #C0C0C0"
+            maxlength={MAX_CONTENT}
+            autoHeight
+            defaultValue={content}
+            onInput={(e) => setContent(e.detail.value)}
+          />
+        </View>
         <View className="px-4 pb-3 flex justify-end">
           <Text
             className="text-xs"
