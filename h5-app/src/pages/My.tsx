@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FileText, Bookmark, Bell, CalendarCheck, UserCog, LogOut, ChevronRight,
+  FileText, Bookmark, Bell, CalendarCheck, Users, UserCog, KeyRound,
+  LogOut, ChevronRight, Loader2,
 } from 'lucide-react';
 import { api, isLoggedIn, getUserInfo, clearToken } from '../api/request';
 
@@ -10,6 +11,7 @@ export default function My() {
   const [user, setUser] = useState<any>(getUserInfo());
   const [stats, setStats] = useState({ noteCount: 0, checkinCount: 0, signDays: 0, partnerCount: 0 });
   const [unread, setUnread] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isLoggedIn()) { navigate('/login'); return; }
@@ -17,12 +19,16 @@ export default function My() {
   }, []);
 
   const loadData = async () => {
+    setLoading(true);
     const [userR, statsR, unreadR] = await Promise.allSettled([
       api.get('/user/info'),
       api.get('/user/my_stats'),
       api.get('/message/unread_count'),
     ]);
-    if (userR.status === 'fulfilled' && userR.value) setUser(userR.value);
+    if (userR.status === 'fulfilled' && userR.value) {
+      setUser(userR.value);
+      localStorage.setItem('userInfo', JSON.stringify(userR.value));
+    }
     if (statsR.status === 'fulfilled' && statsR.value) {
       const s: any = statsR.value;
       setStats({
@@ -33,6 +39,7 @@ export default function My() {
       });
     }
     if (unreadR.status === 'fulfilled') setUnread(Number(unreadR.value) || 0);
+    setLoading(false);
   };
 
   const handleLogout = () => {
@@ -42,13 +49,12 @@ export default function My() {
 
   const menus = [
     { icon: FileText, label: '我的笔记', path: '/community', color: 'text-blue-500 bg-blue-50' },
-    { icon: Bookmark, label: '我的收藏', path: '/community', color: 'text-purple-500 bg-purple-50' },
-    {
-      icon: Bell, label: '消息通知', path: '/messages', color: 'text-orange-500 bg-orange-50',
-      badge: unread > 0 ? unread : undefined,
-    },
-    { icon: CalendarCheck, label: '签到日历', path: '/sign', color: 'text-green-500 bg-green-50' },
+    { icon: Bookmark, label: '我的收藏', path: '/favorite', color: 'text-purple-500 bg-purple-50' },
+    { icon: Bell, label: '消息通知', path: '/messages', color: 'text-orange-500 bg-orange-50', badge: unread > 0 ? unread : undefined },
+    { icon: CalendarCheck, label: '签到日历', path: '/sign', color: 'text-emerald-500 bg-emerald-50' },
+    { icon: Users, label: '学伴', path: '/partner', color: 'text-pink-500 bg-pink-50' },
     { icon: UserCog, label: '编辑资料', path: '/my', color: 'text-slate-500 bg-slate-50' },
+    { icon: KeyRound, label: '修改密码', path: '/my', color: 'text-amber-500 bg-amber-50' },
   ];
 
   const statItems = [
@@ -58,17 +64,27 @@ export default function My() {
     { label: '学伴', value: stats.partnerCount },
   ];
 
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-screen bg-gray-50">
+        <Loader2 size={32} className="animate-spin text-indigo-400" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto pb-24 bg-gray-50">
       {/* Gradient Header */}
-      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 px-6 pt-14 pb-20 rounded-b-[2.5rem] text-white relative">
-        <div className="flex items-center space-x-4">
-          <div className="w-18 h-18 rounded-full bg-white/20 border-3 border-white/40 flex items-center justify-center overflow-hidden"
-            style={{ width: 72, height: 72, borderWidth: 3 }}>
+      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 px-6 pt-14 pb-20 rounded-b-[2.5rem] text-white relative overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full" />
+        <div className="absolute bottom-8 -left-8 w-28 h-28 bg-white/5 rounded-full" />
+
+        <div className="flex items-center space-x-4 relative z-10">
+          <div className="w-[72px] h-[72px] rounded-full bg-white/20 border-[3px] border-white/40 flex items-center justify-center overflow-hidden backdrop-blur-sm">
             {user?.avatar ? (
               <img src={user.avatar} alt="" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-3xl">👤</span>
+              <span className="text-3xl font-bold">{(user?.nickname || '?')[0]}</span>
             )}
           </div>
           <div className="flex-1 min-w-0">
@@ -79,12 +95,12 @@ export default function My() {
       </div>
 
       {/* Stats Card */}
-      <div className="-mt-10 mx-6 bg-white rounded-2xl shadow-sm p-5 relative z-10 border border-gray-100">
+      <div className="-mt-10 mx-5 bg-white rounded-2xl shadow-sm p-5 relative z-10 border border-gray-100 hover:shadow-md transition-shadow">
         <div className="flex justify-between">
           {statItems.map((s) => (
             <div key={s.label} className="text-center flex-1">
-              <div className="text-xl font-bold text-slate-800">{s.value}</div>
-              <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+              <div className="text-2xl font-bold text-slate-800">{s.value}</div>
+              <p className="text-[11px] text-gray-500 mt-0.5">{s.label}</p>
             </div>
           ))}
         </div>
@@ -97,7 +113,7 @@ export default function My() {
           return (
             <div
               key={m.label}
-              className={`flex items-center px-5 py-4 active:bg-gray-50 transition ${
+              className={`flex items-center px-5 py-4 active:bg-gray-50 transition-colors ${
                 i < menus.length - 1 ? 'border-b border-gray-50' : ''
               }`}
               onClick={() => navigate(m.path)}
@@ -120,7 +136,7 @@ export default function My() {
       {/* Logout */}
       <div className="mx-4 mt-4 mb-6">
         <button
-          className="w-full flex items-center justify-center space-x-2 py-3.5 bg-white rounded-2xl shadow-sm border border-gray-100 text-red-500 font-medium text-[15px] active:bg-red-50 transition"
+          className="w-full flex items-center justify-center space-x-2 py-3.5 bg-white rounded-2xl shadow-sm border border-gray-100 text-red-500 font-medium text-[15px] active:bg-red-50 transition-colors"
           onClick={handleLogout}
         >
           <LogOut size={18} />
