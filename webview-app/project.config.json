@@ -1,0 +1,13 @@
+{
+  "miniprogramRoot": "./",
+  "projectname": "study-buddy-webview",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "postcss": true,
+    "minified": true
+  },
+  "compileType": "miniprogram",
+  "appid": "touristappid",
+  "libVersion": "3.3.5"
+}
