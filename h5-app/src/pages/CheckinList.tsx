@@ -145,9 +145,9 @@ export default function CheckinList() {
 
       {/* 创建打卡弹窗 */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowCreate(false)} />
-          <div className="relative w-full max-w-[430px] bg-white rounded-t-2xl px-5 py-5">
+          <div className="relative w-full max-w-[380px] bg-white rounded-2xl px-5 py-5 shadow-xl">
             <h3 className="text-base font-semibold text-slate-800 mb-4">创建打卡任务</h3>
             <input
               className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-50 mb-3"

@@ -236,6 +236,28 @@ try {
 	try { db.exec("CREATE UNIQUE INDEX idx_users_username ON users(username) WHERE username != ''"); } catch {}
 }
 
+// 迁移：创建 checkin_supervisors 表（用户-任务级别的监督关系）
+try {
+	db.prepare("SELECT 1 FROM checkin_supervisors LIMIT 0").run();
+} catch (e) {
+	db.exec(`
+		CREATE TABLE checkin_supervisors (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			checkin_id INTEGER NOT NULL,
+			user_id INTEGER NOT NULL,
+			supervisor_id INTEGER NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(checkin_id, user_id)
+		);
+		CREATE INDEX idx_cs_checkin_user ON checkin_supervisors(checkin_id, user_id);
+		CREATE INDEX idx_cs_supervisor ON checkin_supervisors(supervisor_id);
+	`);
+	// 迁移旧数据：把 checkins.supervisor_id 迁移到新表
+	const oldRows = db.prepare('SELECT id, creator_id, supervisor_id FROM checkins WHERE supervisor_id > 0').all();
+	const ins = db.prepare('INSERT OR IGNORE INTO checkin_supervisors (checkin_id, user_id, supervisor_id) VALUES (?, ?, ?)');
+	for (const r of oldRows) ins.run(r.id, r.creator_id, r.supervisor_id);
+}
+
 // 首次启动：如果没有任何管理员，自动创建初始管理员
 const adminCount = db.prepare('SELECT COUNT(*) as cnt FROM admins').get().cnt;
 if (adminCount === 0) {

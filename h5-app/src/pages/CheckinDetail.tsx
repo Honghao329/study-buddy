@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Users, CheckCircle, UserPlus, Clock, Loader2, ClipboardCheck,
-  Shield, MessageSquare, Send, X, ArrowRightLeft, Bell,
+  Shield, MessageSquare, Send, X, Bell,
 } from 'lucide-react';
 import { api, isLoggedIn } from '../api/request';
 
@@ -52,7 +52,6 @@ export default function CheckinDetail() {
     setLoading(false);
   };
 
-  // 打卡（加入+打卡一体）
   const handleCheckin = async () => {
     setActionLoading(true);
     try {
@@ -62,7 +61,6 @@ export default function CheckinDetail() {
     setActionLoading(false);
   };
 
-  // 打开学伴选择弹窗
   const openPicker = async (mode: 'supervisor' | 'invite') => {
     setPickerMode(mode);
     setPartnersLoading(true);
@@ -108,11 +106,8 @@ export default function CheckinDetail() {
     setInviting(false);
   };
 
-  // 监督者催打卡
-  const handleRemind = async () => {
-    try {
-      await api.post('/checkin/remind', { checkinId: Number(id) });
-    } catch {}
+  const handleRemind = async (targetUserId: number) => {
+    try { await api.post('/checkin/remind', { checkinId: Number(id), targetUserId }); } catch {}
   };
 
   const submitSupervisorComment = async () => {
@@ -127,21 +122,14 @@ export default function CheckinDetail() {
     setCommentSending(false);
   };
 
-  // 身份判断
-  const isCreator = task && currentUser?.id && task.creator_id === currentUser.id;
-  const isSupervisor = task && currentUser?.id && task.supervisor_id === currentUser.id;
-  const canSeeSupervisor = isCreator || isSupervisor;
   const todayDone = !!task?.today_done;
   const hasParticipated = !!task?.has_participated;
+  const mySupervisor = task?.my_supervisor;        // 我邀请的监督人
+  const iSupervise: any[] = task?.i_supervise || []; // 我监督的人
 
   if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center min-h-screen bg-gray-50">
-        <Loader2 size={32} className="animate-spin text-blue-400" />
-      </div>
-    );
+    return <div className="flex-1 flex items-center justify-center min-h-screen bg-gray-50"><Loader2 size={32} className="animate-spin text-blue-400" /></div>;
   }
-
   if (!task) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-gray-50">
@@ -153,10 +141,11 @@ export default function CheckinDetail() {
   }
 
   const displayRecords = records.slice(0, MAX_RECORDS);
+  // 我监督的人的 user_id 集合，用于判断哪些记录我可以点评
+  const supervisedUserIds = new Set(iSupervise.map((s: any) => s.user_id));
 
   return (
     <div className="flex-1 flex flex-col bg-gray-50 min-h-screen">
-      {/* Nav */}
       <div className="bg-white sticky top-0 z-20 flex items-center px-4 py-3 border-b border-gray-100">
         <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center" onClick={() => navigate(-1)}>
           <ArrowLeft size={18} className="text-gray-600" />
@@ -165,7 +154,7 @@ export default function CheckinDetail() {
       </div>
 
       <div className="flex-1 overflow-y-auto pb-28">
-        {/* Task Info */}
+        {/* 任务信息 */}
         <div className="mx-4 mt-4 bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
           <h1 className="text-lg font-bold text-slate-800 mb-2">{task.title}</h1>
           {task.description && <p className="text-sm text-gray-500 leading-relaxed mb-4">{task.description}</p>}
@@ -175,51 +164,23 @@ export default function CheckinDetail() {
           </div>
         </div>
 
-        {/* === 监督关系区 === 只有创建者和监督人能看 */}
-        {canSeeSupervisor && (
+        {/* === 我的监督人 === */}
+        {hasParticipated && (
           <div className="mx-4 mt-3">
-            {task.supervisor_id ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                <div className="flex items-center justify-center space-x-4">
-                  <div className="flex flex-col items-center flex-1">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center overflow-hidden border-[3px] border-blue-200 cursor-pointer"
-                      onClick={() => navigate(`/user/${task.creator_id}`)}>
-                      {task.creator_avatar
-                        ? <img src={task.creator_avatar} alt="" className="w-full h-full object-cover" />
-                        : <span className="text-lg font-bold text-blue-500">{(task.creator_name || '?')[0]}</span>}
-                    </div>
-                    <p className="text-xs font-medium text-slate-700 mt-1.5 truncate max-w-[80px] text-center">{task.creator_name || '创建者'}</p>
-                    <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full mt-0.5">被监督</span>
-                  </div>
-                  <div className="flex flex-col items-center px-2">
-                    <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center border border-amber-200">
-                      <Shield size={18} className="text-amber-500" />
-                    </div>
-                    <ArrowRightLeft size={12} className="text-gray-300 mt-1" />
-                  </div>
-                  <div className="flex flex-col items-center flex-1">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-100 to-orange-50 flex items-center justify-center overflow-hidden border-[3px] border-amber-200 cursor-pointer"
-                      onClick={() => navigate(`/user/${task.supervisor_id}`)}>
-                      {task.supervisor_avatar
-                        ? <img src={task.supervisor_avatar} alt="" className="w-full h-full object-cover" />
-                        : <span className="text-lg font-bold text-amber-500">{(task.supervisor_display_name || '?')[0]}</span>}
-                    </div>
-                    <p className="text-xs font-medium text-slate-700 mt-1.5 truncate max-w-[80px] text-center">{task.supervisor_display_name || task.supervisor_name || '监督人'}</p>
-                    <span className="text-[10px] px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full mt-0.5">监督人</span>
-                  </div>
+            {mySupervisor ? (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center overflow-hidden border-2 border-amber-200 cursor-pointer shrink-0"
+                  onClick={() => navigate(`/user/${mySupervisor.id}`)}>
+                  {mySupervisor.avatar
+                    ? <img src={mySupervisor.avatar} alt="" className="w-full h-full object-cover" />
+                    : <span className="text-sm font-bold text-amber-500">{(mySupervisor.nickname || '?')[0]}</span>}
                 </div>
-                {/* 监督人专属：催打卡按钮 */}
-                {isSupervisor && !todayDone && (
-                  <button
-                    className="w-full mt-4 py-2.5 bg-amber-50 text-amber-600 rounded-xl text-sm font-medium flex items-center justify-center space-x-1.5 hover:bg-amber-100 active:scale-[0.98] transition-all"
-                    onClick={handleRemind}
-                  >
-                    <Bell size={15} />
-                    <span>催 TA 打卡</span>
-                  </button>
-                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-700">{mySupervisor.nickname || '监督人'}</p>
+                  <p className="text-[11px] text-amber-600 flex items-center gap-1"><Shield size={11} />监督我的打卡</p>
+                </div>
               </div>
-            ) : isCreator ? (
+            ) : (
               <button
                 className="w-full bg-white rounded-2xl shadow-sm border border-dashed border-blue-200 px-4 py-4 flex items-center justify-center space-x-2 text-blue-600 hover:bg-blue-50 transition-colors active:scale-[0.98]"
                 onClick={() => openPicker('supervisor')}
@@ -227,11 +188,37 @@ export default function CheckinDetail() {
                 <Shield size={16} />
                 <span className="text-sm font-medium">邀请学伴来监督我</span>
               </button>
-            ) : null}
+            )}
           </div>
         )}
 
-        {/* === 邀请学伴打卡 === 任何参与者都能邀请 */}
+        {/* === 我监督的人 === */}
+        {iSupervise.length > 0 && (
+          <div className="mx-4 mt-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+            <p className="text-xs text-gray-400 mb-3 flex items-center gap-1"><Shield size={12} className="text-amber-500" />我监督的学伴</p>
+            <div className="space-y-2.5">
+              {iSupervise.map((s: any) => (
+                <div key={s.user_id} className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer"
+                    onClick={() => navigate(`/user/${s.user_id}`)}>
+                    {s.avatar
+                      ? <img src={s.avatar} alt="" className="w-full h-full object-cover" />
+                      : <span className="text-xs font-bold text-blue-500">{(s.nickname || '?')[0]}</span>}
+                  </div>
+                  <span className="flex-1 text-sm text-slate-700 truncate">{s.nickname || '学伴'}</span>
+                  <button
+                    className="px-3 py-1.5 bg-amber-50 text-amber-600 rounded-full text-xs font-medium flex items-center gap-1 hover:bg-amber-100 active:scale-95 transition-all"
+                    onClick={() => handleRemind(s.user_id)}
+                  >
+                    <Bell size={12} /><span>催打卡</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* === 邀请学伴打卡 === */}
         {hasParticipated && (
           <div className="mx-4 mt-3">
             <button
@@ -257,70 +244,73 @@ export default function CheckinDetail() {
             </div>
           ) : (
             <div className="space-y-0">
-              {displayRecords.map((r: any, i: number) => (
-                <div key={r.id || i} className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer"
-                      onClick={() => r.user_id && navigate(`/user/${r.user_id}`)}>
-                      {r.user_avatar
-                        ? <img src={r.user_avatar} alt="" className="w-full h-full object-cover" />
-                        : <span className="text-xs font-bold text-blue-500">{(r.user_name || '?')[0]}</span>}
-                    </div>
-                    {i < displayRecords.length - 1 && <div className="w-0.5 flex-1 bg-gray-100 my-1" />}
-                  </div>
-                  <div className="flex-1 pb-4">
-                    <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-slate-700">{r.user_name || '匿名'}</span>
-                        <span className="text-[10px] text-gray-400 flex items-center">
-                          <Clock size={10} className="mr-0.5" />{r.created_at?.slice(0, 16)?.replace('T', ' ')}
-                        </span>
+              {displayRecords.map((r: any, i: number) => {
+                const canComment = supervisedUserIds.has(r.user_id); // 我是这个人的监督人
+                return (
+                  <div key={r.id || i} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer"
+                        onClick={() => r.user_id && navigate(`/user/${r.user_id}`)}>
+                        {r.user_avatar
+                          ? <img src={r.user_avatar} alt="" className="w-full h-full object-cover" />
+                          : <span className="text-xs font-bold text-blue-500">{(r.user_name || '?')[0]}</span>}
                       </div>
-                      {r.content && <p className="text-xs text-gray-500">{r.content}</p>}
-
-                      {/* 监督人点评 - 仅当事人可见 */}
-                      {canSeeSupervisor && r.comment && (
-                        <div className="mt-2 pt-2 border-t border-gray-50 flex items-start space-x-2">
-                          <Shield size={12} className="text-amber-500 mt-0.5 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-[10px] text-amber-600 font-medium">监督人点评</p>
-                            <p className="text-xs text-gray-600 leading-relaxed">{r.comment}</p>
-                          </div>
+                      {i < displayRecords.length - 1 && <div className="w-0.5 flex-1 bg-gray-100 my-1" />}
+                    </div>
+                    <div className="flex-1 pb-4">
+                      <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-slate-700">{r.user_name || '匿名'}</span>
+                          <span className="text-[10px] text-gray-400 flex items-center">
+                            <Clock size={10} className="mr-0.5" />{r.created_at?.slice(0, 16)?.replace('T', ' ')}
+                          </span>
                         </div>
-                      )}
+                        {r.content && <p className="text-xs text-gray-500">{r.content}</p>}
 
-                      {/* 监督人点评输入 */}
-                      {isSupervisor && !r.comment && (
-                        commentingRecordId === r.id ? (
-                          <div className="mt-2 pt-2 border-t border-gray-50 flex items-center space-x-2">
-                            <input className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-100 placeholder-gray-400"
-                              placeholder="输入点评..." value={supervisorComment}
-                              onChange={e => setSupervisorComment(e.target.value)}
-                              onKeyDown={e => e.key === 'Enter' && submitSupervisorComment()} autoFocus />
-                            <button className={`w-8 h-8 rounded-full flex items-center justify-center ${supervisorComment.trim() ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400'}`}
-                              onClick={submitSupervisorComment} disabled={!supervisorComment.trim() || commentSending}>
-                              {commentSending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-                            </button>
-                            <button className="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center"
-                              onClick={() => { setCommentingRecordId(null); setSupervisorComment(''); }}><X size={12} /></button>
+                        {/* 监督人点评 - 只有打卡者自己和监督人能看 */}
+                        {r.comment && (r.user_id === currentUser.id || canComment) && (
+                          <div className="mt-2 pt-2 border-t border-gray-50 flex items-start space-x-2">
+                            <Shield size={12} className="text-amber-500 mt-0.5 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-[10px] text-amber-600 font-medium">监督人点评</p>
+                              <p className="text-xs text-gray-600 leading-relaxed">{r.comment}</p>
+                            </div>
                           </div>
-                        ) : (
-                          <button className="mt-2 pt-2 border-t border-gray-50 w-full flex items-center justify-center space-x-1 text-xs text-blue-500 py-1"
-                            onClick={() => { setCommentingRecordId(r.id); setSupervisorComment(''); }}>
-                            <MessageSquare size={12} /><span>点评</span>
-                          </button>
-                        )
-                      )}
+                        )}
+
+                        {/* 监督人点评输入 */}
+                        {canComment && !r.comment && (
+                          commentingRecordId === r.id ? (
+                            <div className="mt-2 pt-2 border-t border-gray-50 flex items-center space-x-2">
+                              <input className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-100 placeholder-gray-400"
+                                placeholder="输入点评..." value={supervisorComment}
+                                onChange={e => setSupervisorComment(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && submitSupervisorComment()} autoFocus />
+                              <button className={`w-8 h-8 rounded-full flex items-center justify-center ${supervisorComment.trim() ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400'}`}
+                                onClick={submitSupervisorComment} disabled={!supervisorComment.trim() || commentSending}>
+                                {commentSending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                              </button>
+                              <button className="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center"
+                                onClick={() => { setCommentingRecordId(null); setSupervisorComment(''); }}><X size={12} /></button>
+                            </div>
+                          ) : (
+                            <button className="mt-2 pt-2 border-t border-gray-50 w-full flex items-center justify-center space-x-1 text-xs text-blue-500 py-1"
+                              onClick={() => { setCommentingRecordId(r.id); setSupervisorComment(''); }}>
+                              <MessageSquare size={12} /><span>点评</span>
+                            </button>
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
-      {/* 底部操作 */}
+      {/* 底部打卡 */}
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-100 px-5 py-4 z-30">
         {todayDone ? (
           <button className="w-full py-3.5 bg-green-50 text-green-600 rounded-xl font-semibold text-base flex items-center justify-center space-x-2 border border-green-100" disabled>
@@ -337,9 +327,9 @@ export default function CheckinDetail() {
 
       {/* 学伴选择弹窗 */}
       {pickerMode && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
           <div className="absolute inset-0 bg-black/40" onClick={() => setPickerMode(null)} />
-          <div className="relative w-full max-w-[430px] bg-white rounded-t-2xl max-h-[60vh] flex flex-col">
+          <div className="relative w-full max-w-[380px] bg-white rounded-2xl max-h-[70vh] flex flex-col shadow-xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h3 className="text-base font-semibold text-slate-800">
                 {pickerMode === 'supervisor' ? '选择监督人' : '邀请学伴打卡'}
@@ -366,7 +356,7 @@ export default function CheckinDetail() {
                     return (
                       <button key={p.id} className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-blue-50 transition-colors active:scale-[0.98] disabled:opacity-50"
                         onClick={() => pickerMode === 'supervisor' ? inviteSupervisor(uid) : inviteJoin(uid)} disabled={inviting}>
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center overflow-hidden shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden shrink-0">
                           {avatar ? <img src={avatar} alt="" className="w-full h-full object-cover" />
                             : <span className="text-sm font-bold text-blue-500">{(name || '?')[0]}</span>}
                         </div>
