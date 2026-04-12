@@ -48,13 +48,11 @@ export default function My() {
   };
 
   const menus = [
-    { icon: FileText, label: '我的笔记', path: '/community', color: 'text-blue-500 bg-blue-50' },
+    { icon: FileText, label: '我的笔记', path: '/my/notes', color: 'text-blue-500 bg-blue-50' },
     { icon: Bookmark, label: '我的收藏', path: '/favorite', color: 'text-purple-500 bg-purple-50' },
     { icon: Bell, label: '消息通知', path: '/messages', color: 'text-orange-500 bg-orange-50', badge: unread > 0 ? unread : undefined },
     { icon: CalendarCheck, label: '签到日历', path: '/sign', color: 'text-emerald-500 bg-emerald-50' },
     { icon: Users, label: '学伴', path: '/partner', color: 'text-pink-500 bg-pink-50' },
-    { icon: UserCog, label: '编辑资料', path: '/my', color: 'text-slate-500 bg-slate-50' },
-    { icon: KeyRound, label: '修改密码', path: '/my', color: 'text-amber-500 bg-amber-50' },
   ];
 
   const statItems = [

@@ -16,6 +16,7 @@ export default function NoteDetail() {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [favorited, setFavorited] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
   const [commentText, setCommentText] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -34,6 +35,7 @@ export default function NoteDetail() {
       setLiked(!!res?.liked);
       setLikeCount(res?.like_cnt || 0);
       setFavorited(!!res?.favorited);
+      setCommentCount(res?.comment_cnt || 0);
     } catch {}
     setLoading(false);
   };
@@ -69,8 +71,8 @@ export default function NoteDetail() {
     try {
       await api.post('/comment/create', { noteId: Number(id), content: commentText.trim() });
       setCommentText('');
+      setCommentCount(prev => prev + 1);
       loadComments(1, true);
-      if (note) setNote({ ...note, comment_cnt: (note.comment_cnt || 0) + 1 });
     } catch {}
     setSending(false);
   };
@@ -137,42 +139,42 @@ export default function NoteDetail() {
             </span>
           </div>
 
+          {/* Title & Content */}
           <h1 className="text-xl font-bold text-slate-900 mb-3 leading-tight">{note.title}</h1>
           <div className="text-[15px] text-gray-700 leading-relaxed whitespace-pre-wrap">{note.content}</div>
 
-          {/* Stats */}
-          <div className="flex items-center space-x-5 mt-5 pt-4 border-t border-gray-100 text-xs text-gray-400">
-            <span className="flex items-center space-x-1"><Eye size={14} /><span>{note.view_cnt || 0} 浏览</span></span>
-            <span className="flex items-center space-x-1"><Heart size={14} /><span>{likeCount} 赞</span></span>
-            <span className="flex items-center space-x-1"><MessageCircle size={14} /><span>{note.comment_cnt || 0} 评论</span></span>
+          {/* Single Action Bar */}
+          <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100">
+            <div className="flex items-center space-x-1">
+              <button
+                className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all active:scale-95 ${
+                  liked ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                }`}
+                onClick={toggleLike}
+              >
+                <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
+                <span>{likeCount}</span>
+              </button>
+              <button
+                className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all active:scale-95 ${
+                  favorited ? 'bg-yellow-50 text-yellow-600' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                }`}
+                onClick={toggleFav}
+              >
+                <Bookmark size={16} fill={favorited ? 'currentColor' : 'none'} />
+                <span>{favorited ? '已收藏' : '收藏'}</span>
+              </button>
+            </div>
+            <div className="flex items-center space-x-3 text-xs text-gray-400">
+              <span className="flex items-center space-x-1"><Eye size={14} /><span>{note.view_cnt || 0}</span></span>
+              <span className="flex items-center space-x-1"><MessageCircle size={14} /><span>{commentCount}</span></span>
+            </div>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center justify-around bg-white mt-2 py-3 border-y border-gray-100">
-          <button
-            className={`flex items-center space-x-1.5 px-5 py-2.5 rounded-full text-sm font-medium transition-all active:scale-95 ${
-              liked ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-            }`}
-            onClick={toggleLike}
-          >
-            <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
-            <span>{liked ? '已赞' : '点赞'}</span>
-          </button>
-          <button
-            className={`flex items-center space-x-1.5 px-5 py-2.5 rounded-full text-sm font-medium transition-all active:scale-95 ${
-              favorited ? 'bg-yellow-50 text-yellow-600' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-            }`}
-            onClick={toggleFav}
-          >
-            <Bookmark size={16} fill={favorited ? 'currentColor' : 'none'} />
-            <span>{favorited ? '已收藏' : '收藏'}</span>
-          </button>
         </div>
 
         {/* Comments */}
         <div className="px-5 pt-4 pb-4">
-          <h3 className="font-semibold text-slate-800 mb-4">评论 ({note.comment_cnt || 0})</h3>
+          <h3 className="font-semibold text-slate-800 mb-4">评论 ({commentCount})</h3>
           {comments.length === 0 ? (
             <div className="text-center py-10">
               <MessageCircle size={36} className="mx-auto text-gray-200 mb-2" />

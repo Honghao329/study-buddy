@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Eye, MessageCircle, Plus, Flame, Clock, Loader2, FileText } from 'lucide-react';
 import { api, isLoggedIn } from '../api/request';
@@ -16,8 +16,10 @@ export default function Community() {
     if (!isLoggedIn()) { navigate('/login'); return; }
   }, []);
 
-  const loadNotes = useCallback(async (p: number, s: string, reset = false) => {
-    if (loading) return;
+  const loadingRef = React.useRef(false);
+  const loadNotes = async (p: number, s: string, reset = false) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     try {
       const res: any = await api.get('/note/public_list', { page: p, size: 10, sort: s });
@@ -25,9 +27,10 @@ export default function Community() {
       setNotes(prev => reset ? list : [...prev, ...list]);
       setHasMore(list.length >= 10);
     } catch {}
+    loadingRef.current = false;
     setLoading(false);
     setInitialLoad(false);
-  }, [loading]);
+  };
 
   useEffect(() => {
     setPage(1);
