@@ -1,28 +1,24 @@
-import { View, Text } from "@tarojs/components"
+import { Input, Text, View } from "@tarojs/components"
 import Taro from "@tarojs/taro"
-import { useState } from "react"
-import { Button, Field, Toast } from "@taroify/core"
+import { useRef, useState } from "react"
+import { Button } from "@taroify/core"
 import { api, setToken } from "~/api/request"
 
 export default function LoginPage() {
-  const [nickname, setNickname] = useState("")
-  const [password, setPassword] = useState("")
+  const nicknameRef = useRef("")
+  const passwordRef = useRef("")
   const [loading, setLoading] = useState(false)
-  const [toastOpen, setToastOpen] = useState(false)
-  const [toastMsg, setToastMsg] = useState("")
-
-  const showToast = (msg: string) => {
-    setToastMsg(msg)
-    setToastOpen(true)
-  }
 
   const handleLogin = async () => {
-    if (!nickname.trim()) {
-      showToast("请输入昵称")
+    const nickname = nicknameRef.current.trim()
+    const password = passwordRef.current
+
+    if (!nickname) {
+      Taro.showToast({ title: "请输入昵称", icon: "none" })
       return
     }
     if (!password) {
-      showToast("请输入密码")
+      Taro.showToast({ title: "请输入密码", icon: "none" })
       return
     }
 
@@ -30,7 +26,7 @@ export default function LoginPage() {
     try {
       const res = await api.post<{ token: string; user: any }>(
         "/api/user/login",
-        { nickname: nickname.trim(), password }
+        { nickname, password }
       )
       setToken(res.token)
       Taro.setStorageSync("userInfo", res.user)
@@ -39,17 +35,21 @@ export default function LoginPage() {
         Taro.switchTab({ url: "/pages/index/index" })
       }, 800)
     } catch (err: any) {
-      showToast(err.message || "登录失败，请重试")
+      Taro.showToast({
+        title: err.message || "登录失败，请重试",
+        icon: "none",
+        duration: 2000,
+      })
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <View className="min-h-screen flex flex-col items-center px-6 pt-24 pb-10"
+    <View
+      className="min-h-screen flex flex-col items-center px-6 pt-24 pb-10"
       style={{ background: "linear-gradient(180deg, #E8FAE6 0%, #F7F8FA 40%)" }}
     >
-      {/* ===== App Icon ===== */}
       <View
         className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5"
         style={{
@@ -60,7 +60,6 @@ export default function LoginPage() {
         <Text className="text-4xl">📖</Text>
       </View>
 
-      {/* ===== Branding ===== */}
       <Text className="text-2xl font-bold mb-1" style={{ color: "#1A1A1A" }}>
         学习伴侣
       </Text>
@@ -68,52 +67,62 @@ export default function LoginPage() {
         记录学习，结伴成长
       </Text>
 
-      {/* ===== Login Card ===== */}
       <View
         className="w-full rounded-2xl px-5 pt-6 pb-7 mb-6"
-        style={{
-          background: "#FFFFFF",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
-        }}
+        style={{ background: "#fff", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}
       >
-        <Field
-          label="昵称"
-          placeholder="请输入昵称"
-          value={nickname}
-          onChange={(val) => setNickname(val)}
-        />
-
-        <Field
-          label="密码"
-          type="password"
-          placeholder="请输入密码"
-          value={password}
-          onChange={(val) => setPassword(val)}
-          className="mt-2"
-        />
-
-        <View className="mt-7">
-          <Button
-            block
-            round
-            size="large"
-            loading={loading}
+        <View className="mb-4">
+          <Text className="text-sm font-medium mb-2 block" style={{ color: "#666" }}>昵称</Text>
+          <Input
+            className="w-full text-base"
             style={{
-              background: "linear-gradient(135deg, #58CC02 0%, #46A302 100%)",
-              color: "#FFFFFF",
-              fontWeight: "bold",
-              fontSize: "16px",
-              border: "none",
-              boxShadow: "0 4px 16px rgba(88,204,2,0.3)",
+              background: "#F7F8FA",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              color: "#333",
             }}
-            onClick={handleLogin}
-          >
-            登 录
-          </Button>
+            placeholder="请输入昵称"
+            placeholderStyle="color: #C0C0C0"
+            onInput={(e) => { nicknameRef.current = e.detail.value }}
+          />
         </View>
+
+        <View className="mb-6">
+          <Text className="text-sm font-medium mb-2 block" style={{ color: "#666" }}>密码</Text>
+          <Input
+            className="w-full text-base"
+            style={{
+              background: "#F7F8FA",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              color: "#333",
+            }}
+            password
+            placeholder="请输入密码"
+            placeholderStyle="color: #C0C0C0"
+            onInput={(e) => { passwordRef.current = e.detail.value }}
+          />
+        </View>
+
+        <Button
+          block
+          round
+          size="large"
+          loading={loading}
+          style={{
+            background: "linear-gradient(135deg, #58CC02 0%, #46A302 100%)",
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: "16px",
+            border: "none",
+            boxShadow: "0 4px 16px rgba(88,204,2,0.3)",
+          }}
+          onClick={handleLogin}
+        >
+          登 录
+        </Button>
       </View>
 
-      {/* ===== Test account hints ===== */}
       <View className="flex flex-col items-center mt-4">
         <Text className="text-xs leading-6" style={{ color: "#C0C0C0" }}>
           测试账号：user1 / 123456
@@ -122,10 +131,6 @@ export default function LoginPage() {
           测试账号：user2 / 123456
         </Text>
       </View>
-
-      <Toast open={toastOpen} onClose={() => setToastOpen(false)}>
-        {toastMsg}
-      </Toast>
     </View>
   )
 }

@@ -1,8 +1,8 @@
 import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow, usePullDownRefresh, useReachBottom } from "@tarojs/taro";
 import { useCallback, useRef, useState } from "react";
-import { Button, Divider, Empty, Tag } from "@taroify/core";
-import { Plus, LikeOutlined, EyeOutlined, CommentOutlined } from "@taroify/icons";
+import { Button, Divider, Empty, Loading, Tag } from "@taroify/core";
+import { Plus } from "@taroify/icons";
 import { api } from "~/api/request";
 import { formatRelativeTimestamp } from "~/utils/timeFormatter";
 
@@ -101,7 +101,7 @@ export default function NoteListPage() {
           <View
             key={note.id}
             className="bg-white rounded-2xl mb-3 overflow-hidden active:opacity-90"
-            style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)", transition: "opacity 0.15s" }}
+            style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)", transition: "opacity 0.15s" }}
             onClick={() => goDetail(note.id)}
           >
             {/* Card body */}
@@ -156,18 +156,9 @@ export default function NoteListPage() {
               {/* Stats row */}
               <View className="flex items-center justify-between">
                 <View className="flex items-center gap-3">
-                  <View className="flex items-center">
-                    <LikeOutlined size="14" color="#bbb" style={{ marginRight: "3px" }} />
-                    <Text className="text-xs" style={{ color: "#bbb" }}>{note.like_cnt || 0}</Text>
-                  </View>
-                  <View className="flex items-center">
-                    <EyeOutlined size="14" color="#bbb" style={{ marginRight: "3px" }} />
-                    <Text className="text-xs" style={{ color: "#bbb" }}>{note.view_cnt || 0}</Text>
-                  </View>
-                  <View className="flex items-center">
-                    <CommentOutlined size="14" color="#bbb" style={{ marginRight: "3px" }} />
-                    <Text className="text-xs" style={{ color: "#bbb" }}>{note.comment_cnt || 0}</Text>
-                  </View>
+                  <Text style={{ color: "#999", fontSize: "12px" }}>👍 {note.like_cnt || 0}</Text>
+                  <Text style={{ color: "#999", fontSize: "12px" }}>👁 {note.view_cnt || 0}</Text>
+                  <Text style={{ color: "#999", fontSize: "12px" }}>💬 {note.comment_cnt || 0}</Text>
                 </View>
                 <Text className="text-xs" style={{ color: "#ccc" }}>
                   {formatRelativeTimestamp(note.created_at)}
@@ -179,8 +170,10 @@ export default function NoteListPage() {
 
         {/* Loading state */}
         {loading && (
-          <View className="py-5 text-center">
-            <Text className="text-sm" style={{ color: "#999" }}>加载中...</Text>
+          <View className="py-5 flex justify-center">
+            <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+              加载中...
+            </Loading>
           </View>
         )}
 
@@ -188,7 +181,7 @@ export default function NoteListPage() {
         {!loading && list.length === 0 && (
           <View
             className="bg-white rounded-2xl mt-6 py-10"
-            style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+            style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
           >
             <Empty>
               <Empty.Image />

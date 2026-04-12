@@ -1,5 +1,5 @@
 import { Text, View } from "@tarojs/components";
-import Taro from "@tarojs/taro";
+import Taro, { useDidShow } from "@tarojs/taro";
 import { useState } from "react";
 import { Button, Cell, Field, Switch } from "@taroify/core";
 import { Edit } from "@taroify/icons";
@@ -8,29 +8,74 @@ import { api } from "~/api/request";
 const MAX_CONTENT = 5000;
 const MAX_TITLE = 100;
 
+interface NoteData {
+  id: number;
+  title: string;
+  content: string;
+  visibility: string;
+  images: string[];
+  tags: string[];
+}
+
 export default function NoteAddPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editId, setEditId] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   const canSubmit = title.trim().length > 0 && content.trim().length > 0;
+
+  useDidShow(() => {
+    const params = Taro.getCurrentInstance().router?.params || {};
+    const id = params.id || "";
+    const isEdit = params.edit === "1" && !!id;
+
+    if (isEdit && !loaded) {
+      setEditMode(true);
+      setEditId(id);
+      Taro.setNavigationBarTitle({ title: "编辑笔记" });
+      // Load existing note data
+      api.get<NoteData>(`/api/note/detail/${id}`).then((res) => {
+        setTitle(res.title || "");
+        setContent(res.content || "");
+        setIsPublic(res.visibility === "public");
+        setLoaded(true);
+      }).catch(() => {
+        Taro.showToast({ title: "加载笔记失败", icon: "none" });
+      });
+    } else if (!isEdit) {
+      setEditMode(false);
+      setEditId("");
+    }
+  });
 
   const handlePublish = async () => {
     if (!canSubmit || submitting) return;
     setSubmitting(true);
     try {
-      await api.post("/api/note/create", {
-        title: title.trim(),
-        content: content.trim(),
-        is_public: isPublic ? 1 : 0,
-      });
-      Taro.showToast({ title: "发布成功", icon: "success" });
+      if (editMode && editId) {
+        await api.put(`/api/note/update/${editId}`, {
+          title: title.trim(),
+          content: content.trim(),
+          visibility: isPublic ? "public" : "private",
+        });
+        Taro.showToast({ title: "更新成功", icon: "success" });
+      } else {
+        await api.post("/api/note/create", {
+          title: title.trim(),
+          content: content.trim(),
+          visibility: isPublic ? "public" : "private",
+        });
+        Taro.showToast({ title: "发布成功", icon: "success" });
+      }
       setTimeout(() => {
         Taro.navigateBack();
       }, 1200);
     } catch {
-      Taro.showToast({ title: "发布失败", icon: "none" });
+      Taro.showToast({ title: editMode ? "更新失败" : "发布失败", icon: "none" });
     } finally {
       setSubmitting(false);
     }
@@ -48,9 +93,11 @@ export default function NoteAddPage() {
       >
         <Edit size="28" color="#fff" style={{ marginRight: "12px", opacity: 0.9 }} />
         <View>
-          <Text className="block text-lg font-bold text-white">写笔记</Text>
+          <Text className="block text-lg font-bold text-white">
+            {editMode ? "编辑笔记" : "写笔记"}
+          </Text>
           <Text className="block text-xs text-white mt-1" style={{ opacity: 0.75 }}>
-            记录学习心得，分享知识
+            {editMode ? "修改你的学习笔记" : "记录学习心得，分享知识"}
           </Text>
         </View>
       </View>
@@ -162,7 +209,9 @@ export default function NoteAddPage() {
           }}
           onClick={handlePublish}
         >
-          {submitting ? "发布中..." : "发布笔记"}
+          {submitting
+            ? editMode ? "更新中..." : "发布中..."
+            : editMode ? "更新笔记" : "发布笔记"}
         </Button>
       </View>
     </View>

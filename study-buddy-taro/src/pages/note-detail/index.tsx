@@ -1,8 +1,8 @@
 import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useCallback, useRef, useState } from "react";
-import { Avatar, Button, Cell, Divider, Empty, Field, Tag } from "@taroify/core";
-import { Like, LikeOutlined, Star, StarOutlined, CommentOutlined } from "@taroify/icons";
+import { Avatar, Button, Cell, Divider, Empty, Field, Loading, Tag } from "@taroify/core";
+import { Like, LikeOutlined, Star, StarOutlined, CommentOutlined, Edit as EditIcon, DeleteOutlined } from "@taroify/icons";
 import { api, isLoggedIn } from "~/api/request";
 import { formatRelativeTimestamp } from "~/utils/timeFormatter";
 import { resolveImageUrl } from "~/utils/imageUrl";
@@ -32,6 +32,16 @@ interface CommentItem {
 
 const COMMENT_SIZE = 20;
 
+function getCurrentUserId(): number | null {
+  try {
+    const info = Taro.getStorageSync("userInfo");
+    if (info && info.id) return Number(info.id);
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 export default function NoteDetailPage() {
   const [note, setNote] = useState<NoteDetail | null>(null);
   const [comments, setComments] = useState<CommentItem[]>([]);
@@ -48,6 +58,8 @@ export default function NoteDetailPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const noteId = Taro.getCurrentInstance().router?.params?.id || "";
+
+  const isOwner = note ? getCurrentUserId() === Number(note.user_id) : false;
 
   const fetchNote = useCallback(async () => {
     const id = noteId;
@@ -152,6 +164,10 @@ export default function NoteDetailPage() {
   const toggleLike = async () => {
     const id = noteId;
     if (!id) return;
+    if (!isLoggedIn()) {
+      Taro.showToast({ title: "请先登录", icon: "none" });
+      return;
+    }
     try {
       await api.post("/api/like/toggle", { targetType: "note", targetId: Number(id) });
       setLiked((prev) => {
@@ -166,6 +182,10 @@ export default function NoteDetailPage() {
   const toggleFav = async () => {
     const id = noteId;
     if (!id) return;
+    if (!isLoggedIn()) {
+      Taro.showToast({ title: "请先登录", icon: "none" });
+      return;
+    }
     try {
       await api.post("/api/fav/toggle", { targetType: "note", targetId: Number(id) });
       setFavored((prev) => !prev);
@@ -192,6 +212,31 @@ export default function NoteDetailPage() {
     }
   };
 
+  const handleEdit = () => {
+    Taro.navigateTo({ url: `/pages/note-add/index?id=${noteId}&edit=1` });
+  };
+
+  const handleDelete = () => {
+    Taro.showModal({
+      title: "确认删除",
+      content: "删除后无法恢复，确定要删除这篇笔记吗？",
+      confirmColor: "#FF4D4F",
+      success: async (modalRes) => {
+        if (modalRes.confirm) {
+          try {
+            await api.del(`/api/note/delete/${noteId}`);
+            Taro.showToast({ title: "删除成功", icon: "success" });
+            setTimeout(() => {
+              Taro.navigateBack();
+            }, 1200);
+          } catch {
+            Taro.showToast({ title: "删除失败", icon: "none" });
+          }
+        }
+      },
+    });
+  };
+
   const loadMoreComments = () => {
     if (!commentLoading && comments.length < commentTotal) {
       fetchComments(commentPage + 1, true);
@@ -201,7 +246,9 @@ export default function NoteDetailPage() {
   if (loading) {
     return (
       <View className="min-h-screen flex items-center justify-center" style={{ background: "#F7F8FA" }}>
-        <Text className="text-sm" style={{ color: "#999" }}>加载中...</Text>
+        <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+          加载中...
+        </Loading>
       </View>
     );
   }
@@ -231,7 +278,7 @@ export default function NoteDetailPage() {
       {/* Note content card */}
       <View
         className="mx-3 mt-3 bg-white rounded-2xl overflow-hidden"
-        style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}
+        style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
       >
         {/* Author header */}
         <View className="px-4 pt-4 pb-3 flex items-center">
@@ -276,24 +323,44 @@ export default function NoteDetailPage() {
           </Text>
         </View>
 
-        {/* Stats bar */}
+        {/* Stats bar + owner actions */}
         <View
-          className="px-4 py-3 flex items-center gap-4"
+          className="px-4 py-3 flex items-center"
           style={{ borderTop: "1px solid #f5f5f5" }}
         >
-          <Tag size="small" style={{ background: "#f5f5f5", color: "#999", borderColor: "transparent" }}>
-            浏览 {note.view_cnt || 0}
-          </Tag>
-          <Tag size="small" style={{ background: "#f5f5f5", color: "#999", borderColor: "transparent" }}>
-            评论 {note.comment_cnt || 0}
-          </Tag>
+          <View className="flex items-center gap-4 flex-1">
+            <Text style={{ color: "#999", fontSize: "12px" }}>👁 {note.view_cnt || 0}</Text>
+            <Text style={{ color: "#999", fontSize: "12px" }}>💬 {note.comment_cnt || 0}</Text>
+          </View>
+          {isOwner && (
+            <View className="flex items-center gap-2">
+              <Button
+                variant="text"
+                size="mini"
+                icon={<EditIcon size="16" />}
+                style={{ color: "#1CB0F6", padding: "0 8px" }}
+                onClick={handleEdit}
+              >
+                编辑
+              </Button>
+              <Button
+                variant="text"
+                size="mini"
+                icon={<DeleteOutlined size="16" />}
+                style={{ color: "#FF4D4F", padding: "0 8px" }}
+                onClick={handleDelete}
+              >
+                删除
+              </Button>
+            </View>
+          )}
         </View>
       </View>
 
       {/* Action bar */}
       <View
         className="mx-3 mt-3 bg-white rounded-2xl flex items-center justify-around py-2"
-        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+        style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
       >
         <Button
           variant="text"
@@ -325,7 +392,7 @@ export default function NoteDetailPage() {
       {/* Comment section */}
       <View
         className="mx-3 mt-3 bg-white rounded-2xl overflow-hidden"
-        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+        style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
       >
         {/* Section header */}
         <View className="px-4 pt-4 pb-2 flex items-center">
@@ -396,8 +463,10 @@ export default function NoteDetailPage() {
         ))}
 
         {commentLoading && (
-          <View className="py-4 text-center">
-            <Text className="text-sm" style={{ color: "#999" }}>加载中...</Text>
+          <View className="py-4 flex justify-center">
+            <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+              加载中...
+            </Loading>
           </View>
         )}
 
@@ -417,46 +486,66 @@ export default function NoteDetailPage() {
       </View>
 
       {/* Fixed bottom comment input bar */}
-      <View
-        className="fixed bottom-0 left-0 right-0 bg-white flex items-end px-3 py-2 z-30"
-        style={{
-          borderTop: "1px solid #f0f0f0",
-          paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
-          boxShadow: "0 -2px 12px rgba(0,0,0,0.04)",
-        }}
-      >
-        <View className="flex-1 mr-2">
-          <Field
-            type="textarea"
-            placeholder="写一条评论..."
-            value={commentInput}
-            onChange={(e) => setCommentInput(e)}
-            autoHeight
-            style={{
-              background: "#F7F8FA",
-              borderRadius: "16px",
-              padding: "8px 14px",
-              fontSize: "14px",
-              maxHeight: "100px",
-            }}
-          />
-        </View>
-        <Button
-          color="primary"
-          shape="round"
-          size="small"
-          disabled={!commentInput.trim() || submitting}
+      {isLoggedIn() ? (
+        <View
+          className="fixed bottom-0 left-0 right-0 bg-white flex items-end px-3 py-2 z-30"
           style={{
-            background: commentInput.trim() ? "#58CC02" : "#e0e0e0",
-            borderColor: commentInput.trim() ? "#58CC02" : "#e0e0e0",
-            flexShrink: 0,
-            marginBottom: "4px",
+            borderTop: "1px solid #f0f0f0",
+            paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
+            boxShadow: "0 -2px 12px rgba(0,0,0,0.04)",
           }}
-          onClick={sendComment}
         >
-          发送
-        </Button>
-      </View>
+          <View className="flex-1 mr-2">
+            <Field
+              type="textarea"
+              placeholder="写一条评论..."
+              value={commentInput}
+              onChange={(e) => setCommentInput(e)}
+              autoHeight
+              style={{
+                background: "#F7F8FA",
+                borderRadius: "16px",
+                padding: "8px 14px",
+                fontSize: "14px",
+                maxHeight: "100px",
+              }}
+            />
+          </View>
+          <Button
+            color="primary"
+            shape="round"
+            size="small"
+            disabled={!commentInput.trim() || submitting}
+            style={{
+              background: commentInput.trim() ? "#58CC02" : "#e0e0e0",
+              borderColor: commentInput.trim() ? "#58CC02" : "#e0e0e0",
+              flexShrink: 0,
+              marginBottom: "4px",
+            }}
+            onClick={sendComment}
+          >
+            发送
+          </Button>
+        </View>
+      ) : (
+        <View
+          className="fixed bottom-0 left-0 right-0 bg-white flex items-center justify-center px-3 py-3 z-30"
+          style={{
+            borderTop: "1px solid #f0f0f0",
+            paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
+            boxShadow: "0 -2px 12px rgba(0,0,0,0.04)",
+          }}
+        >
+          <Button
+            variant="text"
+            size="small"
+            style={{ color: "#1CB0F6", fontSize: "14px" }}
+            onClick={() => Taro.navigateTo({ url: "/pages/login/index" })}
+          >
+            登录后评论
+          </Button>
+        </View>
+      )}
     </View>
   );
 }

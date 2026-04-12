@@ -10,7 +10,7 @@ import {
   SettingOutlined,
   Arrow,
 } from "@taroify/icons"
-import { api, isLoggedIn } from "~/api/request"
+import { api, isLoggedIn, clearToken } from "~/api/request"
 import { resolveImageUrl } from "~/utils/imageUrl"
 
 interface UserInfo {
@@ -21,19 +21,17 @@ interface UserInfo {
 }
 
 interface MyStats {
-  note_cnt: number
-  checkin_cnt: number
-  sign_days: number
-  partner_cnt: number
-  fav_cnt: number
+  noteCount: number
+  checkinCount: number
+  signDays: number
+  partnerCount: number
 }
 
 const defaultStats: MyStats = {
-  note_cnt: 0,
-  checkin_cnt: 0,
-  sign_days: 0,
-  partner_cnt: 0,
-  fav_cnt: 0,
+  noteCount: 0,
+  checkinCount: 0,
+  signDays: 0,
+  partnerCount: 0,
 }
 
 export default function MyPage() {
@@ -60,6 +58,62 @@ export default function MyPage() {
 
   const nav = (url: string) => Taro.navigateTo({ url })
   const goLogin = () => nav("/pages/login/index")
+
+  const handleChangePassword = () => {
+    let oldPwd = ""
+    let newPwd = ""
+
+    Taro.showModal({
+      title: "修改密码",
+      editable: true,
+      placeholderText: "请输入旧密码",
+      success: (oldRes) => {
+        if (!oldRes.confirm) return
+        oldPwd = (oldRes.content || "").trim()
+        if (!oldPwd) {
+          Taro.showToast({ title: "请输入旧密码", icon: "none" })
+          return
+        }
+        Taro.showModal({
+          title: "修改密码",
+          editable: true,
+          placeholderText: "请输入新密码（至少4位）",
+          success: (newRes) => {
+            if (!newRes.confirm) return
+            newPwd = (newRes.content || "").trim()
+            if (!newPwd || newPwd.length < 4) {
+              Taro.showToast({ title: "新密码至少4位", icon: "none" })
+              return
+            }
+            api
+              .post("/api/user/change_password", {
+                oldPassword: oldPwd,
+                newPassword: newPwd,
+              })
+              .then(() => {
+                Taro.showToast({ title: "密码修改成功", icon: "success" })
+              })
+              .catch(() => {
+                Taro.showToast({ title: "密码修改失败", icon: "none" })
+              })
+          },
+        })
+      },
+    })
+  }
+
+  const handleLogout = () => {
+    Taro.showModal({
+      title: "提示",
+      content: "确定要退出登录吗？",
+      success: (res) => {
+        if (res.confirm) {
+          clearToken()
+          Taro.reLaunch({ url: "/pages/login/index" })
+        }
+      },
+    })
+  }
 
   /* ========== Not logged in ========== */
   if (!logged) {
@@ -111,25 +165,25 @@ export default function MyPage() {
   const statItems: { label: string; value: number; color: string; tap: () => void }[] = [
     {
       label: "笔记",
-      value: stats.note_cnt,
+      value: stats.noteCount,
       color: "#58CC02",
       tap: () => nav("/pages/note-list/index"),
     },
     {
       label: "打卡",
-      value: stats.checkin_cnt,
+      value: stats.checkinCount,
       color: "#1CB0F6",
       tap: () => Taro.switchTab({ url: "/pages/checkin-list/index" }),
     },
     {
       label: "签到",
-      value: stats.sign_days,
+      value: stats.signDays,
       color: "#FF9500",
       tap: () => nav("/pages/sign/index"),
     },
     {
       label: "伙伴",
-      value: stats.partner_cnt,
+      value: stats.partnerCount,
       color: "#FF4B4B",
       tap: () => nav("/pages/partner/index"),
     },
@@ -266,11 +320,15 @@ export default function MyPage() {
         <Cell.Group>
           <Cell
             icon={<SettingOutlined color="#666" />}
-            title="设置"
+            title="修改密码"
             isLink
-            onClick={() =>
-              Taro.showToast({ title: "设置页开发中", icon: "none" })
-            }
+            onClick={handleChangePassword}
+          />
+          <Cell
+            icon={<SettingOutlined color="#FF4B4B" />}
+            title="退出登录"
+            isLink
+            onClick={handleLogout}
           />
         </Cell.Group>
       </View>

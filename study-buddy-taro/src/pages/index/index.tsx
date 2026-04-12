@@ -195,174 +195,86 @@ export default function IndexPage() {
 
   /* ---------- Logged in ---------- */
   return (
-    <View
-      className="min-h-100vh pb-6"
-      style={{ background: "#F7F8FA" }}
-    >
-      {/* ====== Top header area with gradient ====== */}
-      <View
-        className="px-5 pt-4 pb-8"
-        style={{
-          background: "linear-gradient(135deg, #58CC02 0%, #43b700 50%, #1CB0F6 100%)",
-          borderRadius: "0 0 24px 24px",
-        }}
-      >
-        {/* Greeting row */}
-        <View className="flex items-center justify-between mb-5">
-          <View className="flex items-center gap-2">
-            <Text className="text-2xl">{greeting.emoji}</Text>
-            <View>
-              <Text
-                className="block text-xl font-bold"
-                style={{ color: "#fff" }}
-              >
-                {greeting.text}
-              </Text>
-              <Text
-                className="block text-xs mt-0.5"
-                style={{ color: "rgba(255,255,255,0.75)" }}
-              >
-                今天也要加油哦
-              </Text>
-            </View>
+    <View className="min-h-100vh pb-6" style={{ background: "#F7F8FA" }}>
+      {/* ====== Top greeting ====== */}
+      <View className="px-5 pt-4 pb-3" style={{ background: "#fff" }}>
+        <View className="flex items-center justify-between">
+          <View>
+            <Text className="block text-lg font-bold" style={{ color: "#1a1a1a" }}>
+              {greeting.emoji} {greeting.text}
+            </Text>
+            <Text className="block text-xs mt-1" style={{ color: "#bbb" }}>
+              今天也要加油哦
+            </Text>
           </View>
-          {/* Message bell */}
           <View className="relative" onClick={goMessages}>
             <View
-              className="w-10 h-10 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(255,255,255,0.2)" }}
+              className="w-9 h-9 rounded-full flex items-center justify-center"
+              style={{ background: "#F5F5F5" }}
             >
-              <Bell size="20" color="#fff" />
+              <Bell size="18" color="#666" />
             </View>
             {unread > 0 && (
               <View
                 className="absolute flex items-center justify-center"
                 style={{
-                  top: "-4px",
-                  right: "-4px",
-                  minWidth: "18px",
-                  height: "18px",
-                  borderRadius: "9px",
-                  background: "#FF4D4F",
-                  border: "2px solid #58CC02",
-                  padding: "0 4px",
+                  top: "-3px", right: "-3px",
+                  minWidth: "16px", height: "16px", borderRadius: "8px",
+                  background: "#FF4D4F", border: "2px solid #fff", padding: "0 3px",
                 }}
               >
-                <Text className="text-white font-bold" style={{ fontSize: "10px" }}>
+                <Text className="text-white font-bold" style={{ fontSize: "9px" }}>
                   {unread > 99 ? "99+" : unread}
                 </Text>
               </View>
             )}
           </View>
         </View>
+      </View>
 
-        {/* ====== Sign-in card (inside header) ====== */}
+      <View className="px-4 pt-3">
+        {/* ====== Sign-in card ====== */}
         <View
-          className="rounded-2xl px-5 py-4"
+          className="rounded-2xl px-4 py-3.5 mb-3"
           style={{
-            background: signStats.todaySigned
-              ? "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,255,230,0.95) 100%)"
-              : "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,245,230,0.95) 100%)",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-            backdropFilter: "blur(10px)",
+            background: "#fff",
+            boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
+            borderLeft: signStats.todaySigned ? "3px solid #58CC02" : "3px solid #FF9500",
           }}
           onClick={onSignTap}
         >
           <View className="flex items-center justify-between">
-            {/* Left: streak info */}
             <View className="flex items-center gap-3 min-w-0 flex-1">
-              {/* Fire icon container */}
-              <View
-                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                style={{
-                  background: signStats.todaySigned
-                    ? "linear-gradient(135deg, #58CC02, #46a302)"
-                    : "linear-gradient(135deg, #FF9500, #FF6B00)",
-                  boxShadow: signStats.todaySigned
-                    ? "0 3px 12px rgba(88,204,2,0.3)"
-                    : "0 3px 12px rgba(255,149,0,0.3)",
-                }}
-              >
-                <FireOutlined size="22" color="#fff" />
-              </View>
+              <Text className="text-xl">🔥</Text>
               <View className="min-w-0">
-                <View className="flex items-center gap-1.5">
-                  <Text
-                    className="text-xl font-extrabold"
-                    style={{ color: signStats.todaySigned ? "#58CC02" : "#FF9500" }}
-                  >
+                <View className="flex items-center gap-1">
+                  <Text className="text-lg font-bold" style={{ color: signStats.todaySigned ? "#58CC02" : "#FF9500" }}>
                     {signStats.streak || 0}
                   </Text>
-                  <Text className="text-sm font-semibold" style={{ color: "#333" }}>
-                    天连续
-                  </Text>
-                </View>
-                <View className="flex items-center gap-2 mt-0.5">
-                  <Tag
-                    size="small"
-                    style={{
-                      background: "rgba(88,204,2,0.1)",
-                      color: "#58CC02",
-                      border: "none",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    累计{signStats.totalDays || 0}天
-                  </Tag>
-                  {signStats.totalDuration > 0 && (
-                    <Tag
-                      size="small"
-                      style={{
-                        background: "rgba(28,176,246,0.1)",
-                        color: "#1CB0F6",
-                        border: "none",
-                        borderRadius: "4px",
-                      }}
-                    >
-                      {signStats.totalDuration}分钟
-                    </Tag>
-                  )}
+                  <Text className="text-sm" style={{ color: "#333" }}>天连续</Text>
+                  <Text className="text-xs" style={{ color: "#ccc", margin: "0 4px" }}>·</Text>
+                  <Text className="text-xs" style={{ color: "#999" }}>累计{signStats.totalDays || 0}天</Text>
                 </View>
               </View>
             </View>
-
-            {/* Right: sign button or badge */}
             {!signStats.todaySigned ? (
               <View
-                className="shrink-0 flex items-center justify-center"
+                className="shrink-0"
                 style={{
-                  background: "linear-gradient(135deg, #FF9500, #FF6B00)",
-                  color: "#fff",
-                  fontSize: "15px",
-                  fontWeight: "700",
-                  padding: "8px 24px",
-                  borderRadius: "999px",
-                  boxShadow: "0 3px 12px rgba(255,149,0,0.35)",
+                  background: "#FF9500", color: "#fff",
+                  fontSize: "13px", fontWeight: "600",
+                  padding: "6px 20px", borderRadius: "999px",
                 }}
               >
                 签到
               </View>
             ) : (
-              <Tag
-                size="medium"
-                style={{
-                  background: "linear-gradient(135deg, #58CC02, #46a302)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "999px",
-                  padding: "6px 16px",
-                  fontWeight: "600",
-                }}
-              >
+              <Text className="text-sm shrink-0" style={{ color: "#58CC02", fontWeight: "500" }}>
                 已签到 ✓
-              </Tag>
+              </Text>
             )}
           </View>
         </View>
-      </View>
-
-      {/* ====== Content area ====== */}
-      <View className="px-4" style={{ marginTop: "-12px" }}>
 
         {/* ====== Unread messages notice bar ====== */}
         {unread > 0 && (
@@ -373,7 +285,7 @@ export default function IndexPage() {
                 background: "linear-gradient(135deg, #FFF8E6, #FFF3D6)",
                 color: "#FF9500",
                 fontWeight: "500",
-                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+                boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
               }}
               onClick={goMessages}
             >
@@ -428,7 +340,7 @@ export default function IndexPage() {
               style={{
                 borderRadius: "16px",
                 overflow: "hidden",
-                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+                boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
               }}
             >
               {tasks.map((t) => (
@@ -491,7 +403,7 @@ export default function IndexPage() {
             className="mb-4 rounded-2xl overflow-hidden"
             style={{
               background: "#fff",
-              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+              boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
             }}
             onClick={goCheckinList}
           >
@@ -547,7 +459,7 @@ export default function IndexPage() {
               style={{
                 borderRadius: "16px",
                 overflow: "hidden",
-                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+                boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
               }}
             >
               {activities.map((a, i) => (
@@ -619,7 +531,7 @@ export default function IndexPage() {
                 className="mb-3 rounded-2xl overflow-hidden"
                 style={{
                   background: "#fff",
-                  boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+                  boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
                 }}
                 onClick={() => goNote(n.id)}
               >
@@ -667,39 +579,9 @@ export default function IndexPage() {
 
                   {/* Stats row */}
                   <View className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: "1px solid #f5f5f5" }}>
-                    <Tag
-                      size="small"
-                      style={{
-                        background: "rgba(255,68,68,0.06)",
-                        color: "#FF4444",
-                        border: "none",
-                        borderRadius: "6px",
-                      }}
-                    >
-                      👍 {n.like_cnt || 0}
-                    </Tag>
-                    <Tag
-                      size="small"
-                      style={{
-                        background: "rgba(28,176,246,0.06)",
-                        color: "#1CB0F6",
-                        border: "none",
-                        borderRadius: "6px",
-                      }}
-                    >
-                      👁 {n.view_cnt || 0}
-                    </Tag>
-                    <Tag
-                      size="small"
-                      style={{
-                        background: "rgba(88,204,2,0.06)",
-                        color: "#58CC02",
-                        border: "none",
-                        borderRadius: "6px",
-                      }}
-                    >
-                      💬 {n.comment_cnt || 0}
-                    </Tag>
+                    <Text style={{ color: "#999", fontSize: "12px" }}>👍 {n.like_cnt || 0}</Text>
+                    <Text style={{ color: "#999", fontSize: "12px" }}>👁 {n.view_cnt || 0}</Text>
+                    <Text style={{ color: "#999", fontSize: "12px" }}>💬 {n.comment_cnt || 0}</Text>
                   </View>
                 </View>
               </View>

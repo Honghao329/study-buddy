@@ -89,7 +89,7 @@ export default function MessagesPage() {
       <View className="px-12 pt-12">
         <View
           className="rounded-2xl overflow-hidden"
-          style={{ backgroundColor: "#fff", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+          style={{ backgroundColor: "#fff", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
         >
           {list.map((msg) => (
             <Cell

@@ -40,6 +40,7 @@ export default defineConfig(async (merge) => {
     },
     copy: {
       patterns: [
+        { from: "src/assets/", to: `dist/${process.env.TARO_ENV}/assets/` },
       ],
       options: {
       },

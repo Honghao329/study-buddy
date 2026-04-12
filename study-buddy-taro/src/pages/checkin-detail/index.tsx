@@ -11,7 +11,7 @@ import { resolveImageUrl } from "~/utils/imageUrl";
 interface CheckinDetail {
   id: number;
   title: string;
-  desc: string;
+  description: string;
   join_cnt: number;
   creator_id: number;
   creator_name: string;
@@ -177,9 +177,9 @@ export default function CheckinDetailPage() {
         <Text className="block text-xl font-bold text-white mb-2 leading-snug">
           {detail.title}
         </Text>
-        {detail.desc && (
+        {detail.description && (
           <Text className="block text-sm text-white mb-3 leading-relaxed" style={{ opacity: 0.85 }}>
-            {detail.desc}
+            {detail.description}
           </Text>
         )}
         <View className="flex items-center gap-3 mt-3">

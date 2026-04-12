@@ -2,7 +2,7 @@ import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow, usePullDownRefresh, useReachBottom } from "@tarojs/taro";
 import { useCallback, useRef, useState } from "react";
 import { Avatar, Empty, FloatingBubble, Loading, Tabs } from "@taroify/core";
-import { Plus, LikeOutlined, EyeOutlined, CommentOutlined } from "@taroify/icons";
+import { Plus } from "@taroify/icons";
 import { api } from "~/api/request";
 import { resolveImageUrl } from "~/utils/imageUrl";
 
@@ -110,7 +110,7 @@ export default function CommunityPage() {
           <View
             key={note.id}
             className="bg-white rounded-xl mb-3 p-4 active:opacity-80"
-            style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+            style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}
             onClick={() => goDetail(note.id)}
           >
             {/* Author row */}
@@ -138,28 +138,20 @@ export default function CommunityPage() {
             )}
 
             {/* Stats row */}
-            <View className="flex items-center gap-4 text-xs text-[#BCBCBC]">
-              <View className="flex items-center gap-1">
-                <LikeOutlined size="14" color="#BCBCBC" />
-                <Text className="text-xs text-[#BCBCBC]">{note.like_cnt || 0}</Text>
-              </View>
-              <View className="flex items-center gap-1">
-                <EyeOutlined size="14" color="#BCBCBC" />
-                <Text className="text-xs text-[#BCBCBC]">{note.view_cnt || 0}</Text>
-              </View>
-              <View className="flex items-center gap-1">
-                <CommentOutlined size="14" color="#BCBCBC" />
-                <Text className="text-xs text-[#BCBCBC]">{note.comment_cnt || 0}</Text>
-              </View>
+            <View className="flex items-center gap-4">
+              <Text style={{ color: "#999", fontSize: "12px" }}>👍 {note.like_cnt || 0}</Text>
+              <Text style={{ color: "#999", fontSize: "12px" }}>👁 {note.view_cnt || 0}</Text>
+              <Text style={{ color: "#999", fontSize: "12px" }}>💬 {note.comment_cnt || 0}</Text>
             </View>
           </View>
         ))}
 
         {/* Loading state */}
         {loading && (
-          <View className="flex justify-center items-center py-5 gap-2">
-            <Loading size="18px" />
-            <Text className="text-sm text-[#999]">加载中...</Text>
+          <View className="py-5 flex justify-center">
+            <Loading type="spinner" style={{ color: "#1CB0F6" }}>
+              加载中...
+            </Loading>
           </View>
         )}
 

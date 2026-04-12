@@ -74,7 +74,7 @@ export default function FavoritePage() {
             className="rounded-2xl overflow-hidden"
             style={{
               backgroundColor: "#fff",
-              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+              boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
             }}
           >
             {list.map((item) => {
@@ -121,7 +121,7 @@ export default function FavoritePage() {
         {!loading && list.length === 0 && (
           <View className="pt-60">
             <Empty>
-              <Empty.Image src="https://img.yzcdn.cn/vant/empty-image-default.png" />
+              <Empty.Image />
               <Empty.Description>暂无收藏内容</Empty.Description>
             </Empty>
           </View>

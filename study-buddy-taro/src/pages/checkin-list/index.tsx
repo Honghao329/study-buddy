@@ -8,7 +8,7 @@ import { api, isLoggedIn } from "~/api/request";
 interface CheckinTask {
   id: number;
   title: string;
-  desc: string;
+  description: string;
   join_cnt: number;
   creator_name: string;
   created_at: string;
@@ -75,8 +75,47 @@ export default function CheckinListPage() {
     Taro.navigateTo({ url: `/pages/checkin-detail/index?id=${id}` });
   };
 
-  const onCreateTap = () => {
-    Taro.showToast({ title: "功能开发中", icon: "none" });
+  const onCreateTap = async () => {
+    if (!isLoggedIn()) {
+      Taro.showToast({ title: "请先登录", icon: "none" });
+      return;
+    }
+    try {
+      const titleRes = await Taro.showModal({
+        title: "创建打卡任务",
+        placeholderText: "请输入任务标题",
+        editable: true,
+        confirmText: "下一步",
+      });
+      if (!titleRes.confirm || !titleRes.content?.trim()) return;
+      const title = titleRes.content.trim();
+
+      const descRes = await Taro.showModal({
+        title: "任务描述（可选）",
+        placeholderText: "请输入任务描述",
+        editable: true,
+        confirmText: "创建",
+      });
+      const description = descRes.confirm ? (descRes.content?.trim() || "") : "";
+      if (!descRes.confirm) return;
+
+      Taro.showLoading({ title: "创建中..." });
+      const res = await api.post<{ id: number }>("/api/checkin/create", {
+        title,
+        description,
+      });
+      Taro.hideLoading();
+      Taro.showToast({ title: "创建成功", icon: "success" });
+      // Navigate to the newly created checkin detail
+      if (res?.id) {
+        Taro.navigateTo({ url: `/pages/checkin-detail/index?id=${res.id}` });
+      } else {
+        loadList(1);
+      }
+    } catch {
+      Taro.hideLoading();
+      Taro.showToast({ title: "创建失败", icon: "none" });
+    }
   };
 
   return (
@@ -113,9 +152,9 @@ export default function CheckinListPage() {
                   </View>
 
                   {/* Description */}
-                  {item.desc && (
+                  {item.description && (
                     <Text className="block text-sm text-[#999] line-clamp-2 mb-2 leading-relaxed">
-                      {item.desc}
+                      {item.description}
                     </Text>
                   )}
 

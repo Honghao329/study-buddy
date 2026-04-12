@@ -5,14 +5,20 @@ function normalizeBaseUrl(value: string) {
 }
 
 export function getApiBaseUrl() {
-  return normalizeBaseUrl(
-    process.env.TARO_APP_API_BASE_URL
-      || process.env.TARO_API_BASE_URL
-      || DEFAULT_API_BASE_URL,
-  );
+  let envUrl = "";
+  try {
+    envUrl = typeof TARO_APP_API_BASE_URL !== "undefined"
+      ? TARO_APP_API_BASE_URL
+      : "";
+  } catch {
+    // ignore
+  }
+  return normalizeBaseUrl(envUrl || DEFAULT_API_BASE_URL);
 }
 
 export function joinApiUrl(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${getApiBaseUrl()}${normalizedPath}`;
 }
+
+declare const TARO_APP_API_BASE_URL: string;
