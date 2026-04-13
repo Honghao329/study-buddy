@@ -1,14 +1,10 @@
 const router = require('express').Router();
-const crypto = require('crypto');
 const db = require('../config/db');
 const { adminAuth, generateToken } = require('../middleware/auth');
 const { deleteCheckinCascade, deleteNoteCascade, deleteCommentCascade } = require('../lib/cleanup');
 const { normalizeNote, normalizeUser, parseJsonField, fillAvatarsList } = require('../lib/format');
 const { sanitizePage } = require('../lib/validate');
-
-function hashPwd(pwd) {
-	return crypto.createHash('sha256').update(pwd + '_study_buddy').digest('hex');
-}
+const { hashPwd } = require('../lib/hash');
 
 router.post('/login', (req, res) => {
 	const { username, password } = req.body;

@@ -3,13 +3,10 @@
  * 运行: node seed.js
  * 会创建测试用户、笔记、打卡、签到、评论等数据
  */
-const crypto = require('crypto');
 const db = require('./config/db');
 const { getLocalDateString } = require('./lib/date');
+const { hashPwd } = require('./lib/hash');
 
-function hashPwd(pwd) {
-  return crypto.createHash('sha256').update(pwd + '_study_buddy').digest('hex');
-}
 const hash = hashPwd('123456');
 
 // 清空旧数据（可选）

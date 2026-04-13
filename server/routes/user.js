@@ -1,64 +1,74 @@
 const router = require('express').Router();
-const crypto = require('crypto');
 const db = require('../config/db');
 const { authMiddleware, optionalAuth, generateToken } = require('../middleware/auth');
 const { normalizeUser, parseJsonField, fillAvatarsList } = require('../lib/format');
 const { sanitizePage, trimText } = require('../lib/validate');
+const { hashPwd } = require('../lib/hash');
 
 function pickFirstDefined(...values) {
 	return values.find((value) => value !== undefined && value !== null);
 }
 
-function hashPwd(pwd) {
-	return crypto.createHash('sha256').update(pwd + '_study_buddy').digest('hex');
+function respondWithToken(res, user) {
+	const token = generateToken({ userId: user.id, openid: user.openid });
+	res.json({ code: 200, data: { token, user: normalizeUser(user) } });
 }
 
+// 登录
 router.post('/login', (req, res) => {
-	const username = (pickFirstDefined(req.body.username, req.body.nickname, req.body.nickName, '') || '').trim();
+	const username = (req.body.username || '').trim();
 	const password = (req.body.password || '').trim();
-	const nickname = (req.body.nickname || '').trim(); // 注册时可选昵称
 
 	if (!username) return res.json({ code: 400, msg: '请输入账号' });
 	if (!password || password.length < 4) return res.json({ code: 400, msg: '密码至少4位' });
 
 	const hashed = hashPwd(password);
 
-	// 先按 username 查找，再按 nickname 兜底（兼容旧数据）
-	let user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-	if (!user) user = db.prepare('SELECT * FROM users WHERE nickname = ?').get(username);
+	// 单次查询：先匹配 username，再兜底 nickname（兼容旧数据）
+	const user = db.prepare('SELECT * FROM users WHERE username = ? OR nickname = ? LIMIT 1').get(username, username);
+	if (!user) return res.json({ code: 401, msg: '账号不存在，请先注册' });
 
-	if (user) {
-		// 验证密码
-		if (user.password && user.password !== hashed) {
-			if (user.password === password) {
-				db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashed, user.id);
-			} else {
-				return res.json({ code: 401, msg: '密码错误' });
-			}
-		}
-		if (!user.password) {
-			db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashed, user.id);
-		}
-		// 如果旧用户没有 username，补上
-		if (!user.username) {
-			db.prepare('UPDATE users SET username = ? WHERE id = ?').run(username, user.id);
-		}
-		db.prepare('UPDATE users SET login_cnt = login_cnt + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
-		user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
-	} else {
-		// 注册新用户
-		const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
-		if (existing) return res.json({ code: 400, msg: '该账号已被注册' });
-
-		const openid = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-		const displayName = nickname || username; // 昵称默认等于账号
-		const result = db.prepare('INSERT INTO users (openid, username, nickname, password, login_cnt) VALUES (?, ?, ?, ?, 1)')
-			.run(openid, username, displayName, hashed);
-		user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
+	// 验证密码（兼容旧明文）
+	if (user.password && user.password !== hashed) {
+		if (user.password !== password) return res.json({ code: 401, msg: '密码错误' });
 	}
 
-	const token = generateToken({ userId: user.id, openid: user.openid });
-	res.json({ code: 200, data: { token, user: normalizeUser(user) } });
+	// 合并所有需要更新的字段到一次 UPDATE
+	const updates = ['login_cnt = login_cnt + 1', 'updated_at = CURRENT_TIMESTAMP'];
+	const params = [];
+	if (!user.password || user.password === password) { updates.push('password = ?'); params.push(hashed); }
+	if (!user.username) { updates.push('username = ?'); params.push(username); }
+	params.push(user.id);
+	db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+	user.login_cnt = (user.login_cnt || 0) + 1;
+	respondWithToken(res, user);
+});
+
+// 注册
+router.post('/register', (req, res) => {
+	const username = (req.body.username || '').trim();
+	const nickname = (req.body.nickname || '').trim();
+	const password = (req.body.password || '').trim();
+
+	if (!username) return res.json({ code: 400, msg: '请输入账号' });
+	if (!nickname) return res.json({ code: 400, msg: '请输入昵称' });
+	if (!password || password.length < 4) return res.json({ code: 400, msg: '密码至少4位' });
+	if (username.length < 2 || username.length > 20) return res.json({ code: 400, msg: '账号长度2-20位' });
+
+	const hashed = hashPwd(password);
+	const openid = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+	try {
+		const result = db.prepare('INSERT INTO users (openid, username, nickname, password, login_cnt) VALUES (?, ?, ?, ?, 1)')
+			.run(openid, username, nickname, hashed);
+		const user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
+		respondWithToken(res, user);
+	} catch (e) {
+		if (e.code === 'SQLITE_CONSTRAINT_UNIQUE' || (e.message && e.message.includes('UNIQUE'))) {
+			return res.json({ code: 400, msg: '该账号或昵称已被占用' });
+		}
+		throw e;
+	}
 });
 
 // 获取当前用户信息
