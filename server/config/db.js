@@ -80,6 +80,38 @@ db.exec(`
     FOREIGN KEY (target_id) REFERENCES users(id)
   );
 
+  CREATE TABLE IF NOT EXISTS partner_space_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_key TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
+    content TEXT DEFAULT '',
+    images TEXT DEFAULT '[]',
+    status INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS partner_space_likes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_key TEXT NOT NULL,
+    item_type TEXT NOT NULL,
+    item_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(room_key, item_type, item_id, user_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS partner_space_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_key TEXT NOT NULL,
+    item_type TEXT NOT NULL,
+    item_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
   CREATE TABLE IF NOT EXISTS signs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -217,6 +249,9 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_partners_target ON partners(target_id, status);
   CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_likes_lookup ON likes(user_id, target_id, target_type);
+  CREATE INDEX IF NOT EXISTS idx_partner_space_posts_room ON partner_space_posts(room_key, status, created_at);
+  CREATE INDEX IF NOT EXISTS idx_partner_space_comments_item ON partner_space_comments(room_key, item_type, item_id, created_at);
+  CREATE INDEX IF NOT EXISTS idx_partner_space_likes_item ON partner_space_likes(room_key, item_type, item_id);
 `);
 
 // 迁移：给 users 表加 password 字段

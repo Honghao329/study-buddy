@@ -11,6 +11,7 @@ import NoteAdd from './pages/NoteAdd';
 import Sign from './pages/Sign';
 import Messages from './pages/Messages';
 import Partner from './pages/Partner';
+import PartnerRoom from './pages/PartnerRoom';
 import Favorite from './pages/Favorite';
 import UserProfile from './pages/UserProfile';
 import MyNotes from './pages/MyNotes';
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/sign" element={<Sign />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/partner" element={<Partner />} />
+          <Route path="/partner/room" element={<PartnerRoom />} />
           <Route path="/favorite" element={<Favorite />} />
           <Route path="/user/:id" element={<UserProfile />} />
           <Route path="/my/notes" element={<MyNotes />} />

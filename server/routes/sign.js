@@ -59,8 +59,8 @@ router.get('/calendar', authMiddleware, (req, res) => {
 	const endYear = Number(month) === 12 ? Number(year) + 1 : Number(year);
 	const endDay = `${endYear}-${String(endMonth).padStart(2, '0')}-01`;
 
-	const list = db.prepare(
-		'SELECT day, duration, status FROM signs WHERE user_id = ? AND day >= ? AND day < ? ORDER BY day ASC'
+const list = db.prepare(
+		'SELECT day, duration, status, content FROM signs WHERE user_id = ? AND day >= ? AND day < ? ORDER BY day ASC'
 	).all(req.userId, startDay, endDay);
 	res.json({ code: 200, data: list });
 });

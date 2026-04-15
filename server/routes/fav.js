@@ -2,6 +2,7 @@ const router = require('express').Router();
 const db = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
 const { resolveFavoriteToggleAction } = require('../lib/favorite');
+const { normalizeNote } = require('../lib/format');
 
 function checkPartnerAccess(ownerId, userId) {
 	if (!userId || Number(ownerId) === Number(userId)) return false;
@@ -37,14 +38,21 @@ router.post('/toggle', authMiddleware, (req, res) => {
 
 router.get('/my_list', authMiddleware, (req, res) => {
 	const list = db.prepare(
-		`SELECT f.*, n.title as note_title, n.content as note_content, n.like_cnt, n.comment_cnt, n.view_cnt,
+		`SELECT f.id as favorite_id,
+		 f.created_at as favorite_created_at,
+		 f.user_id as favorite_user_id,
+		 f.target_id,
+		 f.target_type,
+		 f.title as favorite_title,
+		 n.*,
+		 n.title as note_title, n.content as note_content, n.like_cnt, n.comment_cnt, n.view_cnt,
 		 u.nickname as author_name, u.avatar as author_avatar
 		 FROM favorites f
 		 LEFT JOIN notes n ON f.target_type = 'note' AND f.target_id = n.id
 		 LEFT JOIN users u ON n.user_id = u.id
 		 WHERE f.user_id = ? ORDER BY f.created_at DESC`
 	).all(req.userId);
-	res.json({ code: 200, data: list });
+	res.json({ code: 200, data: list.map(normalizeNote) });
 });
 
 module.exports = router;

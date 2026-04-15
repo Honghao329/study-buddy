@@ -5,6 +5,7 @@ import {
   Shield, MessageSquare, Send, X, Bell,
 } from 'lucide-react';
 import { api, isLoggedIn } from '../api/request';
+import { resolveMediaUrl } from '../utils/media';
 
 const MAX_RECORDS = 20;
 
@@ -29,6 +30,7 @@ export default function CheckinDetail() {
   const currentUser = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('userInfo') || '{}'); } catch { return {}; }
   }, []);
+  const currentUserId = Number(currentUser.id || 0);
 
   useEffect(() => {
     if (!isLoggedIn()) { navigate('/login'); return; }
@@ -72,18 +74,18 @@ export default function CheckinDetail() {
   };
 
   const getPartnerUserId = (p: any): number => {
-    if (p.user_id === currentUser.id) return p.target_id;
-    if (p.target_id === currentUser.id) return p.user_id;
+    if (p.user_id === currentUserId) return p.target_id;
+    if (p.target_id === currentUserId) return p.user_id;
     return p.user_id || p.id;
   };
   const getPartnerName = (p: any): string => {
-    if (p.user_id === currentUser.id) return p.target_name || '学伴';
-    if (p.target_id === currentUser.id) return p.user_name || '学伴';
+    if (p.user_id === currentUserId) return p.target_name || '学伴';
+    if (p.target_id === currentUserId) return p.user_name || '学伴';
     return p.user_name || p.target_name || '学伴';
   };
   const getPartnerAvatar = (p: any): string => {
-    if (p.user_id === currentUser.id) return p.target_pic || '';
-    if (p.target_id === currentUser.id) return p.user_pic || '';
+    if (p.user_id === currentUserId) return p.target_pic || '';
+    if (p.target_id === currentUserId) return p.user_pic || '';
     return p.user_pic || p.target_pic || '';
   };
 
@@ -171,8 +173,8 @@ export default function CheckinDetail() {
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-3">
                 <div className="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center overflow-hidden border-2 border-amber-200 cursor-pointer shrink-0"
                   onClick={() => navigate(`/user/${mySupervisor.id}`)}>
-                  {mySupervisor.avatar
-                    ? <img src={mySupervisor.avatar} alt="" className="w-full h-full object-cover" />
+                        {mySupervisor.avatar
+                    ? <img src={resolveMediaUrl(mySupervisor.avatar)} alt="" className="w-full h-full object-cover" />
                     : <span className="text-sm font-bold text-amber-500">{(mySupervisor.nickname || '?')[0]}</span>}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -202,7 +204,7 @@ export default function CheckinDetail() {
                   <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer"
                     onClick={() => navigate(`/user/${s.user_id}`)}>
                     {s.avatar
-                      ? <img src={s.avatar} alt="" className="w-full h-full object-cover" />
+                      ? <img src={resolveMediaUrl(s.avatar)} alt="" className="w-full h-full object-cover" />
                       : <span className="text-xs font-bold text-blue-500">{(s.nickname || '?')[0]}</span>}
                   </div>
                   <span className="flex-1 text-sm text-slate-700 truncate">{s.nickname || '学伴'}</span>
@@ -252,7 +254,7 @@ export default function CheckinDetail() {
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer"
                         onClick={() => r.user_id && navigate(`/user/${r.user_id}`)}>
                         {r.user_avatar
-                          ? <img src={r.user_avatar} alt="" className="w-full h-full object-cover" />
+                          ? <img src={resolveMediaUrl(r.user_avatar)} alt="" className="w-full h-full object-cover" />
                           : <span className="text-xs font-bold text-blue-500">{(r.user_name || '?')[0]}</span>}
                       </div>
                       {i < displayRecords.length - 1 && <div className="w-0.5 flex-1 bg-gray-100 my-1" />}
@@ -268,7 +270,7 @@ export default function CheckinDetail() {
                         {r.content && <p className="text-xs text-gray-500">{r.content}</p>}
 
                         {/* 监督人点评 - 只有打卡者自己和监督人能看 */}
-                        {r.comment && (r.user_id === currentUser.id || canComment) && (
+                        {r.comment && (r.user_id === currentUserId || canComment) && (
                           <div className="mt-2 pt-2 border-t border-gray-50 flex items-start space-x-2">
                             <Shield size={12} className="text-amber-500 mt-0.5 shrink-0" />
                             <div className="min-w-0">
@@ -357,7 +359,7 @@ export default function CheckinDetail() {
                       <button key={p.id} className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-blue-50 transition-colors active:scale-[0.98] disabled:opacity-50"
                         onClick={() => pickerMode === 'supervisor' ? inviteSupervisor(uid) : inviteJoin(uid)} disabled={inviting}>
                         <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden shrink-0">
-                          {avatar ? <img src={avatar} alt="" className="w-full h-full object-cover" />
+                          {avatar ? <img src={resolveMediaUrl(avatar)} alt="" className="w-full h-full object-cover" />
                             : <span className="text-sm font-bold text-blue-500">{(name || '?')[0]}</span>}
                         </div>
                         <p className="flex-1 text-left text-sm font-medium text-slate-700 truncate">{name}</p>

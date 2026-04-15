@@ -1,9 +1,10 @@
 const router = require('express').Router();
 const db = require('../config/db');
 const { authMiddleware, optionalAuth, generateToken } = require('../middleware/auth');
-const { normalizeUser, parseJsonField, fillAvatarsList } = require('../lib/format');
+const { normalizeUser, normalizeNote, parseJsonField, fillAvatarsList } = require('../lib/format');
 const { sanitizePage, trimText } = require('../lib/validate');
 const { hashPwd } = require('../lib/hash');
+const { getActivePartnerRelation, getPartnerStatusBetween } = require('../lib/partner_room');
 
 function pickFirstDefined(...values) {
 	return values.find((value) => value !== undefined && value !== null);
@@ -92,16 +93,17 @@ router.get('/profile/:id', optionalAuth, (req, res) => {
 	// 伙伴关系状态
 	let partner_status = 'none'; // none / pending / accepted
 	if (req.userId && req.userId !== Number(req.params.id)) {
-		const rel = db.prepare(
-			`SELECT status FROM partners
-			 WHERE ((user_id = ? AND target_id = ?) OR (user_id = ? AND target_id = ?))
-			 AND status IN (0, 1)
-			 ORDER BY status DESC LIMIT 1`
-		).get(req.userId, req.params.id, req.params.id, req.userId);
-		if (rel) partner_status = rel.status === 1 ? 'accepted' : 'pending';
+		partner_status = getPartnerStatusBetween(db, req.userId, Number(req.params.id));
+		const current = getActivePartnerRelation(db, req.userId);
+		if (current && current.partner && current.partner.id !== Number(req.params.id) && partner_status === 'none') {
+			partner_status = 'occupied';
+		}
 	}
 	user.partner_status = partner_status;
 	user.is_self = req.userId === Number(req.params.id);
+	const current = req.userId ? getActivePartnerRelation(db, req.userId) : null;
+	user.active_partner_id = current?.partner?.id || 0;
+	user.active_partner_name = current?.partner?.nickname || '';
 
 	res.json({ code: 200, data: user });
 });
@@ -116,16 +118,17 @@ router.get('/user_notes/:id', (req, res) => {
 		 ORDER BY n.created_at DESC LIMIT ? OFFSET ?`
 	).all(req.params.id, size, offset);
 	const total = db.prepare("SELECT COUNT(*) as cnt FROM notes WHERE user_id = ? AND status = 1 AND visibility = 'public'").get(req.params.id).cnt;
-	res.json({ code: 200, data: { list, total } });
+	res.json({ code: 200, data: { list: list.map(normalizeNote), total } });
 });
 
 // 用户列表（发现用户）
 router.get('/list', optionalAuth, (req, res) => {
 	const { size, offset } = sanitizePage(req.query);
-	const { search } = req.query;
+	const { search, keyword } = req.query;
 	let where = 'WHERE status = 1';
 	const params = [];
-	if (search) { where += ' AND (nickname LIKE ? OR bio LIKE ? OR tags LIKE ?)'; params.push('%' + search + '%', '%' + search + '%', '%' + search + '%'); }
+	const actualSearch = search || keyword;
+	if (actualSearch) { where += ' AND (nickname LIKE ? OR bio LIKE ? OR tags LIKE ?)'; params.push('%' + actualSearch + '%', '%' + actualSearch + '%', '%' + actualSearch + '%'); }
 
 	const total = db.prepare(`SELECT COUNT(*) as cnt FROM users ${where}`).get(...params).cnt;
 	const list = db.prepare(`SELECT id, nickname, avatar, bio, tags, created_at FROM users ${where} ORDER BY login_cnt DESC, id DESC LIMIT ? OFFSET ?`)
@@ -154,7 +157,7 @@ router.get('/my_stats', authMiddleware, (req, res) => {
 	const stats = db.prepare(`SELECT
 		(SELECT COUNT(*) FROM notes WHERE user_id = ? AND status = 1) as noteCount,
 		(SELECT COUNT(*) FROM signs WHERE user_id = ?) as signDays,
-		(SELECT COUNT(*) FROM partners WHERE (user_id = ? OR target_id = ?) AND status = 1) as partnerCount,
+		(SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM partners WHERE (user_id = ? OR target_id = ?) AND status = 1) as partnerCount,
 		(SELECT COUNT(*) FROM checkin_records WHERE user_id = ?) as checkinCount
 	`).get(req.userId, req.userId, req.userId, req.userId, req.userId);
 	res.json({ code: 200, data: stats });

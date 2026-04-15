@@ -57,8 +57,9 @@ router.post('/image', authMiddleware, rateLimit, (req, res) => {
 			return res.json({ code: 400, msg });
 		}
 		if (!req.file) return res.json({ code: 400, msg: '请选择文件' });
-		const url = '/uploads/' + req.file.filename;
-		res.json({ code: 200, data: { url } });
+		const path = '/uploads/' + req.file.filename;
+		const origin = `${req.protocol}://${req.get('host')}`;
+		res.json({ code: 200, data: { url: `${origin}${path}`, path } });
 	});
 });
 

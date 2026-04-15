@@ -1,14 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowLeft, Heart, Bookmark, MessageCircle, Send, Eye, Share2, Globe,
-  Lock, Users, Loader2, FileX,
+  ArrowLeft,
+  Edit3,
+  Eye,
+  FileX,
+  Globe,
+  Loader2,
+  Lock,
+  MessageCircle,
+  Send,
+  Share2,
+  Trash2,
+  Users,
 } from 'lucide-react';
-import { api, isLoggedIn } from '../api/request';
+import { api, getUserInfo, isLoggedIn } from '../api/request';
+import { resolveMediaUrl } from '../utils/media';
+import EngagementBar from '../components/EngagementBar';
+import MediaGrid from '../components/MediaGrid';
+import TagPills from '../components/TagPills';
+
+function formatDateTime(value?: string) {
+  if (!value) return '';
+  const d = new Date(String(value).replace(' ', 'T'));
+  if (Number.isNaN(d.getTime())) return String(value).slice(0, 19);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function formatCommentTime(value?: string) {
+  if (!value) return '';
+  const d = new Date(String(value).replace(' ', 'T'));
+  if (Number.isNaN(d.getTime())) return String(value).slice(0, 16);
+  return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function visibilityMeta(visibility?: string) {
+  if (visibility === 'private') return { icon: Lock, label: '仅自己', className: 'bg-slate-100 text-slate-500' };
+  if (visibility === 'partner') return { icon: Users, label: '学伴可见', className: 'bg-blue-50 text-blue-600' };
+  return { icon: Globe, label: '公开', className: 'bg-emerald-50 text-emerald-600' };
+}
 
 export default function NoteDetail() {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
+  const currentUser = getUserInfo();
+  const commentsAnchorRef = useRef<HTMLDivElement | null>(null);
   const [note, setNote] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [commentPage, setCommentPage] = useState(1);
@@ -18,11 +54,16 @@ export default function NoteDetail() {
   const [favorited, setFavorited] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const [commentText, setCommentText] = useState('');
-  const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingComments, setLoadingComments] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [toggling, setToggling] = useState(false);
+
+  const isSelf = useMemo(() => currentUser?.id && Number(id) === Number(currentUser.id), [currentUser?.id, id]);
 
   useEffect(() => {
     if (!isLoggedIn()) { navigate('/login'); return; }
+    if (!id) return;
     loadDetail();
     loadComments(1, true);
   }, [id]);
@@ -31,40 +72,61 @@ export default function NoteDetail() {
     setLoading(true);
     try {
       const res: any = await api.get(`/note/detail/${id}`);
-      setNote(res);
+      setNote(res || null);
       setLiked(!!res?.is_liked);
-      setLikeCount(res?.like_cnt || 0);
+      setLikeCount(Number(res?.like_cnt || 0));
       setFavorited(!!res?.is_faved);
-      setCommentCount(res?.comment_cnt || 0);
-    } catch {}
+      setCommentCount(Number(res?.comment_cnt || 0));
+    } catch {
+      setNote(null);
+    }
     setLoading(false);
   };
 
   const loadComments = async (page: number, reset = false) => {
+    setLoadingComments(true);
     try {
-      const res: any = await api.get('/comment/list', { noteId: id, page, size: 20 });
+      const res: any = await api.get('/comment/list', { noteId: id, page, size: 10 });
       const list = res?.list || [];
-      setComments(prev => reset ? list : [...prev, ...list]);
-      setHasMoreComments(list.length >= 20);
+      setComments((prev) => (reset ? list : [...prev, ...list]));
+      setHasMoreComments(list.length >= 10);
       setCommentPage(page);
-      if (reset && res?.total !== undefined) setCommentCount(res.total);
-    } catch {}
+      if (typeof res?.total === 'number') setCommentCount(res.total);
+    } catch {
+      if (reset) setComments([]);
+      setHasMoreComments(false);
+    }
+    setLoadingComments(false);
+  };
+
+  const scrollToComments = () => {
+    commentsAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const toggleLike = async () => {
+    if (toggling) return;
+    setToggling(true);
     try {
       const res: any = await api.post('/like/toggle', { targetId: Number(id), targetType: 'note' });
-      const nowLiked = res?.isLiked === 1;
+      const nowLiked = !!res?.isLiked;
       setLiked(nowLiked);
-      setLikeCount(prev => nowLiked ? prev + 1 : Math.max(0, prev - 1));
+      setLikeCount((prev) => Math.max(0, prev + (nowLiked ? 1 : -1)));
     } catch {}
+    setToggling(false);
   };
 
-  const toggleFav = async () => {
+  const toggleFavorite = async () => {
+    if (toggling) return;
+    setToggling(true);
     try {
-      const res: any = await api.post('/fav/toggle', { targetId: Number(id), targetType: 'note', title: note?.title || '' });
-      setFavorited(res?.isFav === 1);
+      const res: any = await api.post('/fav/toggle', {
+        targetId: Number(id),
+        targetType: 'note',
+        title: note?.title || '',
+      });
+      setFavorited(!!res?.isFav);
     } catch {}
+    setToggling(false);
   };
 
   const submitComment = async () => {
@@ -73,21 +135,35 @@ export default function NoteDetail() {
     try {
       await api.post('/comment/create', { noteId: Number(id), content: commentText.trim() });
       setCommentText('');
-      setCommentCount(prev => prev + 1);
-      loadComments(1, true);
+      await loadDetail();
+      await loadComments(1, true);
+      commentsAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch {}
     setSending(false);
   };
 
-  const visibilityInfo: Record<string, { icon: any; label: string; color: string }> = {
-    public: { icon: Globe, label: '公开', color: 'bg-green-50 text-green-600' },
-    private: { icon: Lock, label: '仅自己', color: 'bg-gray-100 text-gray-500' },
-    partner: { icon: Users, label: '学伴可见', color: 'bg-blue-50 text-blue-600' },
+  const handleDelete = async () => {
+    if (!note || !isSelf) return;
+    if (!confirm('确定删除这篇笔记？')) return;
+    try {
+      await api.del(`/note/delete/${note.id}`);
+      navigate(-1);
+    } catch {}
+  };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}${window.location.pathname}#/note/${note?.id || id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('链接已复制');
+    } catch {
+      window.prompt('复制链接', url);
+    }
   };
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <Loader2 size={32} className="animate-spin text-indigo-400" />
       </div>
     );
@@ -95,144 +171,224 @@ export default function NoteDetail() {
 
   if (!note) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <FileX size={48} className="text-gray-200 mb-3" />
-        <p className="text-gray-400 text-sm mb-4">笔记不存在或已删除</p>
-        <button className="text-indigo-600 text-sm font-medium" onClick={() => navigate(-1)}>返回</button>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-6 text-center">
+        <FileX size={48} className="mb-3 text-slate-200" />
+        <p className="text-sm text-slate-400">笔记不存在或已删除</p>
+        <button className="mt-4 text-sm font-medium text-indigo-600" onClick={() => navigate(-1)}>
+          返回
+        </button>
       </div>
     );
   }
 
-  const vis = visibilityInfo[note.visibility] || visibilityInfo.public;
+  const vis = visibilityMeta(note.visibility);
   const VisIcon = vis.icon;
+  const imageCount = Array.isArray(note.images) ? note.images.length : 0;
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50 min-h-screen">
-      {/* Nav Bar */}
-      <div className="bg-white sticky top-0 z-20 flex items-center justify-between px-4 py-3 border-b border-gray-100">
-        <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors" onClick={() => navigate(-1)}>
-          <ArrowLeft size={18} className="text-gray-600" />
-        </button>
-        <span className="text-sm font-medium text-slate-700">笔记详情</span>
-        <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
-          <Share2 size={16} className="text-gray-500" />
-        </button>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.14),_transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] pb-28">
+      <div className="sticky top-0 z-30 border-b border-white/40 bg-white/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[430px] items-center justify-between px-4 py-3">
+          <button
+            type="button"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <span className="text-sm font-medium text-slate-700">笔记详情</span>
+          <button
+            type="button"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500"
+            onClick={handleShare}
+          >
+            <Share2 size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto pb-20">
-        <div className="bg-white px-5 pt-5 pb-4">
-          {/* Author */}
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center overflow-hidden">
-              {(note.user_pic || note.user_avatar) ? (
-                <img src={note.user_pic || note.user_avatar} alt="" className="w-full h-full object-cover" />
+      <div className="px-4 pt-4">
+        <div className="rounded-[1.9rem] border border-slate-100 bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              className="h-12 w-12 shrink-0 overflow-hidden rounded-[1.2rem] bg-slate-100"
+              onClick={() => navigate(`/user/${note.user_id}`)}
+            >
+              {note.user_pic ? (
+                <img src={resolveMediaUrl(note.user_pic)} alt="" className="h-full w-full object-cover" />
               ) : (
-                <span className="text-sm font-bold text-indigo-500">{(note.user_name || '?')[0]}</span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-800">{note.user_name || '匿名'}</p>
-              <p className="text-[11px] text-gray-400">{note.created_at?.slice(0, 16)?.replace('T', ' ')}</p>
-            </div>
-            <span className={`flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-medium ${vis.color}`}>
-              <VisIcon size={12} />
-              <span>{vis.label}</span>
-            </span>
-          </div>
-
-          {/* Title & Content */}
-          <h1 className="text-xl font-bold text-slate-900 mb-3 leading-tight">{note.title}</h1>
-          <div className="text-[15px] text-gray-700 leading-relaxed whitespace-pre-wrap">{note.content}</div>
-
-          {/* Single Action Bar */}
-          <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100">
-            <div className="flex items-center space-x-1">
-              <button
-                className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all active:scale-95 ${
-                  liked ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                }`}
-                onClick={toggleLike}
-              >
-                <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
-                <span>{likeCount}</span>
-              </button>
-              <button
-                className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all active:scale-95 ${
-                  favorited ? 'bg-yellow-50 text-yellow-600' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                }`}
-                onClick={toggleFav}
-              >
-                <Bookmark size={16} fill={favorited ? 'currentColor' : 'none'} />
-                <span>{favorited ? '已收藏' : '收藏'}</span>
-              </button>
-            </div>
-            <div className="flex items-center space-x-3 text-xs text-gray-400">
-              <span className="flex items-center space-x-1"><Eye size={14} /><span>{note.view_cnt || 0}</span></span>
-              <span className="flex items-center space-x-1"><MessageCircle size={14} /><span>{commentCount}</span></span>
-            </div>
-          </div>
-        </div>
-
-        {/* Comments */}
-        <div className="px-5 pt-4 pb-4">
-          <h3 className="font-semibold text-slate-800 mb-4">评论 ({commentCount})</h3>
-          {comments.length === 0 ? (
-            <div className="text-center py-10">
-              <MessageCircle size={36} className="mx-auto text-gray-200 mb-2" />
-              <p className="text-gray-400 text-sm">暂无评论，快来抢沙发~</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {comments.map((c: any) => (
-                <div key={c.id} className="flex space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center overflow-hidden shrink-0">
-                    {(c.user_pic || c.user_avatar) ? (
-                      <img src={c.user_pic || c.user_avatar} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-[10px] font-bold text-indigo-500">{(c.user_name || '?')[0]}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-700">{c.user_name || '匿名'}</span>
-                      <span className="text-[10px] text-gray-400">{c.created_at?.slice(0, 16)?.replace('T', ' ')}</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1 leading-relaxed">{c.content}</p>
-                  </div>
+                <div className="flex h-full w-full items-center justify-center text-sm font-bold text-indigo-500">
+                  {(note.user_name || '?')[0]}
                 </div>
-              ))}
-              {hasMoreComments && (
-                <button
-                  className="w-full py-2 text-xs text-gray-400 hover:text-indigo-500 transition-colors"
-                  onClick={() => loadComments(commentPage + 1)}
-                >
-                  加载更多评论
-                </button>
               )}
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-800">{note.user_name || '匿名'}</p>
+                  <p className="mt-0.5 text-[11px] text-slate-400">{formatDateTime(note.created_at)}</p>
+                </div>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${vis.className}`}>
+                  <VisIcon size={12} />
+                  <span>{vis.label}</span>
+                </span>
+              </div>
+
+              <div className="mt-4">
+                <h1 className="text-[22px] font-bold leading-tight text-slate-900">{note.title}</h1>
+                {Array.isArray(note.tags) && note.tags.length > 0 && (
+                  <TagPills tags={note.tags} className="mt-3" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {note.content && (
+            <div className="mt-5 whitespace-pre-wrap text-[15px] leading-7 text-slate-700">
+              {note.content}
             </div>
           )}
+
+          {imageCount > 0 && (
+            <div className="mt-5">
+              <MediaGrid images={note.images} cover={imageCount === 1} />
+            </div>
+          )}
+
+          <div className="mt-5 rounded-[1.4rem] bg-slate-50 px-4 py-3">
+            <EngagementBar
+              liked={liked}
+              favorited={favorited}
+              likeCount={likeCount}
+              commentCount={commentCount}
+              viewCount={Number(note.view_cnt || 0)}
+              onLike={toggleLike}
+              onFavorite={toggleFavorite}
+              onComment={scrollToComments}
+              showViewCount
+            />
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {isSelf ? (
+              <>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600"
+                  onClick={() => navigate(`/note/add?edit=1&id=${note.id}`)}
+                >
+                  <Edit3 size={13} />
+                  编辑
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600"
+                  onClick={handleDelete}
+                >
+                  <Trash2 size={13} />
+                  删除
+                </button>
+              </>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-500">
+                <Eye size={13} />
+                {Number(note.view_cnt || 0)} 次浏览
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Bottom Comment Input */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-100 px-4 py-3 flex items-center space-x-3 z-30">
-        <input
-          className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-200 transition-all placeholder-gray-400"
-          placeholder="写评论..."
-          value={commentText}
-          onChange={e => setCommentText(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && submitComment()}
-        />
-        <button
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${
-            commentText.trim() ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-400'
-          }`}
-          onClick={submitComment}
-          disabled={!commentText.trim() || sending}
-        >
-          {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={18} />}
-        </button>
+      <div ref={commentsAnchorRef} className="px-4 pt-4">
+        <div className="rounded-[1.9rem] border border-slate-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Comments</p>
+              <h2 className="mt-1 text-base font-semibold text-slate-900">评论 {commentCount}</h2>
+            </div>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-500"
+              onClick={scrollToComments}
+            >
+              <MessageCircle size={13} />
+              跳转
+            </button>
+          </div>
+
+          <div className="mt-4 space-y-4">
+            {loadingComments && comments.length === 0 ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 size={22} className="animate-spin text-indigo-400" />
+              </div>
+            ) : comments.length === 0 ? (
+              <div className="rounded-[1.4rem] border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+                暂无评论，先说点什么吧
+              </div>
+            ) : (
+              comments.map((comment: any) => (
+                <div key={comment.id} className="flex items-start gap-3">
+                  <button
+                    type="button"
+                    className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-slate-100"
+                    onClick={() => navigate(`/user/${comment.user_id}`)}
+                  >
+                    {comment.user_pic ? (
+                      <img src={resolveMediaUrl(comment.user_pic)} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-indigo-500">
+                        {(comment.user_name || '?')[0]}
+                      </div>
+                    )}
+                  </button>
+                  <div className="min-w-0 flex-1 rounded-[1.2rem] bg-slate-50 px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-slate-700">{comment.user_name || '匿名'}</span>
+                      <span className="text-[10px] text-slate-400">{formatCommentTime(comment.created_at)}</span>
+                    </div>
+                    <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">{comment.content}</p>
+                  </div>
+                </div>
+              ))
+            )}
+
+            {hasMoreComments && comments.length > 0 && (
+              <button
+                type="button"
+                className="w-full rounded-full bg-slate-50 py-2.5 text-xs font-medium text-slate-500"
+                onClick={() => loadComments(commentPage + 1)}
+              >
+                {loadingComments ? '加载中...' : '加载更多评论'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="fixed bottom-0 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2 border-t border-slate-100 bg-white/90 px-4 py-3 backdrop-blur-xl">
+        <div className="flex items-end gap-3">
+          <textarea
+            className="min-h-[48px] flex-1 resize-none rounded-[1.2rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none placeholder:text-slate-300"
+            placeholder="写下你的评论..."
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                submitComment();
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="inline-flex h-[48px] min-w-[48px] items-center justify-center rounded-[1.2rem] bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg shadow-indigo-200 disabled:opacity-60"
+            onClick={submitComment}
+            disabled={!commentText.trim() || sending}
+          >
+            {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+          </button>
+        </div>
       </div>
     </div>
   );

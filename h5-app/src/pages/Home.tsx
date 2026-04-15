@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell, CalendarCheck, CheckCircle2, Flame, ChevronRight,
-  Heart, PenLine, Calendar, Users, BarChart3, Loader2, Trophy, Award,
+  Heart, PenLine, Calendar, Users, BarChart3, Loader2, Trophy, Sparkles,
 } from 'lucide-react';
 import { api, isLoggedIn, getUserInfo } from '../api/request';
+import { resolveMediaUrl } from '../utils/media';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -22,7 +23,7 @@ export default function Home() {
   const [todayDone, setTodayDone] = useState(0);
   const [notes, setNotes] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  const [myPartners, setMyPartners] = useState<any[]>([]);
+  const [currentPartner, setCurrentPartner] = useState<any>(null);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(true);
   const userInfo = getUserInfo();
@@ -34,12 +35,12 @@ export default function Home() {
 
   const loadAll = async () => {
     setLoading(true);
-    const [signR, checkinR, noteR, leaderR, partnerR, unreadR] = await Promise.allSettled([
+    const [signR, checkinR, noteR, leaderR, currentPartnerR, unreadR] = await Promise.allSettled([
       api.get('/sign/stats'),
       api.get('/checkin/list', { page: 1, size: 10 }),
-      api.get('/note/public_list', { page: 1, size: 6, sort: 'hot' }),
+      api.get('/note/public_list', { page: 1, size: 6, sort: 'recommend' }),
       api.get('/sign/leaderboard', { limit: 5 }),
-      api.get('/partner/my_list'),
+      api.get('/partner/current'),
       api.get('/message/unread_count'),
     ]);
     if (signR.status === 'fulfilled') {
@@ -56,17 +57,12 @@ export default function Home() {
     }
     if (noteR.status === 'fulfilled') setNotes((noteR.value as any)?.list || []);
     if (leaderR.status === 'fulfilled') setLeaderboard(Array.isArray(leaderR.value) ? leaderR.value as any[] : []);
-    if (partnerR.status === 'fulfilled') setMyPartners(Array.isArray(partnerR.value) ? (partnerR.value as any[]).slice(0, 4) : ((partnerR.value as any)?.list || []).slice(0, 4));
+    if (currentPartnerR.status === 'fulfilled') {
+      const partnerData: any = currentPartnerR.value || {};
+      setCurrentPartner(partnerData?.partner || null);
+    }
     if (unreadR.status === 'fulfilled') setUnread(Number(unreadR.value) || 0);
     setLoading(false);
-  };
-
-  const handleCheckIn = async () => {
-    if (signStats.todaySigned) { navigate('/sign'); return; }
-    try {
-      await api.post('/sign/do', { duration: 30, status: 'normal', content: '' });
-      loadAll();
-    } catch {}
   };
 
   const noteColors = [
@@ -106,7 +102,7 @@ export default function Home() {
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/30 overflow-hidden backdrop-blur-sm">
               {userInfo?.avatar ? (
-                <img src={userInfo.avatar} alt="" className="w-full h-full object-cover" />
+                <img src={resolveMediaUrl(userInfo.avatar)} alt="" className="w-full h-full object-cover" />
               ) : (
                 <span className="text-xl font-bold">{(userInfo?.nickname || '?')[0]}</span>
               )}
@@ -136,7 +132,7 @@ export default function Home() {
             <p className="text-lg font-semibold">保持专注，突破自我</p>
           </div>
           <button
-            onClick={handleCheckIn}
+            onClick={() => navigate('/sign')}
             className={`flex items-center space-x-2 px-5 py-2.5 rounded-full font-medium text-sm transition-all active:scale-95 ${
               signStats.todaySigned
                 ? 'bg-green-400/90 text-white shadow-[0_0_20px_rgba(74,222,128,0.4)]'
@@ -144,7 +140,7 @@ export default function Home() {
             }`}
           >
             {signStats.todaySigned ? <CheckCircle2 size={18} /> : <CalendarCheck size={18} />}
-            <span>{signStats.todaySigned ? '已打卡' : '立即打卡'}</span>
+            <span>{signStats.todaySigned ? '已签到' : '去签到'}</span>
           </button>
         </div>
       </div>
@@ -167,6 +163,33 @@ export default function Home() {
           <p className="text-[11px] text-gray-500">完成任务</p>
         </div>
       </div>
+
+      {currentPartner && (
+        <div className="mt-5 px-5">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-100 to-blue-100 flex items-center justify-center overflow-hidden shrink-0">
+              {currentPartner.avatar ? (
+                <img src={resolveMediaUrl(currentPartner.avatar)} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-sm font-bold text-cyan-600">{(currentPartner.nickname || '?')[0]}</span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-slate-800 truncate">当前伙伴：{currentPartner.nickname || '伙伴'}</span>
+                <span className="rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-medium px-2 py-0.5">一对一</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5 truncate">{currentPartner.bio || '一起学习吧'}</p>
+            </div>
+            <button
+              className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center hover:bg-indigo-100 active:scale-90 transition-all"
+              onClick={() => navigate('/partner/room')}
+            >
+              <Sparkles size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ===== Quick Actions 2x2 Grid ===== */}
       <div className="mt-6 px-5">
@@ -285,7 +308,7 @@ export default function Home() {
                   </span>
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center overflow-hidden shrink-0 ml-2">
                     {u.avatar ? (
-                      <img src={u.avatar} alt="" className="w-full h-full object-cover" />
+                      <img src={resolveMediaUrl(u.avatar)} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-xs font-bold text-indigo-500">{(u.nickname || '?')[0]}</span>
                     )}
@@ -303,43 +326,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* ===== My Study Partners ===== */}
-      {myPartners.length > 0 && (
-        <div className="mt-6 px-5 mb-8">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
-              <Award size={18} className="text-purple-500" /> 我的学伴
-            </h2>
-            <button className="text-sm text-gray-400 flex items-center hover:text-indigo-500 transition-colors" onClick={() => navigate('/partner')}>
-              全部 <ChevronRight size={16} />
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {myPartners.map((p: any) => (
-              <div
-                key={p.id}
-                className="bg-white rounded-2xl p-3.5 shadow-sm border border-gray-100 flex items-center gap-3 hover:shadow-md transition-shadow active:scale-[0.97]"
-                onClick={() => navigate(`/user/${p.user_id || p.id}`)}
-              >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center overflow-hidden shrink-0">
-                  {p.avatar ? (
-                    <img src={p.avatar} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-sm font-bold text-purple-500">{(p.nickname || p.user_name || '?')[0]}</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-700 truncate">{p.nickname || p.user_name || '学伴'}</p>
-                  <p className="text-[10px] text-gray-400 truncate">{p.bio || '一起学习吧'}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Spacer for empty states */}
-      {leaderboard.length === 0 && myPartners.length === 0 && <div className="h-8" />}
+      {leaderboard.length === 0 && !currentPartner && <div className="h-8" />}
     </div>
   );
 }

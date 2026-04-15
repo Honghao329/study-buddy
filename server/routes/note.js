@@ -5,6 +5,8 @@ const { canViewNote } = require('../lib/access');
 const { deleteNoteCascade } = require('../lib/cleanup');
 const { normalizeNote, parseJsonField } = require('../lib/format');
 const { sanitizePage, checkEnum, trimText } = require('../lib/validate');
+const { inferNoteTags } = require('../lib/tagger');
+const { getInterestSignals, sortRecommendedNotes } = require('../lib/recommend');
 
 const VISIBILITY_VALUES = ['public', 'private', 'partner'];
 
@@ -25,15 +27,17 @@ router.post('/create', authMiddleware, (req, res) => {
 	const noteTitle = trimText(title, 200);
 	if (!noteTitle) return res.json({ code: 400, msg: '标题不能为空' });
 	const safeVisibility = checkEnum(visibility, VISIBILITY_VALUES, 'public');
+	const noteContent = trimText(content, 10000);
+	const noteTags = inferNoteTags({ title: noteTitle, content: noteContent, tags });
 	const result = db.prepare(
 		'INSERT INTO notes (user_id, title, content, images, visibility, tags) VALUES (?, ?, ?, ?, ?, ?)'
 	).run(
 		req.userId,
 		noteTitle,
-		trimText(content, 10000),
+		noteContent,
 		JSON.stringify(parseJsonField(images, [])),
 		safeVisibility,
-		JSON.stringify(parseJsonField(tags, []))
+		JSON.stringify(noteTags)
 	);
 	res.json({ code: 200, data: { id: result.lastInsertRowid } });
 });
@@ -59,7 +63,7 @@ router.get('/my_list', authMiddleware, (req, res) => {
 });
 
 // 获取公开笔记列表（社区广场）
-router.get('/public_list', (req, res) => {
+router.get('/public_list', optionalAuth, (req, res) => {
 	const { size, offset } = sanitizePage(req.query);
 	const { search, tag, sort = 'new' } = req.query;
 	let where = "WHERE n.visibility = 'public' AND n.status = 1";
@@ -67,6 +71,16 @@ router.get('/public_list', (req, res) => {
 
 	if (search) { where += ' AND (n.title LIKE ? OR n.content LIKE ? OR n.tags LIKE ?)'; params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
 	if (tag) { where += ' AND n.tags LIKE ?'; params.push(`%${tag}%`); }
+
+	if (sort === 'recommend' && req.userId) {
+		const list = db.prepare(
+			`SELECT n.*, u.nickname as user_name, u.avatar as user_pic
+			 FROM notes n LEFT JOIN users u ON n.user_id = u.id ${where}
+			 ORDER BY n.created_at DESC`
+		).all(...params);
+		const ranked = sortRecommendedNotes(list.map(normalizeNote), getInterestSignals(db, req.userId));
+		return res.json({ code: 200, data: { list: ranked.slice(offset, offset + size), total: ranked.length } });
+	}
 
 	const orderBy = sort === 'hot' ? 'n.like_cnt DESC, n.created_at DESC' : 'n.created_at DESC';
 
@@ -119,14 +133,16 @@ router.put('/update/:id', authMiddleware, (req, res) => {
 	const noteTitle = trimText(title, 200);
 	if (!noteTitle) return res.json({ code: 400, msg: '标题不能为空' });
 	const safeVisibility = checkEnum(visibility, VISIBILITY_VALUES, 'public');
+	const noteContent = trimText(content, 10000);
+	const noteTags = inferNoteTags({ title: noteTitle, content: noteContent, tags });
 	db.prepare(
 		`UPDATE notes SET title = ?, content = ?, images = ?, visibility = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
 	).run(
 		noteTitle,
-		trimText(content, 10000),
+		noteContent,
 		JSON.stringify(parseJsonField(images, [])),
 		safeVisibility,
-		JSON.stringify(parseJsonField(tags, [])),
+		JSON.stringify(noteTags),
 		req.params.id
 	);
 	res.json({ code: 200, msg: '更新成功' });
